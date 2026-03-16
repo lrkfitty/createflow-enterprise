@@ -1,0 +1,11 @@
+streamlit==1.50.0
+extra-streamlit-components
+openai
+google-generativeai
+boto3
+requests
+python-dotenv
+Pillow
+watchdog
+PyJWT
+replicate

@@ -1,0 +1,2 @@
+DEBUG: Entry. user_assets_dir=output/users/TyTheGuyTTG/Assets_CLOUD_TEST, target_username=TyTheGuyTTG
+DEBUG: Entry. user_assets_dir=output/users/TyTheGuyTTG/Assets_CLOUD_TEST, target_username=TyTheGuyTTG
