@@ -2496,49 +2496,6 @@ Write an immersive, detailed prompt now:"""
                     
                     st.success(f"Added {count} shots to Campaign Queue! Go to 'Campaign Queue' tab to run them.")
 
-            # Check prompt preview
-            final_prompt = scenario['template_prompt']
-            
-            # Generic Replacement Logic
-            # 1. Known slots
-            for k, v in current_selections.items():
-                final_prompt = final_prompt.replace(f"[{k}]", v)
-            
-            # 2. Catch-all: [PROPS_AND_CAST]
-            # FIX: Added pets to extras
-            extras = rel_names + pet_names + prop_names
-            extras_str = ", ".join(extras) if extras else "background details"
-            final_prompt = final_prompt.replace("[PROPS_AND_CAST]", extras_str)
-
-            # 3. Clean up generic legacy slots if they exist in template but weren't filled
-            final_prompt = final_prompt.replace("[RELATION]", current_selections.get("RELATIONS", "friend"))
-            final_prompt = final_prompt.replace("[OUTFIT]", current_selections.get("OUTFIT", "casual outfit")) # Use selected output or fallback
-
-            st.info(f"**Prompt Preview:**\n{final_prompt}")
-            
-            # 3. Generate Actions
-            if st.button("Generate World Scene", type="primary"):
-                 prog_ph = st.empty()
-                 # from execution.magic_ui import circular_progress
-                 with prog_ph.container():
-                      circular_progress()
-                      st.caption("Generating with Nano...")
-
-                 # Construct Payload
-                 wb_payload = {
-                     "positive_prompt": final_prompt,
-                     "aspect_ratio": "4:5", # Default for social
-                     "model_type": "nano", # Force Nano for multi-ref
-                     "assets": assets_to_inject # New Field
-                 }
-                 
-                 res = generate_image_from_prompt(wb_payload, get_user_out_dir("World"))
-                 prog_ph.empty()
-                 
-                 if res["status"] == "success":
-                     st.image(res["image_path"], caption="World Build Result")
-                 else:
-                     st.error(f"Failed: {res.get('logs')}")
 
 
 # ==========================================
