@@ -1476,6 +1476,10 @@ if selection == "Admin Panel":
 
         with tab_stats:
             st.write("Coming soon: Usage stats per student.")
+# Global defaults for form submit buttons — must be set before any tab block
+gen_world = False
+wb_queue = False
+
 if selection == "World Builder":
     with st.container():
         st.markdown("### World Builder")
@@ -1832,10 +1836,6 @@ if selection == "World Builder":
         st.session_state['wb_fidelity_modifier'] = wb_fidelity_modifier
 
         st.divider()
-
-        # Initialize form output defaults so they are always defined even if form hasn't been submitted
-        gen_world = False
-        wb_queue = False
 
         # V3.9: Wrapped in Form to prevent Camera Settings Reload Loop
         with st.form(key="wb_camera_form"):
