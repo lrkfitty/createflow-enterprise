@@ -1833,6 +1833,10 @@ if selection == "World Builder":
 
         st.divider()
 
+        # Initialize form output defaults so they are always defined even if form hasn't been submitted
+        gen_world = False
+        wb_queue = False
+
         # V3.9: Wrapped in Form to prevent Camera Settings Reload Loop
         with st.form(key="wb_camera_form"):
             # --- ALL CAMERA CONTROLS (Including angle/shot/lighting moved from card pickers) ---
