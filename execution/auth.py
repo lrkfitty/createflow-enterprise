@@ -61,7 +61,27 @@ class AuthManager:
                 VALUES (?, ?, ?, ?, ?, ?)
             ''', (env_user, pass_hash, salt, "admin", 1000, time.time()))
             conn.commit()
+
+        # --- OWNER ACCOUNT: ensure tyrielarkin@gmail.com is always admin with high credits ---
+        owner_email = "tyrielarkin@gmail.com"
+        c.execute("SELECT username, role, credits FROM users WHERE lower(username)=?", (owner_email.lower(),))
+        row = c.fetchone()
+        if row:
+            # Account exists — upgrade to admin and top up credits if below 500
+            current_credits = row[2]
+            new_credits = max(current_credits, 10000)
+            c.execute("UPDATE users SET role='admin', credits=? WHERE lower(username)=?", (new_credits, owner_email.lower()))
+            conn.commit()
+        else:
+            # Account not yet registered — pre-seed it with a placeholder hash (user registers normally)
+            pass_hash, salt = self._hash_password(os.getenv("OWNER_PASSWORD", "changeme123"))
+            c.execute('''
+                INSERT INTO users (username, password_hash, salt, role, credits, created_at)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ''', (owner_email, pass_hash, salt, "admin", 10000, time.time()))
+            conn.commit()
         conn.close()
+
 
     def _hash_password(self, password, salt=None):
         """Simple SHA256 hash with salt."""
