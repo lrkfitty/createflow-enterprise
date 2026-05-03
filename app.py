@@ -2019,12 +2019,7 @@ if selection == "World Builder":
                     
                    # CHECK: Is this a custom scenario? (Use session state flag)
                     use_custom_flow = st.session_state.get('is_custom_scenario', False) and 'custom_scenario_data' in st.session_state
-                    
-                    # DEBUG OUTPUT
-                    st.write(f"🔍 DEBUG: is_custom_scenario in session = {st.session_state.get('is_custom_scenario', 'NOT SET')}")
-                    st.write(f"🔍 DEBUG: custom_scenario_data exists = {'custom_scenario_data' in st.session_state}")
-                    st.write(f"🔍 DEBUG: use_custom_flow = {use_custom_flow}")
-                    
+
                     if use_custom_flow:
                         # CUSTOM SCENARIO FLOW - Use new detailed Director AI
                         custom_data = st.session_state['custom_scenario_data']
@@ -2090,6 +2085,10 @@ Write an immersive, detailed prompt now:"""
                         
                         try:
                             import google.generativeai as genai
+                            _google_key = os.getenv("GOOGLE_API_KEY")
+                            if not _google_key:
+                                raise ValueError("GOOGLE_API_KEY not configured")
+                            genai.configure(api_key=_google_key)
                             model = genai.GenerativeModel("gemini-2.0-flash")
                             response = model.generate_content(director_prompt, generation_config={"temperature": sel_temperature})
                             generated_prompt = response.text.strip()
