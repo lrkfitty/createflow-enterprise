@@ -3492,6 +3492,13 @@ if selection == "Wan 2.7 Studio":
                 st.image(uploaded_anim_img, width=300)
                 anim_image_path = temp_anim_path
                 
+        wan_model_flavor = st.selectbox(
+            "Model Variant",
+            ["Wan 2.7 Standard", "Wan 2.7 Spicy (No Guardrails)"],
+            index=0,
+            key="wan_studio_flavor_select"
+        )
+        
         anim_prompt = st.text_area("Motion Prompt", placeholder="e.g. The character turns her head to look at the camera and smiles, wind blowing hair, realistic physics and textures, 35mm lens.", key="wan_anim_prompt")
         
         col_res, col_dur = st.columns(2)
@@ -3513,7 +3520,10 @@ if selection == "Wan 2.7 Studio":
                     st.error("❌ Need 5 Credits for Wan 2.7 Video!")
                 else:
                     with st.status("Submitting motion job to Atlas API...", expanded=True) as status:
-                        st.write("Uploading and running alibaba/wan-2.7/image-to-video...")
+                        if "Spicy" in wan_model_flavor:
+                            st.write("Uploading and running alibaba/wan-2.7/image-to-video (Spicy / No Guardrails)...")
+                        else:
+                            st.write("Uploading and running alibaba/wan-2.7/image-to-video...")
                         
                         out_dir = get_user_out_dir("Videos")
                         res = generate_wan_video(
