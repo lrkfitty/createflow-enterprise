@@ -154,6 +154,106 @@
       "name": "Flower Market Selection",
       "category": "lifestyle",
       "template_prompt": "A colorful candid photo of [PROTAGONIST] standing at a European flower market stall, wearing [OUTFIT], holding a large bouquet of fresh peonies and smiling. Vibrant blooms all around, soft daylight, [VIBE] vibe."
+    },
+    "intimate_candlelit_bath": {
+      "name": "Intimate Candlelit Bath",
+      "category": "sensual",
+      "template_prompt": "Sensual, high-fidelity photo of [PROTAGONIST] relaxing in a porcelain clawfoot bathtub filled with rich white bubbles. Warm candle flames flicker on vanity tables, casting a soft orange glow. Dappled shadows, [VIBE] vibe."
+    },
+    "silhouette_wall_shadow": {
+      "name": "Silhouette Wall Shadow",
+      "category": "sensual",
+      "template_prompt": "Artistic silhouette shadow projection on a textured warm plaster wall. The shadow clearly defines the curves and profile of [PROTAGONIST] posing elegantly, backlit by a soft golden lamp. Minimalist composition, [VIBE] vibe."
+    },
+    "cozy_couch_lounge": {
+      "name": "Cozy Couch Lounge",
+      "category": "lounge",
+      "template_prompt": "Candid indoor lifestyle photo of [PROTAGONIST] lying comfortably on a large cream-colored sectional sofa, wearing [OUTFIT] and fuzzy socks, looking casually at her phone. Soft afternoon window light, cozy home atmosphere, [VIBE] vibe."
+    },
+    "seductive_black_dress": {
+      "name": "Seductive Black Dress",
+      "category": "sensual",
+      "template_prompt": "Seductive portrait of [PROTAGONIST] kneeling on a white-sheeted bed, wearing a sleek black mini dress and high heels, looking directly at the camera with a confident gaze. Soft bedroom lighting, shallow depth of field, [VIBE] vibe."
+    },
+    "kitchen_counter_knitwear": {
+      "name": "Kitchen Counter Knitwear",
+      "category": "lounge",
+      "template_prompt": "Candid portrait of [PROTAGONIST] leaning casually against a modern marble kitchen counter, wearing a cropped knit sweater and cozy shorts. Morning sunbeams stream through the window, highlighting textures, [VIBE] vibe."
+    },
+    "venetian_blind_shadows": {
+      "name": "Venetian Blind Shadows",
+      "category": "sensual",
+      "template_prompt": "Cinematic close-up portrait of [PROTAGONIST] sitting by a window, with graphic shadow lines from venetian blinds cast softly across her face and shoulders. Moody atmosphere, warm highlights, [VIBE] vibe."
+    },
+    "red_corridor_silhouette": {
+      "name": "Red Corridor Silhouette",
+      "category": "sensual",
+      "template_prompt": "Moody silhouette shot of [PROTAGONIST] standing at the end of a dark corridor illuminated by deep red neon ceiling lights, creating a dramatic halo effect. High contrast, atmospheric film style, [VIBE] vibe."
+    },
+    "cozy_bedroom_bodysuit": {
+      "name": "Cozy Bedroom Bodysuit",
+      "category": "lounge",
+      "template_prompt": "A natural, soft-lit photo of [PROTAGONIST] lying on a messy bed covered in white linens, wearing a grey bodysuit. She rests her hands behind her head, looking relaxed. Dappled sunlight, [VIBE] vibe."
+    },
+    "oversized_sweater_stairs": {
+      "name": "Oversized Sweater on Stairs",
+      "category": "lounge",
+      "template_prompt": "Candid photo of [PROTAGONIST] standing on a modern wooden staircase, wearing an oversized knit varsity sweater. Soft residential lighting, minimalist home design, warm tones, [VIBE] vibe."
+    },
+    "dimly_lit_candle_bar": {
+      "name": "Dimly Lit Candle Bar",
+      "category": "sensual",
+      "template_prompt": "Atmospheric portrait of [PROTAGONIST] sitting at a dimly lit mahogany bar, wearing a sleek silk slip dress. A glass of wine and a burning candle sit in front of her, casting warm highlights on her face. Soft background bokeh, [VIBE] vibe."
+    },
+    "orange_sofa_relax": {
+      "name": "Orange Sofa Relax",
+      "category": "lounge",
+      "template_prompt": "A casual photo of [PROTAGONIST] lying on her stomach on a large plush orange velvet sofa, wearing [OUTFIT], smiling as she types on her phone. Sunny apartment background with green indoor plants, [VIBE] vibe."
+    },
+    "slippers_coffee_morning": {
+      "name": "Slippers & Coffee Morning",
+      "category": "lounge",
+      "template_prompt": "Cozy close-up shot of [PROTAGONIST]'s feet wearing plush white fuzzy slippers on a soft rug, with a ceramic mug of coffee resting on a nearby wooden table. Relaxed morning atmosphere, warm sunlit floors, [VIBE] vibe."
+    },
+    "black_knitwear_balcony": {
+      "name": "Black Knitwear Balcony",
+      "category": "sensual",
+      "template_prompt": "A nighttime portrait of [PROTAGONIST] standing on a high balcony, wearing a black knit sweater. She looks back over her shoulder at the camera, with the glittering lights of the city skyline out of focus behind her, [VIBE] vibe."
+    },
+    "bed_selfie_holding_phone": {
+      "name": "Bed Selfie holding Phone",
+      "category": "selfie",
+      "template_prompt": "Candid bedroom photo of [PROTAGONIST] lying sideways on a bed, holding her phone to take a selfie. Messy hair, soft white sheets, natural daylight from a window, relaxed intimate atmosphere, [VIBE] vibe."
+    },
+    "matching_sweats_set": {
+      "name": "Matching Sweats Set",
+      "category": "lounge",
+      "template_prompt": "Candid photo of [PROTAGONIST] sitting cross-legged on a bed, wearing a matching green matching sweatpants and sweatshirt lounge set. Soft light, casual home environment, [VIBE] vibe."
+    },
+    "cropped_hoodie_mirror": {
+      "name": "Cropped Hoodie Mirror",
+      "category": "selfie",
+      "template_prompt": "A mirror selfie of [PROTAGONIST] capturing her outfit in a full-length bedroom mirror, wearing a cropped brown hoodie and white cotton shorts. Bright room lighting, clean aesthetic, [VIBE] vibe."
+    },
+    "high_heels_closeup": {
+      "name": "High Heels Close-up",
+      "category": "sensual",
+      "template_prompt": "Chic close-up shot of [PROTAGONIST]'s legs wearing elegant high heel stilettos, resting casually on a dark velvet ottoman. Moody lighting, high fashion photography, [VIBE] vibe."
+    },
+    "loungewear_by_window": {
+      "name": "Loungewear by Window",
+      "category": "lounge",
+      "template_prompt": "Peaceful portrait of [PROTAGONIST] sitting on a window sill, wearing white linen loungewear. She looks out the large window at the rain outside, soft overcast light, serene atmosphere, [VIBE] vibe."
+    },
+    "sunlight_boudoir_reflection": {
+      "name": "Sunlight Boudoir Reflection",
+      "category": "sensual",
+      "template_prompt": "A beautiful mirror reflection of [PROTAGONIST] standing in a sunlit bedroom, wearing silk slipwear. Warm sunlight floods the room, creating long dramatic shadows across the bed and floor, [VIBE] vibe."
+    },
+    "fuzzy_blanket_sofa_hug": {
+      "name": "Fuzzy Blanket Sofa Hug",
+      "category": "lounge",
+      "template_prompt": "A cozy candid photo of [PROTAGONIST] sitting on a soft white sofa, wrapped in a large chunky knit blanket, smiling warmly at the camera. Hot tea steaming in her hands, soft afternoon lighting, [VIBE] vibe."
     }
   }
 }
