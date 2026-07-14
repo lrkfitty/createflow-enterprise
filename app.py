@@ -2118,7 +2118,7 @@ Write an immersive, detailed prompt now:"""
                                 raise ValueError("GOOGLE_API_KEY not configured")
                             genai.configure(api_key=_google_key)
                             # Try models sequentially during generate_content execution
-                            models_to_try = ["gemini-2.5-flash", "gemini-1.5-flash", "gemini-2.0-flash"]
+                            models_to_try = ["gemini-flash-latest", "gemini-pro-latest", "gemini-2.0-flash-001"]
                             response = None
                             last_err = "No models succeeded."
                             for m_name in models_to_try:

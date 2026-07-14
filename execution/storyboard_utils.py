@@ -43,7 +43,7 @@ def _generate_gemini(prompt):
     if not api_key:
         return ["Error: Missing GOOGLE_API_KEY", "", "", ""]
         
-    models_to_try = ["gemini-3.5-flash", "gemini-2.5-flash", "gemini-1.5-flash", "gemini-2.0-flash"]
+    models_to_try = ["gemini-flash-latest", "gemini-pro-latest", "gemini-2.0-flash-001"]
     headers = { "Content-Type": "application/json" }
     payload = {
         "contents": [{

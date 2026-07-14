@@ -207,7 +207,7 @@ def render_multishot_ui(get_user_out_dir_func):
                                 director_prompt += f"\nCONTEXT FROM USER:\n{extra_context}\n\nIncorporate the user's intent into your suggestion."
                             
                             # Try models sequentially during generate_content execution
-                            models_to_try = ["gemini-3.5-flash", "gemini-2.5-flash", "gemini-1.5-flash", "gemini-2.0-flash"]
+                            models_to_try = ["gemini-flash-latest", "gemini-pro-latest", "gemini-2.0-flash-001"]
                             response = None
                             last_err = "No models succeeded."
                             for m_name in models_to_try:
@@ -395,7 +395,7 @@ def render_multishot_ui(get_user_out_dir_func):
                             content_parts.append(start_img)
                         
                         # Try models sequentially during generate_content execution
-                        models_to_try = ["gemini-3.5-flash", "gemini-2.5-flash", "gemini-1.5-flash", "gemini-2.0-flash"]
+                        models_to_try = ["gemini-flash-latest", "gemini-pro-latest", "gemini-2.0-flash-001"]
                         response = None
                         last_err = "No models succeeded."
                         for m_name in models_to_try:

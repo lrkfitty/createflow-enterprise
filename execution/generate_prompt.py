@@ -379,7 +379,7 @@ def generate_prompt_content(vibe, outfit, character,
             
             # If default fails, try fallback models in sequence
             if not success:
-                fallback_models = ["gemini-3.5-flash", "gemini-2.5-flash", "gemini-1.5-flash"]
+                fallback_models = ["gemini-flash-latest", "gemini-pro-latest", "gemini-2.0-flash-001"]
                 for f_model_name in fallback_models:
                     try:
                         fallback_model = genai.GenerativeModel(f_model_name)

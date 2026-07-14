@@ -131,7 +131,7 @@ def generate_motion_prompt(image_path, movement_type="Auto", physics_focus="stan
     - NO: "Here is the prompt", just give me the raw prompt text.
     """
 
-    models_to_try = ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-2.0-flash']
+    models_to_try = ['gemini-flash-latest', 'gemini-pro-latest', 'gemini-2.0-flash-001']
     last_err = "No models succeeded."
     
     for m_name in models_to_try:
