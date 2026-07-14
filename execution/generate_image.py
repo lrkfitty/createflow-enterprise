@@ -126,11 +126,24 @@ def generate_image_nano(prompt_data, output_folder, reference_image_path, outfit
                     local_logs.append(f"⚠️ Resize Warning for {label}: {e}. Using raw bytes.")
                     return base64.b64encode(img_bytes).decode('utf-8'), mime_type
 
+            # Try local recovery first if it is an S3 URL representing a local file
+            if img_path and img_path.startswith(('http://', 'https://')) and "users/" in img_path:
+                 try:
+                      local_rel = img_path.split(".amazonaws.com/")[1].split("?")[0]
+                      local_abs = os.path.join(os.getcwd(), "output", local_rel)
+                      if os.path.exists(local_abs):
+                           img_path = local_abs
+                 except Exception:
+                      pass
+
             # Case A: URL
             if img_path and img_path.startswith(('http://', 'https://')):
                 try:
                     t_dl_start = time.time()
-                    resp = requests.get(img_path, timeout=(5, 30)) 
+                    headers = {
+                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+                    }
+                    resp = requests.get(img_path, headers=headers, timeout=(5, 30)) 
                     resp.raise_for_status()
                     dl_time = time.time() - t_dl_start
                     
@@ -138,13 +151,38 @@ def generate_image_nano(prompt_data, output_folder, reference_image_path, outfit
                     local_logs.append(f"multimodal: Downloaded {label} from URL ({dl_time:.2f}s)")
                 except Exception as e:
                     local_logs.append(f"⚠️ Failed to download {label}: {e}")
+                    
+                    # Clean path fallback
+                    clean_path = img_path.split("?")[0]
+                    if clean_path.startswith("output/") and os.path.exists(clean_path):
+                         try:
+                             with open(clean_path, "rb") as image_file:
+                                 b64_data, mime_type = process_and_encode(image_file.read(), "image/jpeg")
+                             local_logs.append(f"multimodal: Recovered {label} from local output path")
+                         except Exception:
+                             pass
             
             # Case B: Local File
-            elif img_path and os.path.exists(img_path) and img_path.lower().endswith(('.png', '.jpg', '.jpeg', '.webp')):
-                with open(img_path, "rb") as image_file:
-                    raw_bytes = image_file.read()
-                    b64_data, mime_type = process_and_encode(raw_bytes, "image/jpeg")
-                local_logs.append(f"multimodal: Included {label} reference (Local)")
+            elif img_path and os.path.exists(img_path):
+                try:
+                    with open(img_path, "rb") as image_file:
+                        raw_bytes = image_file.read()
+                        b64_data, mime_type = process_and_encode(raw_bytes, "image/jpeg")
+                    local_logs.append(f"multimodal: Included {label} reference (Local)")
+                except Exception as e:
+                    local_logs.append(f"⚠️ Failed to read local file {label}: {e}")
+
+            # Case C: Check relative in current directory
+            elif img_path:
+                local_alt = os.path.join(os.getcwd(), img_path)
+                if os.path.exists(local_alt):
+                     try:
+                         with open(local_alt, "rb") as image_file:
+                             raw_bytes = image_file.read()
+                             b64_data, mime_type = process_and_encode(raw_bytes, "image/jpeg")
+                         local_logs.append(f"multimodal: Included {label} reference (Local Alt)")
+                     except Exception:
+                         pass
 
             if b64_data:
                 b64_uri = f"data:{mime_type};base64,{b64_data}"
