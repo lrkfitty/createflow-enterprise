@@ -26,20 +26,58 @@ def generate_prompt_content(vibe, outfit, character,
         import base64
         import requests
         
+        if not image_path:
+            return ""
+            
+        # Try local recovery first if it is an S3 URL representing a local file
+        if image_path.startswith(('http://', 'https://')) and "users/" in image_path:
+             try:
+                  local_rel = image_path.split(".amazonaws.com/")[1].split("?")[0]
+                  local_abs = os.path.join(os.getcwd(), "output", local_rel)
+                  if os.path.exists(local_abs):
+                       image_path = local_abs
+             except Exception:
+                  pass
+                  
         # Case A: URL
         if image_path.startswith(('http://', 'https://')):
             try:
-                resp = requests.get(image_path)
+                headers = {
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+                }
+                resp = requests.get(image_path, headers=headers, timeout=5)
                 resp.raise_for_status()
                 return base64.b64encode(resp.content).decode('utf-8')
             except Exception as e:
                 print(f"Failed to download reference image: {e}")
-                return "" # Handle gracefully
+                
+                # Check clean path fallback
+                clean_path = image_path.split("?")[0]
+                if clean_path.startswith("output/") and os.path.exists(clean_path):
+                     try:
+                         with open(clean_path, "rb") as image_file:
+                             return base64.b64encode(image_file.read()).decode('utf-8')
+                     except Exception:
+                         pass
+                return ""
                 
         # Case B: Local File
         if os.path.exists(image_path):
-            with open(image_path, "rb") as image_file:
-                return base64.b64encode(image_file.read()).decode('utf-8')
+            try:
+                with open(image_path, "rb") as image_file:
+                    return base64.b64encode(image_file.read()).decode('utf-8')
+            except Exception as e:
+                print(f"Failed to read local file: {e}")
+                return ""
+                
+        # Case C: Check relative in current directory
+        local_alt = os.path.join(os.getcwd(), image_path)
+        if os.path.exists(local_alt):
+             try:
+                 with open(local_alt, "rb") as image_file:
+                     return base64.b64encode(image_file.read()).decode('utf-8')
+             except Exception:
+                 pass
         
         return ""
 
