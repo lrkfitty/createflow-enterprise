@@ -3574,6 +3574,63 @@ if selection == "Wan 2.7 Studio":
                 st.image(uploaded_anim_img, width=300)
                 anim_image_path = temp_anim_path
                 
+        # Director Vision AI Generator for Wan
+        if anim_image_path:
+            st.markdown("---")
+            st.markdown("#### 🪄 Director Vision AI Prompt Generator")
+            st.caption("Let Gemini analyze your scene composition and generate a custom cinematography prompt.")
+            
+            vis_col1, vis_col2, vis_col3 = st.columns(3)
+            with vis_col1:
+                wan_vis_move = st.selectbox(
+                    "Desired Movement", 
+                    ["Auto", "Pan Left/Right", "Zoom In/Out", "Dolly Shot", "Handheld Close-up", "Slow Drone Orbit"], 
+                    key="wan_vis_move"
+                )
+            with vis_col2:
+                wan_vis_physics = st.selectbox(
+                    "Dynamics Focus", 
+                    ["Standard", "Wind Dynamics (hair/fabric)", "High Motion (action/dance)", "Fluid Dynamics (liquids)"], 
+                    key="wan_vis_physics"
+                )
+            with vis_col3:
+                wan_vis_style = st.selectbox(
+                    "Cinematic Style", 
+                    ["Film Scene (Moody)", "High Action (Kinetic)", "Portrait Study (Emotions)", "Surreal (Dreamlike)"], 
+                    key="wan_vis_style"
+                )
+                
+            if st.button("🪄 Analyze & Suggest Prompt", key="wan_run_vision_ai", use_container_width=True):
+                if not os.getenv("GOOGLE_API_KEY"):
+                    st.error("Missing GOOGLE_API_KEY for Vision Analysis.")
+                else:
+                    with st.spinner("🎬 Director AI is analyzing your image composition..."):
+                        from execution.generate_video_prompt import generate_motion_prompt
+                        
+                        suggestion = generate_motion_prompt(
+                            anim_image_path,
+                            movement_type=wan_vis_move,
+                            physics_focus=wan_vis_physics,
+                            emotion="Dynamic",
+                            additional_context=f"Render style guideline: {wan_vis_style}."
+                        )
+                        st.session_state["wan_vision_ai_suggestion"] = suggestion
+                        
+            if "wan_vision_ai_suggestion" in st.session_state:
+                st.info(f"💡 **Director AI Prompt Suggestion:**\n\n{st.session_state['wan_vision_ai_suggestion']}")
+                
+                c_apply, c_clear = st.columns(2)
+                with c_apply:
+                    if st.button("✅ Apply to Motion Prompt Box", key="wan_apply_vis_suggestion", use_container_width=True):
+                        st.session_state.wan_anim_prompt = st.session_state["wan_vision_ai_suggestion"]
+                        del st.session_state["wan_vision_ai_suggestion"]
+                        st.rerun()
+                with c_clear:
+                    if st.button("❌ Dismiss", key="wan_clear_vis_suggestion", use_container_width=True):
+                        del st.session_state["wan_vision_ai_suggestion"]
+                        st.rerun()
+            st.markdown("---")
+            
         wan_model_flavor = st.selectbox(
             "Model Variant",
             [
