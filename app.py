@@ -3029,8 +3029,16 @@ if selection == "Video Studio":
     with v_tab_create:
         with st.form(key="video_form"):
             # Model Selection
-            st.markdown("**Select Video Engine**")
-            video_model = st.selectbox("Engine", ["Kling AI 2.6 (Professional)", "HuMo AI (Human Motion Premium)"], key="vid_model_select")
+            video_model = st.selectbox(
+                "Engine", 
+                [
+                    "Kling AI 2.6 (Professional)", 
+                    "HuMo AI (Human Motion Premium)",
+                    "Wan 2.7 (Image-to-Video)",
+                    "Wan 2.7 Spicy (Image-to-Video)"
+                ], 
+                key="vid_model_select"
+            )
             
             col_v_in, col_v_set = st.columns([1, 1])
         
@@ -3183,6 +3191,17 @@ if selection == "Video Studio":
                     h_steps = st.slider("Inference Steps", 10, 100, 50, help="More steps = higher quality (and cost).")
                     h_guidance = st.slider("Text Guidance", 2.0, 15.0, 5.0)
                     h_audio_guidance = st.slider("Audio Guidance", 2.0, 15.0, 5.5)
+                    
+                elif "Wan" in video_model:
+                    st.info("⚡ Engine: **Wan 2.7 (Atlas Cloud API)**")
+                    if "Spicy" in video_model:
+                         st.warning("🔥 spicy mode enabled: Model alibaba/wan-2.7/image-to-video will be called with no guardrails.")
+                    
+                    col_wan_res, col_wan_dur = st.columns(2)
+                    with col_wan_res:
+                        wan_studio_res = st.selectbox("Resolution", ["1080P", "720P"], index=0, key="studio_wan_res")
+                    with col_wan_dur:
+                        wan_studio_dur = st.slider("Duration (seconds)", 2, 15, 5, key="studio_wan_dur")
     
             st.divider()
             
@@ -3301,6 +3320,24 @@ if selection == "Video Studio":
                                   audio_guidance_scale=h_audio_guidance,
                                   output_folder=get_user_out_dir("Videos")
                               )
+                              
+                    elif "Wan" in video_model:
+                        st.write("Sending to Wan 2.7 Video API via Atlas Cloud...")
+                        st.write("Animate-to-Video in progress... (Est ~2-3 mins)")
+                        
+                        target_engine = "alibaba/wan-2.7/image-to-video"
+                        
+                        # Fetch values from session state safely
+                        w_res = st.session_state.get("studio_wan_res", "1080P")
+                        w_dur = st.session_state.get("studio_wan_dur", 5)
+                        
+                        result = generate_wan_video(
+                            prompt=final_motion_prompt,
+                            image_path=temp_path,
+                            resolution=w_res,
+                            duration=w_dur,
+                            output_folder=get_user_out_dir("Videos")
+                        )
 
                     # Common Result Handling
                     if result:
