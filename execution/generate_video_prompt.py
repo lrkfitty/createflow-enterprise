@@ -34,13 +34,33 @@ def generate_motion_prompt(image_path, movement_type="Auto", physics_focus="stan
     
     try:
         if image_path.startswith(('http://', 'https://')):
-            resp = requests.get(image_path)
+            # Add custom User-Agent to avoid WAF / S3 signature issues when fetched by requests
+            headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            }
+            # Check if it's a signed S3 URL. If so, standard download is fine but avoid query param encoding issues.
+            resp = requests.get(image_path, headers=headers, timeout=15)
             resp.raise_for_status()
             img = PIL.Image.open(BytesIO(resp.content))
-        else:
+        elif os.path.exists(image_path):
             img = PIL.Image.open(image_path)
+        else:
+            # Maybe it's a relative path in S3 or local output folder, check local output
+            local_alt = os.path.join(os.getcwd(), image_path)
+            if os.path.exists(local_alt):
+                 img = PIL.Image.open(local_alt)
+            else:
+                 raise FileNotFoundError(f"Path does not exist locally: {image_path}")
     except Exception as e:
-        return f"Error loading image: {e}"
+        # Fallback: if it failed with HTTP 403 but is actually a local file path starting with output/
+        clean_path = image_path.split("?")[0] if "?" in image_path else image_path
+        if clean_path.startswith("output/") and os.path.exists(clean_path):
+             try:
+                 img = PIL.Image.open(clean_path)
+             except Exception as inner_e:
+                 return f"Error loading image (fallback): {inner_e}"
+        else:
+             return f"Error loading image: {e}"
 
     # Construct Constraints based on user input
     physics_keywords = ""

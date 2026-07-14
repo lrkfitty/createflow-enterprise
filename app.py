@@ -762,15 +762,17 @@ if selection == "My Gallery":
                         
                         # Row 2: Wan 2.7 Studio Shortcuts
                         c_wan_edit, c_wan_anim = st.columns(2)
+                        # Identify the best local path if available
+                        target_shortcut_path = item.get("local_path", item["src"]) if is_local else item["src"]
                         with c_wan_edit:
                             if st.button("✏️ Edit", key=f"wan_edit_btn_{idx}", use_container_width=True, help="Edit this image using Wan 2.7 Image-to-Image"):
-                                st.session_state.wan_edit_image = item["src"]
+                                st.session_state.wan_edit_image = target_shortcut_path
                                 st.session_state.wan_studio_subtab_radio = "Image-to-Image (Scene Editor)"
                                 st.session_state.active_tab = "Wan 2.7 Studio"
                                 st.rerun()
                         with c_wan_anim:
                             if st.button("🎬 Animate", key=f"wan_anim_btn_{idx}", use_container_width=True, help="Animate this image using Wan 2.7 Image-to-Video"):
-                                st.session_state.wan_animate_image = item["src"]
+                                st.session_state.wan_animate_image = target_shortcut_path
                                 st.session_state.wan_studio_subtab_radio = "Image-to-Video (Motion)"
                                 st.session_state.active_tab = "Wan 2.7 Studio"
                                 st.rerun()
@@ -3209,6 +3211,15 @@ if selection == "Video Studio":
                         
                     if "Reference-to-Video" in video_model:
                         st.markdown("**Video Driven Motion (Reference)**")
+                        
+                        # Character Swap / Motion Keep Toggle for Video Studio
+                        wan_studio_char_swap = st.checkbox(
+                            "🔄 Keep Video Motion (Character Swap)", 
+                            value=False, 
+                            key="wan_video_studio_char_swap",
+                            help="If enabled, this will strictly preserve the motion, background, and physics from the reference video, and swap the character identity with the input image. (Requires reference video to be named Video1 and input image to be named Image1 in your prompt)."
+                        )
+                        
                         m_tab1, m_tab2 = st.tabs(["URL Input", "Upload Video"])
                         
                         with m_tab1:
@@ -3415,8 +3426,18 @@ if selection == "Video Studio":
                                        f.write(w_vid3.getbuffer())
                                   extra_vids.append(path_v3)
                                   
+                        final_motion_payload_prompt = final_motion_prompt
+                        if "Reference-to-Video" in video_model and st.session_state.get("wan_video_studio_char_swap"):
+                             # Append instructions to enforce motion transfer swap and identity locking
+                             final_motion_payload_prompt = (
+                                  "Strict Character Swap: Lock character identity to Image1. "
+                                  "Transfer all environment details, lighting, physics, frame timing, and motion strictly from Video1. "
+                                  "Keep the actions identical to Video1, but swap the character with Image1. "
+                                  f"Context: {final_motion_prompt}"
+                             )
+                             
                         result = generate_wan_video(
-                            prompt=final_motion_prompt,
+                            prompt=final_motion_payload_prompt,
                             image_path=temp_path,
                             resolution=w_res,
                             duration=w_dur,
@@ -3566,9 +3587,20 @@ if selection == "Wan 2.7 Studio":
         anim_image_path = None
         if anim_src_option == "Shortcut (from Gallery or Editor)":
             if st.session_state.wan_animate_image:
-                st.info(f"Using image from shortcut: `{os.path.basename(st.session_state.wan_animate_image)}`")
-                st.image(st.session_state.wan_animate_image, width=300)
-                anim_image_path = st.session_state.wan_animate_image
+                target_p = st.session_state.wan_animate_image
+                # If it's a signed S3 URL but we have a matching local file under output/ or user/ directories:
+                if target_p.startswith(("http://", "https://")) and "users/" in target_p:
+                     try:
+                          # Extract local path from S3 layout structure: users/admin/World/filename.jpg
+                          local_rel = target_p.split(".amazonaws.com/")[1].split("?")[0]
+                          local_abs = os.path.join("output", local_rel)
+                          if os.path.exists(local_abs):
+                               target_p = local_abs
+                     except Exception:
+                          pass
+                st.info(f"Using image from shortcut: `{os.path.basename(target_p)}`")
+                st.image(target_p, width=300)
+                anim_image_path = target_p
             else:
                 st.warning("No shortcut image selected. Go to 'My Gallery' and click '🎬 Animate' on an image, or run the editor above.")
         else:
@@ -3655,8 +3687,17 @@ if selection == "Wan 2.7 Studio":
         )
         
         ref_video_url = None
+        wan_char_swap = False
         if "Reference-to-Video" in wan_model_flavor:
             st.markdown("**Video Driven Motion (Reference)**")
+            
+            # Character Swap / Motion Keep Toggle
+            wan_char_swap = st.checkbox(
+                "🔄 Keep Video Motion (Character Swap)", 
+                value=False, 
+                help="If enabled, this will strictly preserve the motion, background, and physics from the reference video, and swap the character identity with the input image. (Requires reference video to be named Video1 and input image to be named Image1 in your prompt)."
+            )
+            
             m_tab1, m_tab2 = st.tabs(["URL Input", "Upload Video"])
             
             with m_tab1:
@@ -3757,9 +3798,19 @@ if selection == "Wan 2.7 Studio":
                                        f.write(w_vid3.getbuffer())
                                   extra_vids.append(path_v3)
                         
+                        final_wan_prompt = anim_prompt
+                        if wan_char_swap:
+                             # Append instructions to enforce motion transfer swap and identity locking
+                             final_wan_prompt = (
+                                  "Strict Character Swap: Lock character identity to Image1. "
+                                  "Transfer all environment details, lighting, physics, frame timing, and motion strictly from Video1. "
+                                  "Keep the actions identical to Video1, but swap the character with Image1. "
+                                  f"Context: {anim_prompt}"
+                             )
+                        
                         out_dir = get_user_out_dir("Videos")
                         res = generate_wan_video(
-                            prompt=anim_prompt,
+                            prompt=final_wan_prompt,
                             image_path=anim_image_path,
                             resolution=anim_res,
                             duration=anim_dur,
