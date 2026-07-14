@@ -42,15 +42,13 @@ def upload_file_obj(file_obj, object_name=None):
             ExtraArgs={'ContentType': content_type}
         )
         
-        # Generate Presigned URL (Valid for 1 hour)
-        # This resolves 'Video URL is invalid' errors caused by 
-        # private buckets or strict ACLs.
-        url = s3.generate_presigned_url(
-            'get_object',
-            Params={'Bucket': BUCKET_NAME, 'Key': object_name},
-            ExpiresIn=3600
-        )
-        print(f"DEBUG: Generated Presigned URL: {url}")
+        # Return direct, query-parameter-free public URL since bucket allows public reads.
+        # This prevents command-line splitting and parsing errors (e.g. ffprobe running into '&' characters in shell execution) on external APIs.
+        import urllib.parse
+        encoded_parts = [urllib.parse.quote(part) for part in object_name.split('/')]
+        encoded_object_name = '/'.join(encoded_parts)
+        url = f"https://{BUCKET_NAME}.s3.{REGION}.amazonaws.com/{encoded_object_name}"
+        print(f"DEBUG: Generated Direct Public URL: {url}")
         return url
         
     except ClientError as e:
