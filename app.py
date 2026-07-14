@@ -3269,7 +3269,13 @@ if selection == "Video Studio":
                 with open(temp_path, "wb") as f:
                     f.write(video_source_img.getbuffer())
                     
-                suggestion = generate_motion_prompt(temp_path, movement_type=vid_movement, physics_focus=vid_physics)
+                current_typed_prompt = st.session_state.get("vid_prompt_text", "")
+                suggestion = generate_motion_prompt(
+                    temp_path, 
+                    movement_type=vid_movement, 
+                    physics_focus=vid_physics,
+                    additional_context=f"User's Scene Idea / Actions: {current_typed_prompt}" if current_typed_prompt else ""
+                )
                 st.session_state["motion_suggestion"] = suggestion
                 st.rerun()
 
@@ -3607,12 +3613,17 @@ if selection == "Wan 2.7 Studio":
                     with st.spinner("🎬 Director AI is analyzing your image composition..."):
                         from execution.generate_video_prompt import generate_motion_prompt
                         
+                        current_typed_prompt = st.session_state.get("wan_anim_prompt", "")
+                        additional_context_str = f"Render style guideline: {wan_vis_style}."
+                        if current_typed_prompt:
+                            additional_context_str += f" User's scene idea/action: {current_typed_prompt}"
+                            
                         suggestion = generate_motion_prompt(
                             anim_image_path,
                             movement_type=wan_vis_move,
                             physics_focus=wan_vis_physics,
                             emotion="Dynamic",
-                            additional_context=f"Render style guideline: {wan_vis_style}."
+                            additional_context=additional_context_str
                         )
                         st.session_state["wan_vision_ai_suggestion"] = suggestion
                         
