@@ -137,7 +137,16 @@ OUTPUT: Return ONLY valid JSON in this exact format:
 
     try:
         genai.configure(api_key=google_key)
-        model = genai.GenerativeModel(model_engine)
+        try:
+            model = genai.GenerativeModel(model_engine)
+        except Exception:
+            try:
+                model = genai.GenerativeModel("gemini-3.5-flash")
+            except Exception:
+                try:
+                    model = genai.GenerativeModel("gemini-2.5-flash")
+                except Exception:
+                    model = genai.GenerativeModel("gemini-1.5-flash")
         response = model.generate_content([system_prompt, user_message])
         raw = response.text.strip()
 

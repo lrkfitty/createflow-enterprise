@@ -3,6 +3,8 @@ import sys
 import os
 import json
 import time
+from dotenv import load_dotenv
+load_dotenv(override=True)
 
 # Add execution directory to path to import scripts
 sys.path.append(os.path.join(os.path.dirname(__file__), 'execution'))
@@ -26,6 +28,7 @@ try:
     from generate_prompt import generate_prompt_content
     from campaign_runner import CampaignManager
     from execution.generate_video import generate_video_kling, generate_video_humo
+    from execution.generate_wan import generate_wan_image, generate_wan_video
     from execution.s3_uploader import upload_file_obj, delete_file
     from generate_video_prompt import generate_motion_prompt
     from world_manager import load_world_db, get_assets_by_category, get_scenarios
@@ -354,6 +357,13 @@ def get_user_out_dir(category="General"):
 if "active_tab" not in st.session_state:
     st.session_state.active_tab = "Workflow Wizard"
 
+if "wan_edit_image" not in st.session_state:
+    st.session_state.wan_edit_image = None
+if "wan_animate_image" not in st.session_state:
+    st.session_state.wan_animate_image = None
+if "wan_active_subtab" not in st.session_state:
+    st.session_state.wan_active_subtab = 0
+
 # Custom CSS for Pill-like Tabs
 st.markdown("""
 <style>
@@ -410,6 +420,7 @@ nav_options = [
     "Campaign Queue",
     "Art Director",
     "Video Studio",
+    "Wan 2.7 Studio",
     "Character Studio",
     "Multi-Shot Generator"
 ]
@@ -748,6 +759,21 @@ if selection == "My Gallery":
                                     ''',
                                     unsafe_allow_html=True
                                 )
+                        
+                        # Row 2: Wan 2.7 Studio Shortcuts
+                        c_wan_edit, c_wan_anim = st.columns(2)
+                        with c_wan_edit:
+                            if st.button("✏️ Edit", key=f"wan_edit_btn_{idx}", use_container_width=True, help="Edit this image using Wan 2.7 Image-to-Image"):
+                                st.session_state.wan_edit_image = item["src"]
+                                st.session_state.wan_active_subtab = 0  # Edit sub-tab
+                                st.session_state.active_tab = "Wan 2.7 Studio"
+                                st.rerun()
+                        with c_wan_anim:
+                            if st.button("🎬 Animate", key=f"wan_anim_btn_{idx}", use_container_width=True, help="Animate this image using Wan 2.7 Image-to-Video"):
+                                st.session_state.wan_animate_image = item["src"]
+                                st.session_state.wan_active_subtab = 1  # Animate sub-tab
+                                st.session_state.active_tab = "Wan 2.7 Studio"
+                                st.rerun()
 
 # ==========================================
 # TAB: ASSET LIBRARY
@@ -2089,8 +2115,20 @@ Write an immersive, detailed prompt now:"""
                             if not _google_key:
                                 raise ValueError("GOOGLE_API_KEY not configured")
                             genai.configure(api_key=_google_key)
-                            model = genai.GenerativeModel("gemini-2.0-flash")
-                            response = model.generate_content(director_prompt, generation_config={"temperature": sel_temperature})
+                            # Try models sequentially during generate_content execution
+                            models_to_try = ["gemini-3.5-flash", "gemini-2.5-flash", "gemini-1.5-flash", "gemini-2.0-flash"]
+                            response = None
+                            last_err = "No models succeeded."
+                            for m_name in models_to_try:
+                                try:
+                                    model = genai.GenerativeModel(m_name)
+                                    response = model.generate_content(director_prompt, generation_config={"temperature": sel_temperature})
+                                    break
+                                except Exception as e:
+                                    last_err = str(e)
+                                    continue
+                            if not response:
+                                raise ValueError(f"Generative AI execution failed: {last_err}")
                             generated_prompt = response.text.strip()
                             
                             # Remove any markdown artifacts if present
@@ -3304,10 +3342,180 @@ if selection == "Video Studio":
                             with st.expander("Error Logs", expanded=True):
                                  st.write(result.get("logs", []))
 
+
+# ==========================================
+# TAB: WAN 2.7 STUDIO (Atlas Cloud API)
+# ==========================================
+if selection == "Wan 2.7 Studio":
+    with st.container():
+        st.markdown("### Wan 2.7 Studio (Atlas Cloud API)")
+        st.info("Edit your scene images and animate them using the latest Wan 2.7 models on Atlas Cloud.")
+
+    # Check for authentication
+    username = st.session_state.current_user.get("username") if st.session_state.get("authenticated") else "guest"
+    
+    # Sub-mode selection using radio buttons to support dynamic tab switching from shortcuts
+    w_mode = st.radio(
+        "Select Studio Tool",
+        ["Image-to-Image (Scene Editor)", "Image-to-Video (Motion)"],
+        index=st.session_state.wan_active_subtab if st.session_state.wan_active_subtab in [0, 1] else 0,
+        horizontal=True,
+        key="wan_studio_subtab_radio"
+    )
+    
+    # Update state if changed manually
+    if w_mode == "Image-to-Image (Scene Editor)":
+        st.session_state.wan_active_subtab = 0
+    else:
+        st.session_state.wan_active_subtab = 1
+        
+    if st.session_state.wan_active_subtab == 0:
+        st.markdown("#### Wan 2.7 Image-to-Image Editor")
+        st.write("Modify the wardrobe, location, lighting, or style of your generated images.")
+        
+        # Select image source
+        src_option = st.radio("Image Source", ["Shortcut (from Gallery)", "Upload custom image"], horizontal=True, key="wan_edit_source_option")
+        
+        edit_image_path = None
+        if src_option == "Shortcut (from Gallery)":
+            if st.session_state.wan_edit_image:
+                st.info(f"Using image from gallery shortcut: `{os.path.basename(st.session_state.wan_edit_image)}`")
+                st.image(st.session_state.wan_edit_image, width=300)
+                edit_image_path = st.session_state.wan_edit_image
+            else:
+                st.warning("No shortcut image selected. Go to 'My Gallery' and click '✏️ Edit' on an image, or upload a custom image.")
+        else:
+            uploaded_edit_img = st.file_uploader("Upload Image to Edit", type=["png", "jpg", "jpeg"], key="wan_edit_uploader")
+            if uploaded_edit_img:
+                temp_edit_path = os.path.join("output", "temp_wan_edit_input.png")
+                with open(temp_edit_path, "wb") as f:
+                    f.write(uploaded_edit_img.getbuffer())
+                st.image(uploaded_edit_img, width=300)
+                edit_image_path = temp_edit_path
+                
+        edit_prompt = st.text_area("Edit Prompt (SOP instructions)", placeholder="e.g. Change the background to a sunny Malibu beach. Change her outfit to a red leather jacket and black jeans. Keep character identity identical.", key="wan_edit_prompt")
+        edit_size = st.selectbox("Resolution", ["2K", "1K"], index=0, key="wan_edit_size")
+        
+        run_edit_btn = st.button("Generate Edited Image", type="primary", key="wan_run_edit")
+        
+        if run_edit_btn:
+            if not edit_image_path:
+                st.error("Please provide a source image.")
+            elif not edit_prompt:
+                st.error("Please describe what changes you want to make.")
+            else:
+                user = st.session_state.current_user.get("username")
+                if not auth_mgr.deduct_credits(user, 3):
+                    st.error("❌ Need 3 Credits for Wan 2.7 Editing!")
+                else:
+                    with st.status("Submitting job to Atlas API...", expanded=True) as status:
+                        st.write("Uploading and running alibaba/wan-2.7/image-edit...")
+                        
+                        out_dir = get_user_out_dir("World")
+                        res = generate_wan_image(
+                            prompt=edit_prompt,
+                            image_path=edit_image_path,
+                            size=edit_size,
+                            output_folder=out_dir
+                        )
+                        
+                        if res and res["status"] == "success":
+                            status.update(label="Complete!", state="complete")
+                            st.success("✅ Image generated and saved to your Gallery!")
+                            st.image(res["image_path"], caption="Edited Scene Output", use_container_width=True)
+                            
+                            # Option to send immediately to motion generator
+                            if st.button("🎬 Send to Animate", key="send_to_animate_from_edit"):
+                                st.session_state.wan_animate_image = res["image_path"]
+                                st.session_state.wan_active_subtab = 1
+                                st.rerun()
+                        else:
+                            status.update(label="Failed", state="error")
+                            st.error(f"Error: {res.get('error', 'Unknown error')}")
+                            with st.expander("Logs", expanded=True):
+                                st.write(res.get("logs", []))
+
+    else:
+        st.markdown("#### Wan 2.7 Image-to-Video Motion Generator")
+        st.write("Animate your edited scene image into high-motion video clips.")
+        
+        # Select image source
+        anim_src_option = st.radio("Image Source", ["Shortcut (from Gallery or Editor)", "Upload custom image"], horizontal=True, key="wan_anim_source_option")
+        
+        anim_image_path = None
+        if anim_src_option == "Shortcut (from Gallery or Editor)":
+            if st.session_state.wan_animate_image:
+                st.info(f"Using image from shortcut: `{os.path.basename(st.session_state.wan_animate_image)}`")
+                st.image(st.session_state.wan_animate_image, width=300)
+                anim_image_path = st.session_state.wan_animate_image
+            else:
+                st.warning("No shortcut image selected. Go to 'My Gallery' and click '🎬 Animate' on an image, or run the editor above.")
+        else:
+            uploaded_anim_img = st.file_uploader("Upload Image to Animate", type=["png", "jpg", "jpeg"], key="wan_anim_uploader")
+            if uploaded_anim_img:
+                temp_anim_path = os.path.join("output", "temp_wan_anim_input.png")
+                with open(temp_anim_path, "wb") as f:
+                    f.write(uploaded_anim_img.getbuffer())
+                st.image(uploaded_anim_img, width=300)
+                anim_image_path = temp_anim_path
+                
+        anim_prompt = st.text_area("Motion Prompt", placeholder="e.g. The character turns her head to look at the camera and smiles, wind blowing hair, realistic physics and textures, 35mm lens.", key="wan_anim_prompt")
+        
+        col_res, col_dur = st.columns(2)
+        with col_res:
+            anim_res = st.selectbox("Resolution", ["1080P", "720P"], index=0, key="wan_anim_res")
+        with col_dur:
+            anim_dur = st.slider("Duration (seconds)", 2, 15, 5, key="wan_anim_dur")
+            
+        run_anim_btn = st.button("Generate Video Motion", type="primary", key="wan_run_anim")
+        
+        if run_anim_btn:
+            if not anim_image_path:
+                st.error("Please provide a source image.")
+            elif not anim_prompt:
+                st.error("Please describe the motion you want.")
+            else:
+                user = st.session_state.current_user.get("username")
+                if not auth_mgr.deduct_credits(user, 5):
+                    st.error("❌ Need 5 Credits for Wan 2.7 Video!")
+                else:
+                    with st.status("Submitting motion job to Atlas API...", expanded=True) as status:
+                        st.write("Uploading and running alibaba/wan-2.7/image-to-video...")
+                        
+                        out_dir = get_user_out_dir("Videos")
+                        res = generate_wan_video(
+                            prompt=anim_prompt,
+                            image_path=anim_image_path,
+                            resolution=anim_res,
+                            duration=anim_dur,
+                            output_folder=out_dir
+                        )
+                        
+                        if res and res["status"] == "success":
+                            status.update(label="Complete!", state="complete")
+                            st.success("✅ Video generated successfully!")
+                            st.write(f"💾 Saved to: {res['video_path']}")
+                            st.video(res["video_url"])
+                            
+                            if os.path.exists(res["video_path"]):
+                                with open(res["video_path"], "rb") as vf:
+                                    st.download_button(
+                                        "Download MP4",
+                                        data=vf,
+                                        file_name=os.path.basename(res["video_path"]),
+                                        mime="video/mp4"
+                                    )
+                        else:
+                            status.update(label="Failed", state="error")
+                            st.error(f"Error: {res.get('error', 'Unknown error')}")
+                            with st.expander("Logs", expanded=True):
+                                st.write(res.get("logs", []))
+
 # ==========================================
 # TAB 8: CHARACTER STUDIO
 # ==========================================
 if selection == "Character Studio":
+
     with st.container():
         st.markdown("### Character Studio")
     st.info("Design your cast with precision. Used consistently across the platform.")

@@ -3,7 +3,7 @@ import google.generativeai as genai
 from dotenv import load_dotenv
 
 # Load Env
-load_dotenv()
+load_dotenv(override=True)
 
 def generate_motion_prompt(image_path, movement_type="Auto", physics_focus="standard", emotion="Neutral", additional_context=""):
     """
@@ -16,11 +16,14 @@ def generate_motion_prompt(image_path, movement_type="Auto", physics_focus="stan
         return "Error: Missing GOOGLE_API_KEY for Motion Analysis."
 
     genai.configure(api_key=api_key)
-    # Using 2.0 Flash as verified in available models list
+    # Using 3.5 Flash or falling back to 2.5 Flash / 1.5 Flash based on quota availability
     try:
-        model = genai.GenerativeModel('gemini-2.0-flash')
-    except:
-        model = genai.GenerativeModel('gemini-2.0-flash') # Fallback to free model
+        model = genai.GenerativeModel('gemini-3.5-flash')
+    except Exception:
+        try:
+            model = genai.GenerativeModel('gemini-2.5-flash')
+        except Exception:
+            model = genai.GenerativeModel('gemini-1.5-flash')
 
     # Read Image Data
     import PIL.Image
@@ -108,8 +111,16 @@ def generate_motion_prompt(image_path, movement_type="Auto", physics_focus="stan
     - NO: "Here is the prompt", just give me the raw prompt text.
     """
 
-    try:
-        response = model.generate_content([prompt_instruction, img])
-        return response.text.strip()
-    except Exception as e:
-        return f"Error analyzing image: {e}"
+    models_to_try = ['gemini-3.5-flash', 'gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-2.0-flash']
+    last_err = "No models succeeded."
+    
+    for m_name in models_to_try:
+        try:
+            fallback_model = genai.GenerativeModel(m_name)
+            response = fallback_model.generate_content([prompt_instruction, img])
+            return response.text.strip()
+        except Exception as e:
+            last_err = str(e)
+            continue
+            
+    return f"Error analyzing image: {last_err}"

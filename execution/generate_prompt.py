@@ -213,7 +213,16 @@ def generate_prompt_content(vibe, outfit, character,
             if not google_key: return {"positive_prompt": "Error: GOOGLE_API_KEY missing", "aspect_ratio": "9:16"}
             
             genai.configure(api_key=google_key)
-            model = genai.GenerativeModel(model_engine)
+            try:
+                model = genai.GenerativeModel(model_engine)
+            except Exception:
+                try:
+                    model = genai.GenerativeModel("gemini-3.5-flash")
+                except Exception:
+                    try:
+                        model = genai.GenerativeModel("gemini-2.5-flash")
+                    except Exception:
+                        model = genai.GenerativeModel("gemini-1.5-flash")
             
             # Prepare Content List
             gemini_content = [system_prompt, "\n\nUSER REQUEST:\n" + user_text_content]
@@ -309,16 +318,53 @@ def generate_prompt_content(vibe, outfit, character,
             max_retries = 3
             retry_delay = 2
             
+            # RETRY LOGIC FOR 429 (RATE LIMIT) and fallback model resolution
+            max_retries = 3
+            retry_delay = 2
+            response = None
+            success = False
+            last_err = None
+            
+            # First try the default model
             for attempt in range(max_retries):
                 try:
                     response = model.generate_content(gemini_content)
+                    success = True
                     break 
                 except Exception as e:
+                    last_err = e
                     if "429" in str(e) and attempt < max_retries - 1:
                         time.sleep(retry_delay * (attempt + 1))
                         continue
                     else:
-                        raise e
+                        break
+            
+            # If default fails, try fallback models in sequence
+            if not success:
+                fallback_models = ["gemini-3.5-flash", "gemini-2.5-flash", "gemini-1.5-flash"]
+                for f_model_name in fallback_models:
+                    try:
+                        fallback_model = genai.GenerativeModel(f_model_name)
+                        for attempt in range(max_retries):
+                            try:
+                                response = fallback_model.generate_content(gemini_content)
+                                success = True
+                                break
+                            except Exception as e:
+                                last_err = e
+                                if "429" in str(e) and attempt < max_retries - 1:
+                                    time.sleep(retry_delay * (attempt + 1))
+                                    continue
+                                else:
+                                    break
+                        if success:
+                            break
+                    except Exception as e:
+                        last_err = e
+                        continue
+                        
+            if not success or not response:
+                raise last_err
             
             # Parse JSON
             raw_text = response.text
