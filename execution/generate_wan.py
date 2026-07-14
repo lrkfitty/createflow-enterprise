@@ -267,7 +267,7 @@ def generate_wan_video(prompt, image_path, resolution="1080P", duration=5, outpu
         return {
             "status": "success",
             "video_path": filepath,
-            "video_url": video_url or output_url,
+            "video_url": s3_url if s3_url else output_url,
             "logs": logs
         }
         
