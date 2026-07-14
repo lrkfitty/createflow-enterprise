@@ -765,13 +765,13 @@ if selection == "My Gallery":
                         with c_wan_edit:
                             if st.button("✏️ Edit", key=f"wan_edit_btn_{idx}", use_container_width=True, help="Edit this image using Wan 2.7 Image-to-Image"):
                                 st.session_state.wan_edit_image = item["src"]
-                                st.session_state.wan_active_subtab = 0  # Edit sub-tab
+                                st.session_state.wan_studio_subtab_radio = "Image-to-Image (Scene Editor)"
                                 st.session_state.active_tab = "Wan 2.7 Studio"
                                 st.rerun()
                         with c_wan_anim:
                             if st.button("🎬 Animate", key=f"wan_anim_btn_{idx}", use_container_width=True, help="Animate this image using Wan 2.7 Image-to-Video"):
                                 st.session_state.wan_animate_image = item["src"]
-                                st.session_state.wan_active_subtab = 1  # Animate sub-tab
+                                st.session_state.wan_studio_subtab_radio = "Image-to-Video (Motion)"
                                 st.session_state.active_tab = "Wan 2.7 Studio"
                                 st.rerun()
 
@@ -3354,22 +3354,18 @@ if selection == "Wan 2.7 Studio":
     # Check for authentication
     username = st.session_state.current_user.get("username") if st.session_state.get("authenticated") else "guest"
     
-    # Sub-mode selection using radio buttons to support dynamic tab switching from shortcuts
+    # Initialize session state for subtab radio if not present
+    if "wan_studio_subtab_radio" not in st.session_state:
+        st.session_state.wan_studio_subtab_radio = "Image-to-Image (Scene Editor)"
+
     w_mode = st.radio(
         "Select Studio Tool",
         ["Image-to-Image (Scene Editor)", "Image-to-Video (Motion)"],
-        index=st.session_state.wan_active_subtab if st.session_state.wan_active_subtab in [0, 1] else 0,
         horizontal=True,
         key="wan_studio_subtab_radio"
     )
     
-    # Update state if changed manually
     if w_mode == "Image-to-Image (Scene Editor)":
-        st.session_state.wan_active_subtab = 0
-    else:
-        st.session_state.wan_active_subtab = 1
-        
-    if st.session_state.wan_active_subtab == 0:
         st.markdown("#### Wan 2.7 Image-to-Image Editor")
         st.write("Modify the wardrobe, location, lighting, or style of your generated images.")
         
@@ -3427,7 +3423,7 @@ if selection == "Wan 2.7 Studio":
                             # Option to send immediately to motion generator
                             if st.button("🎬 Send to Animate", key="send_to_animate_from_edit"):
                                 st.session_state.wan_animate_image = res["image_path"]
-                                st.session_state.wan_active_subtab = 1
+                                st.session_state.wan_studio_subtab_radio = "Image-to-Video (Motion)"
                                 st.rerun()
                         else:
                             status.update(label="Failed", state="error")
