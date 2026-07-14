@@ -290,7 +290,7 @@ def generate_wan_video(prompt, image_path, resolution="1080P", duration=5, ref_v
         poll_url = f"https://api.atlascloud.ai/api/v1/model/prediction/{prediction_id}"
         logs.append("Polling for completion...")
         
-        max_retries = 200  # ~6.5 minutes
+        max_retries = 450  # 15 minutes
         for i in range(max_retries):
             time.sleep(2)
             poll_resp = requests.get(poll_url, headers={"Authorization": f"Bearer {api_key}"})
@@ -315,7 +315,7 @@ def generate_wan_video(prompt, image_path, resolution="1080P", duration=5, ref_v
                 err_msg = poll_data.get("data", {}).get("error") or "Unknown error"
                 return {"status": "failed", "error": f"Generation failed: {err_msg}", "logs": logs}
         else:
-            return {"status": "failed", "error": "Polling timed out after 6.5 minutes.", "logs": logs}
+            return {"status": "failed", "error": "Polling timed out after 15 minutes.", "logs": logs}
             
         # Download the output video
         timestamp = int(time.time())
