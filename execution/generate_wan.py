@@ -9,6 +9,7 @@ load_dotenv(override=True)
 def image_to_base64_data_uri(img_path_or_url):
     """
     Converts a local file path to a base64 data URI, or returns the URL as-is if it starts with http.
+    Optimizes/resizes local images to keep request payload size lightweight.
     """
     if not img_path_or_url:
         return None
@@ -17,15 +18,33 @@ def image_to_base64_data_uri(img_path_or_url):
         return img_path_or_url
         
     if os.path.exists(img_path_or_url):
-        with open(img_path_or_url, "rb") as f:
-            data = f.read()
+        try:
+            from PIL import Image
+            from io import BytesIO
+            
+            img = Image.open(img_path_or_url)
+            max_dim = 1920
+            if max(img.width, img.height) > max_dim:
+                img.thumbnail((max_dim, max_dim), Image.Resampling.LANCZOS)
+                
+            if img.mode in ('RGBA', 'P'):
+                img = img.convert('RGB')
+                
+            buffer = BytesIO()
+            img.save(buffer, format="JPEG", quality=85)
+            data = buffer.getvalue()
+            
             encoded = base64.b64encode(data).decode('utf-8')
-            # Determine mime type
-            ext = os.path.splitext(img_path_or_url)[1].lower()
-            mime = "image/jpeg"
-            if ext in (".png", ".webp"):
-                mime = f"image/{ext[1:]}"
-            return f"data:{mime};base64,{encoded}"
+            return f"data:image/jpeg;base64,{encoded}"
+        except Exception as e:
+            with open(img_path_or_url, "rb") as f:
+                data = f.read()
+                encoded = base64.b64encode(data).decode('utf-8')
+                ext = os.path.splitext(img_path_or_url)[1].lower()
+                mime = "image/jpeg"
+                if ext in (".png", ".webp"):
+                    mime = f"image/{ext[1:]}"
+                return f"data:{mime};base64,{encoded}"
             
     raise FileNotFoundError(f"Image source not found: {img_path_or_url}")
 
