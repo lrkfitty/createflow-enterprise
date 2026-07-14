@@ -3035,7 +3035,9 @@ if selection == "Video Studio":
                     "Kling AI 2.6 (Professional)", 
                     "HuMo AI (Human Motion Premium)",
                     "Wan 2.7 (Image-to-Video)",
-                    "Wan 2.7 Spicy (Image-to-Video)"
+                    "Wan 2.7 Spicy (Image-to-Video)",
+                    "Wan 2.7 (Reference-to-Video)",
+                    "Wan 2.7 Spicy (Reference-to-Video)"
                 ], 
                 key="vid_model_select"
             )
@@ -3073,6 +3075,8 @@ if selection == "Video Studio":
 
             # Settings Column (Dynamic)
             with col_v_set:
+                ref_video_url = None
+                ref_orientation = "image"
                 if "Kling" in video_model:
                     st.info("⚡ Engine: **Kling AI 2.6** (Professional)")
                     
@@ -3138,9 +3142,6 @@ if selection == "Video Studio":
                     
                     m_tab1, m_tab2 = st.tabs(["URL Input", "Upload Video"])
                     
-                    ref_video_url = None
-                    ref_orientation = "image"
-                    
                     with m_tab1:
                         url_input = st.text_input("Reference Video URL (S3/Public)", help="Paste an `http` URL to a video. Overrides Camera Control.")
                         if url_input: ref_video_url = url_input
@@ -3195,13 +3196,56 @@ if selection == "Video Studio":
                 elif "Wan" in video_model:
                     st.info("⚡ Engine: **Wan 2.7 (Atlas Cloud API)**")
                     if "Spicy" in video_model:
-                         st.warning("🔥 spicy mode enabled: Model alibaba/wan-2.7/image-to-video will be called with no guardrails.")
+                         if "Reference-to-Video" in video_model:
+                              st.warning("🔥 spicy mode enabled: Model alibaba/wan-2.7/reference-to-video will be called with no guardrails.")
+                         else:
+                              st.warning("🔥 spicy mode enabled: Model alibaba/wan-2.7/image-to-video will be called with no guardrails.")
                     
                     col_wan_res, col_wan_dur = st.columns(2)
                     with col_wan_res:
                         wan_studio_res = st.selectbox("Resolution", ["1080P", "720P"], index=0, key="studio_wan_res")
                     with col_wan_dur:
                         wan_studio_dur = st.slider("Duration (seconds)", 2, 15, 5, key="studio_wan_dur")
+                        
+                    if "Reference-to-Video" in video_model:
+                        st.markdown("**Video Driven Motion (Reference)**")
+                        m_tab1, m_tab2 = st.tabs(["URL Input", "Upload Video"])
+                        
+                        with m_tab1:
+                            url_input = st.text_input("Reference Video URL (S3/Public)", key="wan_ref_url_input", help="Paste an `http` URL to a video.")
+                            if url_input: ref_video_url = url_input
+                            
+                        with m_tab2:
+                            st.info("⚠️ **Constraint:** Video must be **≤ 30 seconds** and **< 100MB**.")
+                            uploaded_vid = st.file_uploader("Upload Reference Video", type=['mp4', 'mov'], key="wan_ref_uploader")
+                            if uploaded_vid:
+                                 if uploaded_vid.size > 100 * 1024 * 1024:
+                                      st.error(f"File too large ({uploaded_vid.size / 1024 / 1024:.1f}MB). Max 100MB.")
+                                 else:
+                                      with st.spinner("Uploading to S3..."):
+                                           if 'last_uploaded_vid_name' not in st.session_state or st.session_state['last_uploaded_vid_name'] != uploaded_vid.name:
+                                                s3_url = upload_file_obj(uploaded_vid, f"user_uploads/{uploaded_vid.name}")
+                                                if s3_url:
+                                                     st.session_state['last_uploaded_vid_url'] = s3_url
+                                                     st.session_state['last_uploaded_vid_name'] = uploaded_vid.name
+                                                     st.success("✅ Uploaded!")
+                                                else:
+                                                     st.error("Upload failed.")
+                                           
+                                           if 'last_uploaded_vid_url' in st.session_state:
+                                                ref_video_url = st.session_state['last_uploaded_vid_url']
+                                                st.caption(f"Using: `{ref_video_url}`")
+                                                
+                        with st.expander("👥 Additional References (Multi-Subject Control)", expanded=False):
+                             st.write("Reference these subjects in your prompt as `Image2`, `Video2`, etc. (`Image1` is the main input image, `Video1` is the main reference video).")
+                             
+                             ex_col1, ex_col2 = st.columns(2)
+                             with ex_col1:
+                                  st.file_uploader("Upload Image 2 (Image2)", type=["png", "jpg", "jpeg"], key="v_wan_extra_img2")
+                                  st.file_uploader("Upload Image 3 (Image3)", type=["png", "jpg", "jpeg"], key="v_wan_extra_img3")
+                             with ex_col2:
+                                  st.file_uploader("Upload Video 2 (Video2)", type=["mp4", "mov"], key="v_wan_extra_vid2")
+                                  st.file_uploader("Upload Video 3 (Video3)", type=["mp4", "mov"], key="v_wan_extra_vid3")
     
             st.divider()
             
@@ -3326,16 +3370,54 @@ if selection == "Video Studio":
                         st.write("Animate-to-Video in progress... (Est ~2-3 mins)")
                         
                         target_engine = "alibaba/wan-2.7/image-to-video"
+                        if "Reference-to-Video" in video_model:
+                            target_engine = "alibaba/wan-2.7/reference-to-video"
                         
                         # Fetch values from session state safely
                         w_res = st.session_state.get("studio_wan_res", "1080P")
                         w_dur = st.session_state.get("studio_wan_dur", 5)
                         
+                        extra_imgs = []
+                        extra_vids = []
+                        
+                        if "Reference-to-Video" in video_model:
+                             w_img2 = st.session_state.get("v_wan_extra_img2")
+                             if w_img2:
+                                  path2 = os.path.join("output", "temp_wan_ex_img2.png")
+                                  with open(path2, "wb") as f:
+                                       f.write(w_img2.getbuffer())
+                                  extra_imgs.append(path2)
+                                  
+                             w_img3 = st.session_state.get("v_wan_extra_img3")
+                             if w_img3:
+                                  path3 = os.path.join("output", "temp_wan_ex_img3.png")
+                                  with open(path3, "wb") as f:
+                                       f.write(w_img3.getbuffer())
+                                  extra_imgs.append(path3)
+                                  
+                             w_vid2 = st.session_state.get("v_wan_extra_vid2")
+                             if w_vid2:
+                                  path_v2 = os.path.join("output", "temp_wan_ex_vid2.mp4")
+                                  with open(path_v2, "wb") as f:
+                                       f.write(w_vid2.getbuffer())
+                                  extra_vids.append(path_v2)
+                                  
+                             w_vid3 = st.session_state.get("v_wan_extra_vid3")
+                             if w_vid3:
+                                  path_v3 = os.path.join("output", "temp_wan_ex_vid3.mp4")
+                                  with open(path_v3, "wb") as f:
+                                       f.write(w_vid3.getbuffer())
+                                  extra_vids.append(path_v3)
+                                  
                         result = generate_wan_video(
                             prompt=final_motion_prompt,
                             image_path=temp_path,
                             resolution=w_res,
                             duration=w_dur,
+                            ref_video_path=ref_video_url,
+                            extra_images=extra_imgs if extra_imgs else None,
+                            extra_videos=extra_vids if extra_vids else None,
+                            model=target_engine,
                             output_folder=get_user_out_dir("Videos")
                         )
 
@@ -3494,10 +3576,56 @@ if selection == "Wan 2.7 Studio":
                 
         wan_model_flavor = st.selectbox(
             "Model Variant",
-            ["Wan 2.7 Standard", "Wan 2.7 Spicy (No Guardrails)"],
+            [
+                "Wan 2.7 Standard (Image-to-Video)", 
+                "Wan 2.7 Spicy (Image-to-Video)",
+                "Wan 2.7 Standard (Reference-to-Video)",
+                "Wan 2.7 Spicy (Reference-to-Video)"
+            ],
             index=0,
             key="wan_studio_flavor_select"
         )
+        
+        ref_video_url = None
+        if "Reference-to-Video" in wan_model_flavor:
+            st.markdown("**Video Driven Motion (Reference)**")
+            m_tab1, m_tab2 = st.tabs(["URL Input", "Upload Video"])
+            
+            with m_tab1:
+                url_input = st.text_input("Reference Video URL (S3/Public)", key="wan_studio_ref_url_input", help="Paste an `http` URL to a video.")
+                if url_input: ref_video_url = url_input
+                
+            with m_tab2:
+                st.info("⚠️ **Constraint:** Video must be **≤ 30 seconds** and **< 100MB**.")
+                uploaded_vid = st.file_uploader("Upload Reference Video", type=['mp4', 'mov'], key="wan_studio_ref_uploader")
+                if uploaded_vid:
+                     if uploaded_vid.size > 100 * 1024 * 1024:
+                          st.error(f"File too large ({uploaded_vid.size / 1024 / 1024:.1f}MB). Max 100MB.")
+                     else:
+                          with st.spinner("Uploading to S3..."):
+                               if 'last_uploaded_vid_name' not in st.session_state or st.session_state['last_uploaded_vid_name'] != uploaded_vid.name:
+                                    s3_url = upload_file_obj(uploaded_vid, f"user_uploads/{uploaded_vid.name}")
+                                    if s3_url:
+                                         st.session_state['last_uploaded_vid_url'] = s3_url
+                                         st.session_state['last_uploaded_vid_name'] = uploaded_vid.name
+                                         st.success("✅ Uploaded!")
+                                    else:
+                                         st.error("Upload failed.")
+                               
+                               if 'last_uploaded_vid_url' in st.session_state:
+                                    ref_video_url = st.session_state['last_uploaded_vid_url']
+                                    st.caption(f"Using: `{ref_video_url}`")
+                                    
+            with st.expander("👥 Additional References (Multi-Subject Control)", expanded=False):
+                 st.write("Reference these subjects in your prompt as `Image2`, `Video2`, etc. (`Image1` is the main input image, `Video1` is the main reference video).")
+                 
+                 ex_col1, ex_col2 = st.columns(2)
+                 with ex_col1:
+                      st.file_uploader("Upload Image 2 (Image2)", type=["png", "jpg", "jpeg"], key="studio_wan_extra_img2")
+                      st.file_uploader("Upload Image 3 (Image3)", type=["png", "jpg", "jpeg"], key="studio_wan_extra_img3")
+                 with ex_col2:
+                      st.file_uploader("Upload Video 2 (Video2)", type=["mp4", "mov"], key="studio_wan_extra_vid2")
+                      st.file_uploader("Upload Video 3 (Video3)", type=["mp4", "mov"], key="studio_wan_extra_vid3")
         
         anim_prompt = st.text_area("Motion Prompt", placeholder="e.g. The character turns her head to look at the camera and smiles, wind blowing hair, realistic physics and textures, 35mm lens.", key="wan_anim_prompt")
         
@@ -3520,10 +3648,46 @@ if selection == "Wan 2.7 Studio":
                     st.error("❌ Need 5 Credits for Wan 2.7 Video!")
                 else:
                     with st.status("Submitting motion job to Atlas API...", expanded=True) as status:
+                        target_engine = "alibaba/wan-2.7/image-to-video"
+                        if "Reference-to-Video" in wan_model_flavor:
+                            target_engine = "alibaba/wan-2.7/reference-to-video"
+                            
                         if "Spicy" in wan_model_flavor:
-                            st.write("Uploading and running alibaba/wan-2.7/image-to-video (Spicy / No Guardrails)...")
+                            st.write(f"Uploading and running {target_engine} (Spicy / No Guardrails)...")
                         else:
-                            st.write("Uploading and running alibaba/wan-2.7/image-to-video...")
+                            st.write(f"Uploading and running {target_engine}...")
+                            
+                        extra_imgs = []
+                        extra_vids = []
+                        
+                        if "Reference-to-Video" in wan_model_flavor:
+                             w_img2 = st.session_state.get("studio_wan_extra_img2")
+                             if w_img2:
+                                  path2 = os.path.join("output", "temp_wan_studio_ex_img2.png")
+                                  with open(path2, "wb") as f:
+                                       f.write(w_img2.getbuffer())
+                                  extra_imgs.append(path2)
+                                  
+                             w_img3 = st.session_state.get("studio_wan_extra_img3")
+                             if w_img3:
+                                  path3 = os.path.join("output", "temp_wan_studio_ex_img3.png")
+                                  with open(path3, "wb") as f:
+                                       f.write(w_img3.getbuffer())
+                                  extra_imgs.append(path3)
+                                  
+                             w_vid2 = st.session_state.get("studio_wan_extra_vid2")
+                             if w_vid2:
+                                  path_v2 = os.path.join("output", "temp_wan_studio_ex_vid2.mp4")
+                                  with open(path_v2, "wb") as f:
+                                       f.write(w_vid2.getbuffer())
+                                  extra_vids.append(path_v2)
+                                  
+                             w_vid3 = st.session_state.get("studio_wan_extra_vid3")
+                             if w_vid3:
+                                  path_v3 = os.path.join("output", "temp_wan_studio_ex_vid3.mp4")
+                                  with open(path_v3, "wb") as f:
+                                       f.write(w_vid3.getbuffer())
+                                  extra_vids.append(path_v3)
                         
                         out_dir = get_user_out_dir("Videos")
                         res = generate_wan_video(
@@ -3531,6 +3695,10 @@ if selection == "Wan 2.7 Studio":
                             image_path=anim_image_path,
                             resolution=anim_res,
                             duration=anim_dur,
+                            ref_video_path=ref_video_url,
+                            extra_images=extra_imgs if extra_imgs else None,
+                            extra_videos=extra_vids if extra_vids else None,
+                            model=target_engine,
                             output_folder=out_dir
                         )
                         

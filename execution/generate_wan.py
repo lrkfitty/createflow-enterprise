@@ -171,11 +171,12 @@ def generate_wan_image(prompt, image_path, size="2K", output_folder="output"):
     except Exception as e:
         return {"status": "failed", "error": str(e), "logs": logs}
 
-def generate_wan_video(prompt, image_path, resolution="1080P", duration=5, output_folder="output"):
+def generate_wan_video(prompt, image_path, resolution="1080P", duration=5, ref_video_path=None, extra_images=None, extra_videos=None, model="alibaba/wan-2.7/image-to-video", output_folder="output"):
     """
-    Animates an image using Alibaba Wan 2.7 Image-to-Video model via Atlas Cloud API.
+    Animates an image using Alibaba Wan 2.7 models (Image-to-Video or Reference-to-Video) via Atlas Cloud API.
+    Supports multi-subject references (extra_images, extra_videos) for Reference-to-Video.
     """
-    logs = ["--- Starting Wan 2.7 Image-to-Video (Atlas Cloud API) ---"]
+    logs = [f"--- Starting Wan 2.7 Video ({model}) ---"]
     api_key = os.getenv("ATLASCLOUD_API_KEY")
     
     if not api_key:
@@ -198,16 +199,81 @@ def generate_wan_video(prompt, image_path, resolution="1080P", duration=5, outpu
         
         # Build API payload
         payload = {
-            "model": "alibaba/wan-2.7/image-to-video",
+            "model": model,
             "prompt": prompt,
-            "image": img_uri,
             "resolution": resolution,
             "duration": duration,
-            "prompt_extend": True,
             "seed": -1
         }
         
-        logs.append(f"Submitting job to Atlas API for alibaba/wan-2.7/image-to-video...")
+        if "reference-to-video" in model:
+             if not ref_video_path:
+                  return {"status": "failed", "error": "Missing reference video for Reference-to-Video model.", "logs": logs}
+             
+             # Primary reference video
+             ref_video_url = ref_video_path
+             if not ref_video_path.startswith(("http://", "https://")) and os.path.exists(ref_video_path):
+                 logs.append("Uploading primary reference video to S3...")
+                 try:
+                     from execution.s3_uploader import upload_file_obj
+                     filename = os.path.basename(ref_video_path)
+                     s3_key = f"ref_videos/{filename}"
+                     with open(ref_video_path, "rb") as f_ref:
+                         s3_url = upload_file_obj(f_ref, object_name=s3_key)
+                     if s3_url:
+                         ref_video_url = s3_url
+                         logs.append(f"Primary reference video uploaded to S3: {s3_url}")
+                     else:
+                         raise ValueError("S3 upload returned empty URL")
+                 except Exception as s3_err:
+                     return {"status": "failed", "error": f"Failed to upload primary reference video to S3: {s3_err}", "logs": logs}
+             
+             videos_payload = [ref_video_url]
+             
+             # Extra reference videos
+             if extra_videos:
+                  for idx, v_path in enumerate(extra_videos):
+                       if not v_path: continue
+                       v_url = v_path
+                       if not v_path.startswith(("http://", "https://")) and os.path.exists(v_path):
+                            logs.append(f"Uploading extra reference video {idx+2} to S3...")
+                            try:
+                                from execution.s3_uploader import upload_file_obj
+                                filename = os.path.basename(v_path)
+                                s3_key = f"ref_videos/extra_{idx}_{filename}"
+                                with open(v_path, "rb") as f_ref:
+                                    s3_url = upload_file_obj(f_ref, object_name=s3_key)
+                                if s3_url:
+                                    v_url = s3_url
+                                    logs.append(f"Extra reference video {idx+2} uploaded to S3: {s3_url}")
+                                else:
+                                    raise ValueError("S3 upload returned empty URL")
+                            except Exception as s3_err:
+                                logs.append(f"⚠️ S3 Upload Warning for video {idx+2}: {s3_err}")
+                                continue
+                       videos_payload.append(v_url)
+             
+             # Primary reference image
+             images_payload = [img_uri]
+             
+             # Extra reference images
+             if extra_images:
+                  for idx, img_p in enumerate(extra_images):
+                       if not img_p: continue
+                       try:
+                            extra_uri = image_to_base64_data_uri(img_p)
+                            images_payload.append(extra_uri)
+                            logs.append(f"Encoded extra image reference {idx+2}")
+                       except Exception as img_err:
+                            logs.append(f"⚠️ Image encoding warning for image {idx+2}: {img_err}")
+                            
+             payload["images"] = images_payload
+             payload["videos"] = videos_payload
+        else:
+             payload["image"] = img_uri
+             payload["prompt_extend"] = True
+        
+        logs.append(f"Submitting job to Atlas API for {model}...")
         response = requests.post(generate_url, headers=headers, json=payload)
         
         if response.status_code != 200:
