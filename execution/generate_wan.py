@@ -269,6 +269,8 @@ def generate_wan_video(prompt, image_path, resolution="1080P", duration=5, ref_v
                             
              payload["images"] = images_payload
              payload["videos"] = videos_payload
+        elif "text-to-video" in model:
+             payload["prompt_extend"] = True
         else:
              payload["image"] = img_uri
              payload["prompt_extend"] = True

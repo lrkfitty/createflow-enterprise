@@ -420,7 +420,7 @@ nav_options = [
     "Campaign Queue",
     "Art Director",
     "Video Studio",
-    "Wan 2.7 Studio",
+    "Wan & Seedance Studio",
     "Character Studio",
     "Multi-Shot Generator"
 ]
@@ -768,13 +768,13 @@ if selection == "My Gallery":
                             if st.button("✏️ Edit", key=f"wan_edit_btn_{idx}", use_container_width=True, help="Edit this image using Wan 2.7 Image-to-Image"):
                                 st.session_state.wan_edit_image = target_shortcut_path
                                 st.session_state.wan_studio_subtab_radio = "Image-to-Image (Scene Editor)"
-                                st.session_state.active_tab = "Wan 2.7 Studio"
+                                st.session_state.active_tab = "Wan & Seedance Studio"
                                 st.rerun()
                         with c_wan_anim:
                             if st.button("🎬 Animate", key=f"wan_anim_btn_{idx}", use_container_width=True, help="Animate this image using Wan 2.7 Image-to-Video"):
                                 st.session_state.wan_animate_image = target_shortcut_path
                                 st.session_state.wan_studio_subtab_radio = "Image-to-Video (Motion)"
-                                st.session_state.active_tab = "Wan 2.7 Studio"
+                                st.session_state.active_tab = "Wan & Seedance Studio"
                                 st.rerun()
 
 # ==========================================
@@ -3490,12 +3490,12 @@ if selection == "Video Studio":
 
 
 # ==========================================
-# TAB: WAN 2.7 STUDIO (Atlas Cloud API)
+# TAB: WAN & SEEDANCE STUDIO (Atlas Cloud API)
 # ==========================================
-if selection == "Wan 2.7 Studio":
+if selection == "Wan & Seedance Studio":
     with st.container():
-        st.markdown("### Wan 2.7 Studio (Atlas Cloud API)")
-        st.info("Edit your scene images and animate them using the latest Wan 2.7 models on Atlas Cloud.")
+        st.markdown("### Wan & Seedance Studio (Atlas Cloud API)")
+        st.info("Edit your scene images and animate them using the latest Wan 2.7 & Seedance 2.0 models on Atlas Cloud.")
 
     # Check for authentication
     username = st.session_state.current_user.get("username") if st.session_state.get("authenticated") else "guest"
@@ -3578,14 +3578,21 @@ if selection == "Wan 2.7 Studio":
                                 st.write(res.get("logs", []))
 
     else:
-        st.markdown("#### Wan 2.7 Image-to-Video Motion Generator")
-        st.write("Animate your edited scene image into high-motion video clips.")
+        st.markdown("#### Wan & Seedance Video Motion Generator")
+        st.write("Animate your edited scene image or generate cinematic video clips from scratch.")
         
-        # Select image source
-        anim_src_option = st.radio("Image Source", ["Shortcut (from Gallery or Editor)", "Upload custom image"], horizontal=True, key="wan_anim_source_option")
+        # Read selected model flavor to check if Text-to-Video
+        model_flavor_val = st.session_state.get("wan_studio_flavor_select", "Wan 2.7 Standard (Image-to-Video)")
+        is_txt_to_vid = "Text-to-Video" in model_flavor_val
         
         anim_image_path = None
-        if anim_src_option == "Shortcut (from Gallery or Editor)":
+        if is_txt_to_vid:
+            st.info("ℹ️ **Text-to-Video Mode Selected**: No input image is required. Video will be generated purely from your Motion Prompt.")
+        else:
+            # Select image source
+            anim_src_option = st.radio("Image Source", ["Shortcut (from Gallery or Editor)", "Upload custom image"], horizontal=True, key="wan_anim_source_option")
+            
+            if anim_src_option == "Shortcut (from Gallery or Editor)":
             if st.session_state.wan_animate_image:
                 target_p = st.session_state.wan_animate_image
                 # If it's a signed S3 URL but we have a matching local file under output/ or user/ directories:
@@ -3680,7 +3687,10 @@ if selection == "Wan 2.7 Studio":
                 "Wan 2.7 Standard (Image-to-Video)", 
                 "Wan 2.7 Spicy (Image-to-Video)",
                 "Wan 2.7 Standard (Reference-to-Video)",
-                "Wan 2.7 Spicy (Reference-to-Video)"
+                "Wan 2.7 Spicy (Reference-to-Video)",
+                "Seedance 2.0 (Image-to-Video)",
+                "Seedance 2.0 Mini (Reference-to-Video)",
+                "Seedance 2.0 (Text-to-Video)"
             ],
             index=0,
             key="wan_studio_flavor_select"
@@ -3747,19 +3757,28 @@ if selection == "Wan 2.7 Studio":
         run_anim_btn = st.button("Generate Video Motion", type="primary", key="wan_run_anim")
         
         if run_anim_btn:
-            if not anim_image_path:
+            is_text_to_video_selected = "Text-to-Video" in wan_model_flavor
+            if not is_text_to_video_selected and not anim_image_path:
                 st.error("Please provide a source image.")
             elif not anim_prompt:
                 st.error("Please describe the motion you want.")
             else:
                 user = st.session_state.current_user.get("username")
                 if not auth_mgr.deduct_credits(user, 5):
-                    st.error("❌ Need 5 Credits for Wan 2.7 Video!")
+                    st.error("❌ Need 5 Credits for Video!")
                 else:
                     with st.status("Submitting motion job to Atlas API...", expanded=True) as status:
                         target_engine = "alibaba/wan-2.7/image-to-video"
                         if "Reference-to-Video" in wan_model_flavor:
                             target_engine = "alibaba/wan-2.7/reference-to-video"
+                            
+                        # Seedance 2.0 model routing
+                        if "Seedance 2.0 (Image-to-Video)" in wan_model_flavor:
+                            target_engine = "bytedance/seedance-2.0/image-to-video"
+                        elif "Seedance 2.0 Mini (Reference-to-Video)" in wan_model_flavor:
+                            target_engine = "bytedance/seedance-2.0-mini/reference-to-video"
+                        elif "Seedance 2.0 (Text-to-Video)" in wan_model_flavor:
+                            target_engine = "bytedance/seedance-2.0/text-to-video"
                             
                         if "Spicy" in wan_model_flavor:
                             st.write(f"Uploading and running {target_engine} (Spicy / No Guardrails)...")
