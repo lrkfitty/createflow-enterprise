@@ -1,0 +1,159 @@
+{
+  "characters": {},
+  "relations": {},
+  "pets": {},
+  "vehicles": {},
+  "locations": {},
+  "scenarios": {
+    "morning_matcha_vibe": {
+      "name": "Morning Matcha Vibe",
+      "category": "selfie",
+      "template_prompt": "Photorealistic close-up selfie of [PROTAGONIST] in a bright modern kitchen, wearing [OUTFIT] with a plush pink headband, holding a glass of iced matcha latte, looking directly at the camera with a soft smile. Natural morning light, shallow depth of field, high-fidelity skin details, [VIBE] vibe."
+    },
+    "crisp_car_sunset_selfie": {
+      "name": "Crisp Car Sunset Selfie",
+      "category": "selfie",
+      "template_prompt": "A warm golden hour car interior selfie of [PROTAGONIST] sitting in the passenger seat of a luxury car, wearing [OUTFIT]. Sunlight highlights her long hair, casting a warm glow on her skin. City buildings visible through the window, [VIBE] vibe, high-resolution photography."
+    },
+    "parisian_coffee_walk": {
+      "name": "Parisian Coffee Walk",
+      "category": "lifestyle",
+      "template_prompt": "Action shot of [PROTAGONIST] walking confidently down a historic Parisian street, wearing [OUTFIT] and chic sunglasses, holding a paper coffee cup. Classic architecture in the soft-focus background, warm afternoon sun, [VIBE] vibe."
+    },
+    "private_jet_travel_style": {
+      "name": "Private Jet Travel Style",
+      "category": "travel",
+      "template_prompt": "High-end travel shot of [PROTAGONIST] relaxing in a plush leather seat inside a private jet cabin, wearing [OUTFIT] and looking thoughtfully out the window. Laptop and travel bag nearby, soft ambient interior lighting, [VIBE] vibe."
+    },
+    "cozy_bedroom_mirror_selfie": {
+      "name": "Cozy Bedroom Mirror Selfie",
+      "category": "selfie",
+      "template_prompt": "A casual bedroom mirror selfie of [PROTAGONIST] holding her phone to capture her reflection, wearing [OUTFIT]. Cozy room in the background with warm bedside lamps, soft curtains, and a laptop on the bed, [VIBE] vibe."
+    },
+    "rooftop_cocktail_hour": {
+      "name": "Rooftop Cocktail Hour",
+      "category": "lifestyle",
+      "template_prompt": "Cinematic lifestyle shot of [PROTAGONIST] sitting at a chic rooftop bar at sunset, wearing [OUTFIT], smiling as she holds a colorful drink with a straw. City skyline in the background with golden hour lighting, [VIBE] vibe."
+    },
+    "dior_bathroom_selfie": {
+      "name": "Dior Bathroom Selfie",
+      "category": "selfie",
+      "template_prompt": "A high-end bathroom mirror selfie of [PROTAGONIST] capturing her reflection in a luxury marble bathroom, wearing [OUTFIT]. Soft steam, chic vanity lighting, and designer toiletries in the background, [VIBE] vibe."
+    },
+    "beach_sunbathing_closeup": {
+      "name": "Beach Sunbathing Close-up",
+      "category": "selfie",
+      "template_prompt": "A sun-drenched close-up selfie of [PROTAGONIST] lying on a beach towel at golden hour, wearing [OUTFIT] and orange statement earrings. Sandy beach and gentle ocean waves in the background, warm highlights on her skin, [VIBE] vibe."
+    },
+    "streetwear_cap_sunglasses": {
+      "name": "Streetwear Cap & Sunglasses",
+      "category": "lifestyle",
+      "template_prompt": "A candid street portrait of [PROTAGONIST] standing outdoors, wearing a white baseball cap, dark sunglasses, and [OUTFIT], sipping from a clear cup with a straw. Urban background, bright daylight, [VIBE] vibe."
+    },
+    "aesthetic_matcha_cafe": {
+      "name": "Aesthetic Matcha Cafe",
+      "category": "lifestyle",
+      "template_prompt": "Candid photo of [PROTAGONIST] sitting at a marble cafe table, wearing [OUTFIT], looking away with a gentle smile. An iced matcha latte sits on the table, warm sun filtering through green leaves, [VIBE] vibe."
+    },
+    "car_front_seat_sunglasses": {
+      "name": "Car Front-Seat Sunglasses Vibe",
+      "category": "selfie",
+      "template_prompt": "A cool car front-seat selfie of [PROTAGONIST] looking at the camera, wearing dark designer sunglasses and [OUTFIT]. Sunny blue sky visible through the open sunroof, [VIBE] vibe, cinematic lighting."
+    },
+    "paris_cafe_sidewalk_dining": {
+      "name": "Paris Cafe Sidewalk Dining",
+      "category": "lifestyle",
+      "template_prompt": "Elegant candid shot of [PROTAGONIST] sitting at a Parisian sidewalk cafe, wearing [OUTFIT] and white pants, resting her hands on a small round table with a drink and a designer handbag nearby. Bustling street background, [VIBE] vibe."
+    },
+    "pink_car_interior_glow": {
+      "name": "Pink Car Interior Glow",
+      "category": "selfie",
+      "template_prompt": "A vibrant selfie of [PROTAGONIST] sitting inside a luxury car with custom pink leather seats, wearing [OUTFIT]. Soft neon ambient lighting, streetlights glowing outside the window, [VIBE] vibe."
+    },
+    "amusement_park_ride_selfie": {
+      "name": "Amusement Park Ride Selfie",
+      "category": "lifestyle",
+      "template_prompt": "A fun, dynamic selfie of [PROTAGONIST] riding a classic amusement park swing ride, wearing [OUTFIT] and sunglasses. Other rides and a clear blue sky in the background, [VIBE] vibe, high shutter speed capturing motion."
+    },
+    "mirror_selfie_in_studio": {
+      "name": "Mirror Selfie in Studio",
+      "category": "selfie",
+      "template_prompt": "A minimalist phone selfie of [PROTAGONIST] standing in a white studio, wearing [OUTFIT] and glasses. Clean background, soft overhead lighting, [VIBE] vibe."
+    },
+    "outdoor_terrace_brunch": {
+      "name": "Outdoor Terrace Brunch",
+      "category": "lifestyle",
+      "template_prompt": "A bright lifestyle photo of [PROTAGONIST] enjoying brunch on a sunny garden terrace, wearing [OUTFIT]. Fresh flowers, fruit plates, and orange juice on the table, dappled sunlight, [VIBE] vibe."
+    },
+    "sunset_beach_stroll": {
+      "name": "Sunset Beach Stroll",
+      "category": "lifestyle",
+      "template_prompt": "Candid wide shot of [PROTAGONIST] walking barefoot along the wet sand at the water's edge during a fiery sunset, wearing [OUTFIT]. Ocean reflection, soft golden mist, [VIBE] vibe."
+    },
+    "luxury_hotel_balcony": {
+      "name": "Luxury Hotel Balcony Portrait",
+      "category": "travel",
+      "template_prompt": "A stunning portrait of [PROTAGONIST] standing on a luxury hotel balcony at sunrise, wearing [OUTFIT]. Panoramic view of the city in the background, morning mist, warm glowing light, [VIBE] vibe."
+    },
+    "cozy_cafe_corner_reading": {
+      "name": "Cozy Cafe Corner Reading",
+      "category": "lifestyle",
+      "template_prompt": "A warm, atmospheric photo of [PROTAGONIST] tucked into a cozy cafe corner, wearing [OUTFIT], holding a cup of coffee. Dappled window light, bookshelves in the background, [VIBE] vibe."
+    },
+    "museum_art_gallery_walk": {
+      "name": "Museum Art Gallery Walk",
+      "category": "lifestyle",
+      "template_prompt": "A clean, artistic photo of [PROTAGONIST] from the side, looking at a large abstract painting in a modern art gallery, wearing [OUTFIT]. Minimalist white walls, polished concrete floor, soft museum lighting, [VIBE] vibe."
+    },
+    "chic_city_street_crossing": {
+      "name": "Chic City Street Crossing",
+      "category": "lifestyle",
+      "template_prompt": "An action-candid shot of [PROTAGONIST] confidently crossing a street in a major city center, wearing [OUTFIT]. Motion blur of yellow cabs in the background, bright city lights, [VIBE] vibe."
+    },
+    "tennis_court_golden_hour": {
+      "name": "Tennis Court Golden Hour",
+      "category": "lifestyle",
+      "template_prompt": "A sporty lifestyle photo of [PROTAGONIST] sitting on a tennis court bench at golden hour, wearing [OUTFIT]. Sunlight reflecting off the court surface, warm breeze, [VIBE] vibe."
+    },
+    "private_yacht_lounge": {
+      "name": "Private Yacht Lounge",
+      "category": "travel",
+      "template_prompt": "An ultra-luxury shot of [PROTAGONIST] lounging on the sun deck of a private yacht, wearing [OUTFIT] and sunglasses. Deep blue ocean and clear sky in the background, [VIBE] vibe."
+    },
+    "poolside_sun_lounger": {
+      "name": "Poolside Sun Lounger",
+      "category": "lifestyle",
+      "template_prompt": "A relaxing shot of [PROTAGONIST] lying on a sun lounger next to a pristine infinity pool, wearing [OUTFIT] and designer sunglasses. Sparkling blue water, tropical palms in the background, [VIBE] vibe."
+    },
+    "artisan_dessert_indulgence": {
+      "name": "Artisan Dessert Indulgence",
+      "category": "lifestyle",
+      "template_prompt": "A close-up candid of [PROTAGONIST] at a dimly lit luxury restaurant, wearing [OUTFIT], smiling as she takes a bite of an artisan dessert. Warm candlelight, soft background bokeh, [VIBE] vibe."
+    },
+    "cozy_cabin_fireplace_vibe": {
+      "name": "Cozy Cabin Fireplace Vibe",
+      "category": "lifestyle",
+      "template_prompt": "A warm, cozy portrait of [PROTAGONIST] sitting on a plush rug in front of a stone fireplace in a rustic cabin, wearing [OUTFIT]. Soft firelight glow, mug of hot chocolate in hand, [VIBE] vibe."
+    },
+    "desert_oasis_safari": {
+      "name": "Desert Oasis Safari",
+      "category": "travel",
+      "template_prompt": "An adventurous travel shot of [PROTAGONIST] standing in a luxury desert oasis camp at dusk, wearing [OUTFIT]. Warm lanterns glowing, sand dunes under a starry sky in the background, [VIBE] vibe."
+    },
+    "rooftop_pool_sunrise": {
+      "name": "Rooftop Pool Sunrise",
+      "category": "lifestyle",
+      "template_prompt": "A beautiful sunrise photo of [PROTAGONIST] sitting at the edge of a rooftop pool, wearing [OUTFIT], looking out at the city skyline as the sun breaks. Hazy golden morning light, [VIBE] vibe."
+    },
+    "chic_library_bookstore": {
+      "name": "Chic Library Bookstore",
+      "category": "lifestyle",
+      "template_prompt": "A cinematic photo of [PROTAGONIST] reaching for a book on a high shelf in a grand old library, wearing [OUTFIT]. Dust motes floating in sunbeams, dark wood shelves, [VIBE] vibe."
+    },
+    "flower_market_selection": {
+      "name": "Flower Market Selection",
+      "category": "lifestyle",
+      "template_prompt": "A colorful candid photo of [PROTAGONIST] standing at a European flower market stall, wearing [OUTFIT], holding a large bouquet of fresh peonies and smiling. Vibrant blooms all around, soft daylight, [VIBE] vibe."
+    }
+  }
+}
