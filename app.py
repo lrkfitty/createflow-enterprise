@@ -3405,7 +3405,7 @@ if selection == "Wan 2.7 Studio":
                     st.error("❌ Need 3 Credits for Wan 2.7 Editing!")
                 else:
                     with st.status("Submitting job to Atlas API...", expanded=True) as status:
-                        st.write("Uploading and running alibaba/wan-2.7/image-edit...")
+                        st.write("Uploading and running alibaba/wan-2.7-pro/image-edit...")
                         
                         out_dir = get_user_out_dir("World")
                         res = generate_wan_image(

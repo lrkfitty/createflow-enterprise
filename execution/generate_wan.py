@@ -56,7 +56,7 @@ def generate_wan_image(prompt, image_path, size="2K", output_folder="output"):
         
         # Build API payload
         payload = {
-            "model": "alibaba/wan-2.7/image-edit",
+            "model": "alibaba/wan-2.7-pro/image-edit",
             "prompt": prompt,
             "images": [img_uri],
             "size": size,
@@ -67,7 +67,7 @@ def generate_wan_image(prompt, image_path, size="2K", output_folder="output"):
             "enable_base64_output": False
         }
         
-        logs.append(f"Submitting job to Atlas API for alibaba/wan-2.7/image-edit...")
+        logs.append(f"Submitting job to Atlas API for alibaba/wan-2.7-pro/image-edit...")
         response = requests.post(generate_url, headers=headers, json=payload)
         
         if response.status_code != 200:
