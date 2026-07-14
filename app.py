@@ -3593,31 +3593,31 @@ if selection == "Wan & Seedance Studio":
             anim_src_option = st.radio("Image Source", ["Shortcut (from Gallery or Editor)", "Upload custom image"], horizontal=True, key="wan_anim_source_option")
             
             if anim_src_option == "Shortcut (from Gallery or Editor)":
-            if st.session_state.wan_animate_image:
-                target_p = st.session_state.wan_animate_image
-                # If it's a signed S3 URL but we have a matching local file under output/ or user/ directories:
-                if target_p.startswith(("http://", "https://")) and "users/" in target_p:
-                     try:
-                          # Extract local path from S3 layout structure: users/admin/World/filename.jpg
-                          local_rel = target_p.split(".amazonaws.com/")[1].split("?")[0]
-                          local_abs = os.path.join("output", local_rel)
-                          if os.path.exists(local_abs):
-                               target_p = local_abs
-                     except Exception:
-                          pass
-                st.info(f"Using image from shortcut: `{os.path.basename(target_p)}`")
-                st.image(target_p, width=300)
-                anim_image_path = target_p
+                if st.session_state.wan_animate_image:
+                    target_p = st.session_state.wan_animate_image
+                    # If it's a signed S3 URL but we have a matching local file under output/ or user/ directories:
+                    if target_p.startswith(("http://", "https://")) and "users/" in target_p:
+                         try:
+                              # Extract local path from S3 layout structure: users/admin/World/filename.jpg
+                              local_rel = target_p.split(".amazonaws.com/")[1].split("?")[0]
+                              local_abs = os.path.join("output", local_rel)
+                              if os.path.exists(local_abs):
+                                   target_p = local_abs
+                         except Exception:
+                              pass
+                    st.info(f"Using image from shortcut: `{os.path.basename(target_p)}`")
+                    st.image(target_p, width=300)
+                    anim_image_path = target_p
+                else:
+                    st.warning("No shortcut image selected. Go to 'My Gallery' and click '🎬 Animate' on an image, or run the editor above.")
             else:
-                st.warning("No shortcut image selected. Go to 'My Gallery' and click '🎬 Animate' on an image, or run the editor above.")
-        else:
-            uploaded_anim_img = st.file_uploader("Upload Image to Animate", type=["png", "jpg", "jpeg"], key="wan_anim_uploader")
-            if uploaded_anim_img:
-                temp_anim_path = os.path.join("output", "temp_wan_anim_input.png")
-                with open(temp_anim_path, "wb") as f:
-                    f.write(uploaded_anim_img.getbuffer())
-                st.image(uploaded_anim_img, width=300)
-                anim_image_path = temp_anim_path
+                uploaded_anim_img = st.file_uploader("Upload Image to Animate", type=["png", "jpg", "jpeg"], key="wan_anim_uploader")
+                if uploaded_anim_img:
+                    temp_anim_path = os.path.join("output", "temp_wan_anim_input.png")
+                    with open(temp_anim_path, "wb") as f:
+                        f.write(uploaded_anim_img.getbuffer())
+                    st.image(uploaded_anim_img, width=300)
+                    anim_image_path = temp_anim_path
                 
         # Director Vision AI Generator for Wan
         if anim_image_path:
