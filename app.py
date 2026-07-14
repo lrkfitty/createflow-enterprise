@@ -479,16 +479,13 @@ def _scan_s3_gallery(bucket_name, prefix, region):
 # --- Cached Presigned URL batch (avoids re-signing on rerun) ---
 @st.cache_data(ttl=3500, show_spinner=False)
 def _sign_urls(bucket_name, region, keys_tuple):
-    """Generate presigned URLs for a batch of S3 keys. keys_tuple for hashability."""
-    import boto3
-    s3 = boto3.client('s3', region_name=region)
+    """Generate direct public S3 URLs for a batch of keys. keys_tuple for hashability."""
     urls = {}
+    import urllib.parse
     for key in keys_tuple:
-        urls[key] = s3.generate_presigned_url(
-            'get_object',
-            Params={'Bucket': bucket_name, 'Key': key},
-            ExpiresIn=3600
-        )
+        encoded_parts = [urllib.parse.quote(part) for part in key.split('/')]
+        encoded_key = '/'.join(encoded_parts)
+        urls[key] = f"https://{bucket_name}.s3.{region}.amazonaws.com/{encoded_key}"
     return urls
 
 # --- Cached Local Scanner (survives reruns, 2-min TTL) ---
