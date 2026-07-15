@@ -3531,7 +3531,37 @@ if selection == "Wan & Seedance Studio":
                     f.write(uploaded_edit_img.getbuffer())
                 st.image(uploaded_edit_img, width=300)
                 edit_image_path = temp_edit_path
-                
+        # Extra Reference Images (for clothing, locations, multi-subject)
+        extra_ref_paths = []
+        with st.expander("🎨 Multi-Subject / Clothing & Location References (Optional)", expanded=False):
+            st.markdown("Add up to 8 additional reference images (e.g. clothing reference, face reference, background style reference) to guide the Wan edit.")
+            
+            ref_input_mode = st.radio("Reference Source Mode", ["Upload Files", "URLs (S3/Web)"], horizontal=True, key="wan_edit_ref_mode")
+            if ref_input_mode == "Upload Files":
+                uploaded_refs = st.file_uploader(
+                    "Upload Reference Images (Max 8)",
+                    type=["png", "jpg", "jpeg", "webp"],
+                    accept_multiple_files=True,
+                    key="wan_edit_uploaded_refs"
+                )
+                if uploaded_refs:
+                    for i, file_obj in enumerate(uploaded_refs[:8]):
+                        temp_ref_path = os.path.join("output", f"temp_wan_ref_{i}.png")
+                        with open(temp_ref_path, "wb") as f:
+                            f.write(file_obj.getbuffer())
+                        extra_ref_paths.append(temp_ref_path)
+                    st.success(f"Loaded {len(extra_ref_paths)} local upload reference images.")
+            else:
+                url_text = st.text_area(
+                    "Reference URLs (One per line)",
+                    placeholder="https://example.com/outfit.jpg\nhttps://example.com/location.jpg",
+                    key="wan_edit_ref_urls"
+                )
+                if url_text.strip():
+                    lines = [line.strip() for line in url_text.split("\n") if line.strip()]
+                    extra_ref_paths.extend(lines[:8])
+                    st.success(f"Registered {len(lines[:8])} reference URLs.")
+
         edit_prompt = st.text_area("Edit Prompt (SOP instructions)", placeholder="e.g. Change the background to a sunny Malibu beach. Change her outfit to a red leather jacket and black jeans. Keep character identity identical.", key="wan_edit_prompt")
         edit_size = st.selectbox("Resolution", ["2K", "1K"], index=0, key="wan_edit_size")
         
@@ -3555,7 +3585,8 @@ if selection == "Wan & Seedance Studio":
                             prompt=edit_prompt,
                             image_path=edit_image_path,
                             size=edit_size,
-                            output_folder=out_dir
+                            output_folder=out_dir,
+                            extra_images=extra_ref_paths
                         )
                         
                         if res and res["status"] == "success":

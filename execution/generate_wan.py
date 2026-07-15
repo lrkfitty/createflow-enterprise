@@ -48,9 +48,10 @@ def image_to_base64_data_uri(img_path_or_url):
             
     raise FileNotFoundError(f"Image source not found: {img_path_or_url}")
 
-def generate_wan_image(prompt, image_path, size="2K", output_folder="output"):
+def generate_wan_image(prompt, image_path, size="2K", output_folder="output", extra_images=None):
     """
     Edits an image using Alibaba Wan 2.7 Image Edit model via Atlas Cloud API.
+    Supports up to 9 reference photos for multi-subject control.
     """
     logs = ["--- Starting Wan 2.7 Image Edit (Atlas Cloud API) ---"]
     api_key = os.getenv("ATLASCLOUD_API_KEY")
@@ -67,6 +68,18 @@ def generate_wan_image(prompt, image_path, size="2K", output_folder="output"):
         img_uri = image_to_base64_data_uri(image_path)
         logs.append(f"Source image converted to URI (length: {len(img_uri) if img_uri else 0})")
         
+        images_payload = [img_uri] if img_uri else []
+        if extra_images:
+             for idx, img_p in enumerate(extra_images):
+                  if not img_p: continue
+                  try:
+                       extra_uri = image_to_base64_data_uri(img_p)
+                       if extra_uri:
+                            images_payload.append(extra_uri)
+                            logs.append(f"Encoded extra image reference {idx+2}")
+                  except Exception as img_err:
+                       logs.append(f"⚠️ Image encoding warning for reference {idx+2}: {img_err}")
+        
         generate_url = "https://api.atlascloud.ai/api/v1/model/generateImage"
         headers = {
             "Content-Type": "application/json",
@@ -77,7 +90,7 @@ def generate_wan_image(prompt, image_path, size="2K", output_folder="output"):
         payload = {
             "model": "alibaba/wan-2.7-pro/image-edit",
             "prompt": prompt,
-            "images": [img_uri],
+            "images": images_payload,
             "size": size,
             "n": 1,
             "thinking_mode": True,
