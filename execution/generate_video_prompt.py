@@ -32,6 +32,16 @@ def generate_motion_prompt(image_path, movement_type="Auto", physics_focus="stan
     import requests
     from io import BytesIO
     
+    # Try local recovery first if it is an S3 URL representing a local file
+    if image_path and image_path.startswith(('http://', 'https://')) and "users/" in image_path:
+         try:
+              local_rel = image_path.split(".amazonaws.com/")[1].split("?")[0]
+              local_abs = os.path.join(os.getcwd(), "output", local_rel)
+              if os.path.exists(local_abs):
+                   image_path = local_abs
+         except Exception:
+              pass
+
     try:
         if image_path.startswith(('http://', 'https://')):
             # Add custom User-Agent to avoid WAF / S3 signature issues when fetched by requests
@@ -52,14 +62,21 @@ def generate_motion_prompt(image_path, movement_type="Auto", physics_focus="stan
             else:
                  raise FileNotFoundError(f"Path does not exist locally: {image_path}")
     except Exception as e:
-        # Fallback: if it failed with HTTP 403 but is actually a local file path starting with output/
-        clean_path = image_path.split("?")[0] if "?" in image_path else image_path
-        if clean_path.startswith("output/") and os.path.exists(clean_path):
-             try:
-                 img = PIL.Image.open(clean_path)
-             except Exception as inner_e:
-                 return f"Error loading image (fallback): {inner_e}"
-        else:
+        # Fallback: if it failed but is actually a local file path or represented by S3 URL
+        try:
+             clean_path = image_path.split("?")[0] if "?" in image_path else image_path
+             if "users/" in clean_path:
+                  local_rel = clean_path.split(".amazonaws.com/")[-1]
+                  local_abs = os.path.join(os.getcwd(), "output", local_rel)
+                  if os.path.exists(local_abs):
+                       img = PIL.Image.open(local_abs)
+                  else:
+                       raise Exception("No fallback match")
+             elif clean_path.startswith("output/") and os.path.exists(clean_path):
+                  img = PIL.Image.open(clean_path)
+             else:
+                  raise Exception("No fallback match")
+        except Exception:
              return f"Error loading image: {e}"
 
     # Construct Constraints based on user input
@@ -131,7 +148,7 @@ def generate_motion_prompt(image_path, movement_type="Auto", physics_focus="stan
     - NO: "Here is the prompt", just give me the raw prompt text.
     """
 
-    models_to_try = ['gemini-flash-latest', 'gemini-pro-latest', 'gemini-2.0-flash-001']
+    models_to_try = ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-flash-latest', 'gemini-pro-latest', 'gemini-2.0-flash-001', 'gemini-2.5-pro']
     last_err = "No models succeeded."
     
     for m_name in models_to_try:
