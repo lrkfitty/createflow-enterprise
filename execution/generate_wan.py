@@ -154,6 +154,23 @@ def generate_wan_image(prompt, image_path, size="2K", output_folder="output", ex
             with open(filepath, "wb") as f:
                 f.write(dl_resp.content)
             logs.append(f"✅ Edited image saved to: {filepath}")
+            
+            # --- Generate Thumbnail for Performance ---
+            thumb_filename = None
+            try:
+                from PIL import Image
+                from io import BytesIO
+                thumb_filename = f"wan27_edit_{timestamp}_thumb.jpg"
+                thumb_filepath = os.path.join(output_folder, thumb_filename)
+                
+                img_for_thumb = Image.open(BytesIO(dl_resp.content))
+                if img_for_thumb.mode in ('RGBA', 'P'): 
+                    img_for_thumb = img_for_thumb.convert('RGB')
+                img_for_thumb.thumbnail((512, 512), Image.Resampling.LANCZOS)
+                img_for_thumb.save(thumb_filepath, format="JPEG", quality=80)
+                logs.append(f"✅ Created gallery thumbnail: {thumb_filepath}")
+            except Exception as thumb_err:
+                logs.append(f"⚠️ Thumbnail Creation Warning: {thumb_err}")
         else:
             return {"status": "failed", "error": f"Failed to download image: HTTP {dl_resp.status_code}", "logs": logs}
             
@@ -165,12 +182,21 @@ def generate_wan_image(prompt, image_path, size="2K", output_folder="output", ex
                 if "users" in output_folder:
                     relative_path = output_folder.replace("output/", "").replace("output\\", "")
                     s3_key = f"{relative_path}/{filename}"
+                    thumb_s3_key = f"{relative_path}/{thumb_filename}" if thumb_filename else None
                 else:
                     s3_key = f"generated/{filename}"
+                    thumb_s3_key = f"generated/{thumb_filename}" if thumb_filename else None
                 
                 with open(filepath, "rb") as f_up:
                     s3_url = upload_file_obj(f_up, object_name=s3_key)
                 logs.append(f"☁️ Uploaded to S3: {s3_key}")
+                
+                if thumb_s3_key and thumb_filename:
+                     thumb_full_path = os.path.join(output_folder, thumb_filename)
+                     if os.path.exists(thumb_full_path):
+                          with open(thumb_full_path, "rb") as f_up_thumb:
+                               upload_file_obj(f_up_thumb, object_name=thumb_s3_key)
+                          logs.append(f"☁️ Uploaded thumbnail to S3: {thumb_s3_key}")
             except Exception as s3_err:
                 logs.append(f"⚠️ S3 Upload Warning: {s3_err}")
                 
