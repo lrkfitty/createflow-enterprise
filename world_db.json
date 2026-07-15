@@ -254,6 +254,31 @@
       "name": "Fuzzy Blanket Sofa Hug",
       "category": "lounge",
       "template_prompt": "A cozy candid photo of [PROTAGONIST] sitting on a soft white sofa, wrapped in a large chunky knit blanket, smiling warmly at the camera. Hot tea steaming in her hands, soft afternoon lighting, [VIBE] vibe."
+    },
+    "angel_birthday_shh_pose_25": {
+      "name": "Angel Birthday: Shh Pose 25",
+      "category": "birthday",
+      "template_prompt": "Hyper-realistic, high-fidelity studio photo of [PROTAGONIST] sitting on a white cube stool against a sparkly pink backdrop, wearing [OUTFIT] and pink platform heels with large bows tied around her ankles. She has long straight black hair, holding a small pink birthday cake with candles in her left hand and posing with her right index finger over her lips in a shushing gesture. Pink metallic foil balloons spelling out the number '25' float above her, and matching pink balloons are scattered on the floor around her, [VIBE] vibe."
+    },
+    "angel_birthday_sports_jersey_backshot": {
+      "name": "Angel Birthday: Sports Jersey Backshot",
+      "category": "birthday",
+      "template_prompt": "Clean studio portrait of [PROTAGONIST] seen from behind, looking back over her shoulder with a confident expression, wearing an orange and black sports jersey with white numbers and [OUTFIT] under it. She is wearing a black knit beanie, white crew socks, and brown nubuck work boots. Solid vibrant orange backdrop, professional studio lighting, high contrast, [VIBE] vibe."
+    },
+    "angel_birthday_heart_spotlight_roses": {
+      "name": "Angel Birthday: Heart Spotlight Roses",
+      "category": "birthday",
+      "template_prompt": "Glamorous romantic studio portrait of [PROTAGONIST] with long wavy brown hair, wearing a pink satin corset top, a pearl necklace, pearl earrings, and long pink satin gloves, holding a massive bouquet of pink and red roses. Behind her is a soft pink-mauve plaster wall with a crisp, bright heart-shaped spotlight projected on the wall framing her. Warm, elegant studio lighting, shallow depth of field, [VIBE] vibe."
+    },
+    "angel_birthday_pink_thigh_high_poster": {
+      "name": "Angel Birthday: Pink Thigh-High Poster",
+      "category": "birthday",
+      "template_prompt": "Monochromatic high-fashion studio portrait of [PROTAGONIST] with long straight brown hair, standing in a confident pose with her left hand on her hip, wearing a pink bikini top, matching pink mini skirt, and thigh-high pink boots. Solid pastel pink background, bright high-key studio lighting, clear sharp details, [VIBE] vibe."
+    },
+    "angel_birthday_roses_closeup_editorial": {
+      "name": "Angel Birthday: Roses Close-up Editorial",
+      "category": "birthday",
+      "template_prompt": "Cinematic close-up beauty editorial portrait of [PROTAGONIST] with her eyes closed and head tilted back slightly in a serene expression. She has long wavy honey-blonde hair, wearing a wide diamond rhinestone choker, a matching diamond pendant necklace, diamond hoop earrings, and white satin gloves, holding fresh pink and white roses near her shoulders and face. Soft moody lighting with dramatic shadows, warm highlights, high-resolution beauty photography, [VIBE] vibe."
     }
   }
 }
