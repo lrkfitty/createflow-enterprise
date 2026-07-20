@@ -279,6 +279,31 @@
       "name": "Angel Birthday: Roses Close-up Editorial",
       "category": "birthday",
       "template_prompt": "Cinematic close-up beauty editorial portrait of [PROTAGONIST] with her eyes closed and head tilted back slightly in a serene expression. She has long wavy honey-blonde hair, wearing a wide diamond rhinestone choker, a matching diamond pendant necklace, diamond hoop earrings, and white satin gloves, holding fresh pink and white roses near her shoulders and face. Soft moody lighting with dramatic shadows, warm highlights, high-resolution beauty photography, [VIBE] vibe."
+    },
+    "golf_low_angle_tee_shot": {
+      "name": "Golf: Low Angle Tee Framing",
+      "category": "sports",
+      "template_prompt": "Dramatic low-angle ground-level photo looking forward between the legs of [PROTAGONIST] standing on a lush green golf course tee box, wearing [OUTFIT] with white crew athletic socks and white sneakers. She holds a driver club poised next to a white golf ball, framed against a vibrant blue sky and sunlit trees in the background, [VIBE] vibe."
+    },
+    "golf_driving_range_dusk_swing": {
+      "name": "Golf: Driving Range Dusk Swing",
+      "category": "sports",
+      "template_prompt": "Action-candid rear perspective shot of [PROTAGONIST] at the peak of her golf swing follow-through on a green driving range mat, wearing [OUTFIT] with a golf glove and sneakers. Glowing tall floodlights illuminate the range netting and green field under a twilight evening sky, with yellow practice golf balls scattered across the turf, [VIBE] vibe."
+    },
+    "golf_sunlit_visor_followthrough": {
+      "name": "Golf: Sunlit Visor Follow-Through",
+      "category": "sports",
+      "template_prompt": "Sun-drenched medium 3/4 side profile portrait of [PROTAGONIST] outdoors on a golf course, wearing [OUTFIT] with a white sun visor, dark sunglasses, and a leather golf glove. She is caught mid-movement watching her ball flight with focused expression, soft sunbeams filtering through lush green trees in the background, shallow depth of field, [VIBE] vibe."
+    },
+    "golf_putting_green_crouch": {
+      "name": "Golf: Putting Green Crouch",
+      "category": "sports",
+      "template_prompt": "Low-profile athletic portrait of [PROTAGONIST] crouched gracefully on a pristine manicured golf putting green, wearing [OUTFIT] and a golf visor, holding a putter as she lines up her shot. Bright sunny day, crisp focus on her expression and posture, rolling green fairways in the soft background, [VIBE] vibe."
+    },
+    "golf_cart_fairway_lounge": {
+      "name": "Golf: Fairway Cart Lounge",
+      "category": "sports",
+      "template_prompt": "Chic outdoor lifestyle portrait of [PROTAGONIST] leaning casually against a modern luxury golf cart on a fairway path, wearing [OUTFIT] and sunglasses, holding an iced drink in one hand and a golf iron in the other. Clear blue sky, palm trees, and pristine sand traps in the background, [VIBE] vibe."
     }
   }
 }
