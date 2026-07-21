@@ -304,6 +304,61 @@
       "name": "Golf: Fairway Cart Lounge",
       "category": "sports",
       "template_prompt": "Chic outdoor lifestyle portrait of [PROTAGONIST] leaning casually against a modern luxury golf cart on a fairway path, wearing [OUTFIT] and sunglasses, holding an iced drink in one hand and a golf iron in the other. Clear blue sky, palm trees, and pristine sand traps in the background, [VIBE] vibe."
+    },
+    "ty_birthday_sparkler_mouth": {
+      "name": "Ty Birthday: Sparkler Mouth",
+      "category": "birthday",
+      "template_prompt": "Hyper-realistic, high-fidelity studio portrait of [PROTAGONIST] sitting on the floor with legs spread against a solid bright red studio backdrop. He has clean braided hair, wearing a black leather racing jacket with colorful sponsor patches, a white t-shirt, loose dark blue denim cargo pants, and tan work boots. He has a sparking birthday candle sparkler lit in his mouth with golden sparks flying, looking confidently at the camera. In the foreground on the floor sits a small white birthday cake with sprinkles and lighted candles spelling out '24', [VIBE] vibe."
+    },
+    "ty_birthday_champagne_pour": {
+      "name": "Ty Birthday: Champagne Pour",
+      "category": "birthday",
+      "template_prompt": "Cinematic studio portrait of [PROTAGONIST] sitting back in a luxury green velvet armchair against a solid olive-green studio backdrop. He has short black hair, wearing a dark green double-breasted suit jacket, matching trousers, a black dress shirt, dark sunglasses, and a grey faux-fur collar scarf draped around his shoulders. He is holding up a tall crystal champagne glass as sparkling champagne is being poured into it from a green bottle off-screen, overflowing and splashing over the side of the glass, [VIBE] vibe."
+    },
+    "ty_birthday_paparazzi_mob": {
+      "name": "Ty Birthday: Paparazzi Mob",
+      "category": "birthday",
+      "template_prompt": "Dynamic high-contrast photo of [PROTAGONIST] with hair pulled back in a sleek bun, wearing dark black sunglasses, a black blazer, a black turtleneck sweater, and a gold cross necklace. He sits calmly and confidently as he is surrounded by a dense crowd of paparazzi hands holding up smartphones with bright camera flashes lighting up, framing him in intense spotlight flares, [VIBE] vibe."
+    },
+    "ty_birthday_museum_head": {
+      "name": "Ty Birthday: Museum Head Sculpture",
+      "category": "birthday",
+      "template_prompt": "Vibrant photo inside a bright, modern white-walled museum gallery space. In the center is a giant, towering hyperrealistic sculpture of the head of [PROTAGONIST] wearing a dark blue corduroy cap with the words 'SHIT HAPPENS' embroidered in white block letters. Museum visitors walk around the gallery, looking up in awe at the massive head sculpture behind a thin black barrier, [VIBE] vibe."
+    },
+    "ty_birthday_cake_smear_crown": {
+      "name": "Ty Birthday: Cake Smear & Crown",
+      "category": "birthday",
+      "template_prompt": "Hyper-detailed studio portrait of [PROTAGONIST] with dreadlocks, wearing black-framed glasses, a black t-shirt, and a gold chain necklace, sitting against a solid bright red backdrop. His face has blue and white birthday cake frosting playfully smeared on his forehead, nose, and cheeks. A woman's hand with long white acrylic nails places a detailed golden crown on his head from above, while another hand touches his chin from below, [VIBE] vibe."
+    },
+    "ty_birthday_white_couple_hug": {
+      "name": "Ty Birthday: Clean White Hug",
+      "category": "birthday",
+      "template_prompt": "Cozy studio portrait of [PROTAGONIST] wearing a black durag and a white tank top, standing behind [PROPS_AND_CAST] against a solid clean white background. He hugs her from behind, placing his chin gently on her shoulder and touching her cheek with his hand. Warm, bright studio lighting, soft details, [VIBE] vibe."
+    },
+    "ty_birthday_magazine_sofa": {
+      "name": "Ty Birthday: Magazine Sofa Lounge",
+      "category": "birthday",
+      "template_prompt": "Chic studio lifestyle portrait of [PROTAGONIST] with neat braided hair, wearing a white tank top and gold chain necklace, sitting on a luxurious orange velvet sofa in front of dark green curtains. He is holding open a high-fashion magazine showing pages of Dazed and Valentino. Behind him, [PROPS_AND_CAST] gently touches his ear and shoulder. Warm moody lighting, [VIBE] vibe."
+    },
+    "ty_birthday_bed_foot_lips": {
+      "name": "Ty Birthday: Bed Foot Cover",
+      "category": "birthday",
+      "template_prompt": "Intimate close-up overhead shot of [PROTAGONIST] lying down on a bed with a grey pillow, wearing a black hoodie and durag, with his eyes closed. A woman's foot with pink nail polish and a gold chain anklet is gently resting on his mouth. Cozy bedroom atmosphere, soft indoor lighting, [VIBE] vibe."
+    },
+    "ty_birthday_joint_nails": {
+      "name": "Ty Birthday: Lit Joint & Nails",
+      "category": "birthday",
+      "template_prompt": "Close-up low-angle portrait of [PROTAGONIST] with a black beard and eyes closed, under warm indoor lighting. A woman's hand with long pink acrylic nails and a turquoise ring is holding a lit gold paper joint to his lips, with a thin wisp of smoke rising, [VIBE] vibe."
+    },
+    "ty_birthday_sky_selfie": {
+      "name": "Ty Birthday: Sky Selfie Dusk",
+      "category": "birthday",
+      "template_prompt": "Low-angle selfie-style photo of [PROTAGONIST] wearing black-rimmed glasses and a white t-shirt, with [PROPS_AND_CAST] leaning her head cozy on his chest. In the background is a beautiful blue and orange twilight sky at dusk, warm lighting, [VIBE] vibe."
+    },
+    "ty_birthday_club_duckface": {
+      "name": "Ty Birthday: Club Night Duckface",
+      "category": "birthday",
+      "template_prompt": "Stylish flash-photography candid shot inside a crowded high-end nightclub event of [PROTAGONIST] wearing a sharp black suit, dark sunglasses, and diamond studs, holding a black designer leather handbag. Behind him, [PROPS_AND_CAST] in a black dress and gold chain necklace holds onto his shoulder, making a playful kiss face at the camera, [VIBE] vibe."
     }
   }
 }
