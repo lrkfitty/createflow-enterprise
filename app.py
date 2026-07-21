@@ -3053,6 +3053,9 @@ if selection == "Video Studio":
                 [
                     "Kling AI 2.6 (Professional)", 
                     "HuMo AI (Human Motion Premium)",
+                    "Seedance 2.0 (Image-to-Video)",
+                    "Seedance 2.0 Mini (Reference-to-Video)",
+                    "Seedance 2.0 (Text-to-Video)",
                     "Wan 2.7 (Image-to-Video)",
                     "Wan 2.7 Spicy (Image-to-Video)",
                     "Wan 2.7 (Reference-to-Video)",
@@ -3399,13 +3402,20 @@ if selection == "Video Studio":
                                   output_folder=get_user_out_dir("Videos")
                               )
                               
-                    elif "Wan" in video_model:
-                        st.write("Sending to Wan 2.7 Video API via Atlas Cloud...")
-                        st.write("Animate-to-Video in progress... (Est ~2-3 mins)")
-                        
+                    elif "Wan" in video_model or "Seedance" in video_model:
                         target_engine = "alibaba/wan-2.7/image-to-video"
-                        if "Reference-to-Video" in video_model:
+                        if "Seedance 2.0 (Image-to-Video)" in video_model:
+                            target_engine = "bytedance/seedance-2.0/image-to-video"
+                        elif "Seedance 2.0 Mini (Reference-to-Video)" in video_model:
+                            target_engine = "bytedance/seedance-2.0-mini/reference-to-video"
+                        elif "Seedance 2.0 (Text-to-Video)" in video_model:
+                            target_engine = "bytedance/seedance-2.0/text-to-video"
+                        elif "Reference-to-Video" in video_model:
                             target_engine = "alibaba/wan-2.7/reference-to-video"
+                        
+                        engine_name_display = "Seedance 2.0" if "Seedance" in video_model else "Wan 2.7"
+                        st.write(f"Sending to {engine_name_display} Video API via Atlas Cloud...")
+                        st.write("Animate-to-Video in progress... (Est ~2-3 mins)")
                         
                         # Fetch values from session state safely
                         w_res = st.session_state.get("studio_wan_res", "1080P")

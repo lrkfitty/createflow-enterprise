@@ -215,7 +215,10 @@ def generate_wan_video(prompt, image_path, resolution="1080P", duration=5, ref_v
     Animates an image using Alibaba Wan 2.7 models (Image-to-Video or Reference-to-Video) via Atlas Cloud API.
     Supports multi-subject references (extra_images, extra_videos) for Reference-to-Video.
     """
-    logs = [f"--- Starting Wan 2.7 Video ({model}) ---"]
+    brand_name = "Seedance 2.0" if "seedance" in model.lower() else "Wan 2.7"
+    file_prefix = "seedance20_video" if "seedance" in model.lower() else "wan27_video"
+    
+    logs = [f"--- Starting {brand_name} Video ({model}) ---"]
     api_key = os.getenv("ATLASCLOUD_API_KEY")
     
     if not api_key:
@@ -360,7 +363,7 @@ def generate_wan_video(prompt, image_path, resolution="1080P", duration=5, ref_v
             
         # Download the output video
         timestamp = int(time.time())
-        filename = f"wan27_video_{timestamp}.mp4"
+        filename = f"{file_prefix}_{timestamp}.mp4"
         filepath = os.path.join(output_folder, filename)
         
         logs.append(f"Downloading video from {output_url}...")
