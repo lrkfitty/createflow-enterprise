@@ -1557,7 +1557,10 @@ if selection == "World Builder":
             )
             
             if selected_scenario_key:
-                scenario = scenarios[selected_scenario_key]
+                scenario = dict(scenarios[selected_scenario_key])
+                scenario['is_custom'] = False
+                st.session_state['wb_current_scenario'] = scenario
+                st.session_state['wb_selected_scenario_key'] = selected_scenario_key
                 st.caption(f"💡 Template: {scenario['template_prompt']}")
         else:
             # NEW: Custom Scenario Builder
@@ -2115,7 +2118,7 @@ Write an immersive, detailed prompt now:"""
                                 raise ValueError("GOOGLE_API_KEY not configured")
                             genai.configure(api_key=_google_key)
                             # Try models sequentially during generate_content execution
-                            models_to_try = ["gemini-flash-latest", "gemini-pro-latest", "gemini-2.0-flash-001"]
+                            models_to_try = ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-flash-latest', 'gemini-pro-latest', 'gemini-2.0-flash-001', 'gemini-2.5-pro']
                             response = None
                             last_err = "No models succeeded."
                             for m_name in models_to_try:
@@ -2175,8 +2178,22 @@ Write an immersive, detailed prompt now:"""
                         st.toast(f"Director AI Analyzing: {current_selections.get('PROTAGONIST', 'Character')} + {current_selections.get('OUTFIT', 'Outfit')}... [Cam: {sel_camera}, Act: {sel_action}]")
                     
                         prompt_engine = "gemini-2.0-flash" # User requested specifically (Free Tier)
+                        
+                        # Extract Active Scenario Details
+                        scenario_obj = st.session_state.get('wb_current_scenario', scenario)
+                        scen_title = scenario_obj.get('name', 'General Scene') if isinstance(scenario_obj, dict) else 'General Scene'
+                        scen_concept = scenario_obj.get('template_prompt', '') if isinstance(scenario_obj, dict) else ''
+
+                        additional_notes_str = (
+                            f"SCENARIO TITLE & THEME: '{scen_title}'. "
+                            f"SCENARIO CONCEPT: {scen_concept}. "
+                            f"ATMOSPHERE/VIBE: {current_selections.get('VIBE', 'General')}. FILM STYLE: {sel_film}. "
+                            f"CURRENT DRAFT CONTEXT: {base_template}. "
+                            f"INSTRUCTION: Create a fresh, vivid, Hollywood-level scene description specifically for the scenario '{scen_title}'. "
+                            f"Integrate all visual references, character identities, outfits, and camera specs smoothly."
+                        )
+
                         # 2. Call Generator with full context
-                        # We treat the current draft as 'additional_notes' context
                         enhanced_res = generate_prompt_content(
                             vibe=current_selections.get("VIBE", "luxury"),
                             outfit=current_selections.get("OUTFIT", "fashion"),
@@ -2196,7 +2213,7 @@ Write an immersive, detailed prompt now:"""
                             film_stock=(sel_film_stock if sel_film_stock != "Auto" else None),
                             filter_look=(sel_filter_look if sel_filter_look != "Auto" else None),
                             
-                            additional_notes=f"CREATIVE BRIEF: The atmosphere is {current_selections.get('VIBE', 'General')}. Overall style: {sel_film}. CREATE A FRESH, HOLLYWOOD-LEVEL SCENE DESCRIPTION from the visual references and cast list. Do not copy template text.",
+                            additional_notes=additional_notes_str,
                             model_engine=prompt_engine # Use currently selected brain (Gemini 2.0)
                         )
                         
