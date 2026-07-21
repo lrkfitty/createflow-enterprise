@@ -8,13 +8,31 @@ load_dotenv(override=True)
 
 def image_to_base64_data_uri(img_path_or_url):
     """
-    Converts a local file path to a base64 data URI, or returns the URL as-is if it starts with http.
-    Optimizes/resizes local images to keep request payload size lightweight.
+    Converts a local file path or HTTP URL to a base64 data URI.
+    Optimizes/resizes images to keep request payload size lightweight and prevent Atlas 403 errors.
     """
     if not img_path_or_url:
         return None
         
+    # If HTTP URL, try fetching locally to convert to base64 (prevents Atlas S3 403 errors)
     if img_path_or_url.startswith(("http://", "https://")):
+        try:
+            resp = requests.get(img_path_or_url, timeout=10)
+            if resp.status_code == 200:
+                from PIL import Image
+                from io import BytesIO
+                img = Image.open(BytesIO(resp.content))
+                max_dim = 1920
+                if max(img.width, img.height) > max_dim:
+                    img.thumbnail((max_dim, max_dim), Image.Resampling.LANCZOS)
+                if img.mode in ('RGBA', 'P'):
+                    img = img.convert('RGB')
+                buffer = BytesIO()
+                img.save(buffer, format="JPEG", quality=85)
+                encoded = base64.b64encode(buffer.getvalue()).decode('utf-8')
+                return f"data:image/jpeg;base64,{encoded}"
+        except Exception:
+            pass
         return img_path_or_url
         
     if os.path.exists(img_path_or_url):
