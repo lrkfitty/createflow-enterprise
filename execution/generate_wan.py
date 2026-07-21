@@ -93,7 +93,7 @@ def generate_wan_image(prompt, image_path, size="2K", output_folder="output", ex
             "images": images_payload,
             "size": size,
             "n": 1,
-            "thinking_mode": True,
+            "thinking_mode": False,
             "seed": -1,
             "enable_sync_mode": False,
             "enable_base64_output": False
