@@ -2370,17 +2370,18 @@ Write an immersive, detailed prompt now:"""
                     reference_context_str = ", ".join(asset_labels) if asset_labels else ""
 
                     # Pass the FULL prompt + specs as context
+                    scen_name = scenario.get('name', 'Custom Scenario') if isinstance(scenario, dict) else str(scenario)
                     sb_prompts = generate_storyboard_prompts(
-                        scenario['name'], 
+                        scen_name, 
                         final_prompt,
                         camera_settings=camera_str,
                         reference_context=reference_context_str
                     )
                     st.session_state['sb_prompts'] = sb_prompts
-                    if sb_prompts and not isinstance(sb_prompts[0], str) or (len(sb_prompts) > 0 and "Error" not in sb_prompts[0]):
+                    if sb_prompts and isinstance(sb_prompts, list) and len(sb_prompts) > 0 and not str(sb_prompts[0]).startswith("Error"):
                         st.success("Storyboard Drafted! See below.")
                     else:
-                        st.error(f"Generation failed: {sb_prompts}")
+                        st.error(f"Generation failed: {sb_prompts[0] if sb_prompts else 'Unknown error'}")
             
             if 'sb_prompts' in st.session_state:
                 prompts = st.session_state['sb_prompts']
@@ -2400,11 +2401,12 @@ Write an immersive, detailed prompt now:"""
                     if st.button("Add All to Queue"):
                          curr_idx = len(campaign_mgr.queue)
                          for i, p in enumerate(prompts):
+                             active_p = st.session_state.get(f"sb_{i}", p)
                              campaign_mgr.add_job(
                                 name=f"SB_Shot_{i+1}_{int(time.time())}",
                                 description=f"Storyboard Shot {i+1}",
                                 prompt_data={
-                                    "positive_prompt": p + f", {final_prompt}", 
+                                    "positive_prompt": active_p, 
                                     "aspect_ratio": sel_ar,
                                     "image_size": sel_res,
                                     "model_type": "nano",
@@ -2419,6 +2421,7 @@ Write an immersive, detailed prompt now:"""
                 with c_sb_run:
                     if st.button("🎬 Generate All"):
                          for i, p in enumerate(prompts):
+                             active_p = st.session_state.get(f"sb_{i}", p)
                              # Credit Check Loop
                              can_proceed = True
                              if st.session_state.get("authenticated"):
@@ -2431,7 +2434,7 @@ Write an immersive, detailed prompt now:"""
                              if can_proceed:
                                  with st.spinner(f"Generating Shot {i+1}..."):
                                      wb_payload = {
-                                         "positive_prompt": p + f", {final_prompt}", # Append full context
+                                         "positive_prompt": active_p, # Use active text
                                          "aspect_ratio": sel_ar, 
                                          "image_size": sel_res,
                                          "model_type": "nano", 

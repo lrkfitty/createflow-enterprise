@@ -43,7 +43,7 @@ def _generate_gemini(prompt):
     if not api_key:
         return ["Error: Missing GOOGLE_API_KEY", "", "", ""]
         
-    models_to_try = ["gemini-flash-latest", "gemini-pro-latest", "gemini-2.0-flash-001"]
+    models_to_try = ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-flash-latest', 'gemini-pro-latest', 'gemini-2.0-flash-001', 'gemini-2.5-pro']
     headers = { "Content-Type": "application/json" }
     payload = {
         "contents": [{
@@ -66,25 +66,45 @@ def _generate_gemini(prompt):
             res_json = response.json()
             
             # Extract text
-            if 'candidates' not in res_json:
+            if 'candidates' not in res_json or not res_json['candidates']:
                 last_error_msg = f"No candidates: {res_json.get('promptFeedback', res_json)}"
                 continue
                 
             text = res_json['candidates'][0]['content']['parts'][0]['text']
             text = text.replace('```json', '').replace('```', '').strip()
             
+            # Extract JSON block if surrounded by extra text
+            start_bracket = min([i for i in (text.find('['), text.find('{')) if i != -1], default=-1)
+            end_bracket = max([text.rfind(']'), text.rfind('}')])
+            if start_bracket != -1 and end_bracket != -1 and end_bracket > start_bracket:
+                text = text[start_bracket:end_bracket+1]
+
             try:
                 params = json.loads(text)
             except json.JSONDecodeError:
-                 return ["Error parsing JSON", text, "", ""]
+                return ["Error parsing JSON", text, "", ""]
 
             if isinstance(params, dict):
                 for key, val in params.items():
                     if isinstance(val, list):
                         params = val
                         break
-            if isinstance(params, list) and len(params) >= 4:
-                return params[:4]
+            
+            if isinstance(params, list) and len(params) >= 1:
+                clean_prompts = []
+                for item in params:
+                    if isinstance(item, str):
+                        clean_prompts.append(item.strip())
+                    elif isinstance(item, dict):
+                        # Extract the main text value from dict
+                        str_val = item.get("prompt") or item.get("description") or item.get("text") or list(item.values())[0]
+                        clean_prompts.append(str(str_val).strip())
+                
+                # Pad to at least 4 items if fewer returned
+                while len(clean_prompts) < 4:
+                    clean_prompts.append(clean_prompts[-1] if clean_prompts else prompt)
+                    
+                return clean_prompts[:4]
             else:
                 return ["Error parsing response", str(text), "", ""]
                 
