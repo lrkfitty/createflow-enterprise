@@ -904,13 +904,16 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
                             if active_wardrobe_labels:
                                 st.caption("Mapped Reference Attachments: " + " | ".join(active_wardrobe_labels))
                             
-                            # Cascading Video Continuity Toggle
-                            use_cascade_vid = st.checkbox(
-                                "🔗 Cascading Video Continuity (Reference Shot N-1 Video)",
-                                value=True,
-                                key=f"v_casc_{key_base}",
-                                help="Automatically passes the previously generated shot video into Seedance 2.0 for 100% lighting, camera motion, and character continuity across clips!"
-                            )
+                            # Cascading Video Continuity Toggle (Only when a prior shot video exists)
+                            has_prior_video = (shot_idx > 0) or (scene_idx > 0)
+                            use_cascade_vid = False
+                            if has_prior_video:
+                                use_cascade_vid = st.checkbox(
+                                    "🔗 Cascading Video Continuity (Reference Shot N-1 Video)",
+                                    value=True,
+                                    key=f"v_casc_{key_base}",
+                                    help="Automatically passes the previously generated shot video into Seedance 2.0 for 100% lighting, camera motion, and character continuity across clips!"
+                                )
                             
                             c_vref_col, c_aref_col = st.columns(2)
                             with c_vref_col:

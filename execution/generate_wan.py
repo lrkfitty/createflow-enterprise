@@ -41,27 +41,28 @@ def extract_last_frame_as_base64(video_path):
 
 def image_to_base64_data_uri(img_path_or_url):
     """
-    Converts a local file path or HTTP URL to a base64 data URI.
-    Optimizes/resizes images to keep request payload size lightweight and prevent Atlas timeouts.
+    Converts a local file path or HTTP URL to an optimized lightweight base64 data URI.
+    Resizes images to max 960px at JPEG quality 75 to keep total request payload lightweight (<2MB)
+    and prevent Cloudflare HTTP 502 payload size limit errors.
     """
     if not img_path_or_url:
         return None
         
-    # If HTTP URL, try fetching locally to convert to base64
+    # If HTTP URL, try fetching locally to convert to lightweight base64
     if img_path_or_url.startswith(("http://", "https://")):
         try:
-            resp = requests.get(img_path_or_url, timeout=10)
+            resp = requests.get(img_path_or_url, timeout=8)
             if resp.status_code == 200:
                 from PIL import Image
                 from io import BytesIO
                 img = Image.open(BytesIO(resp.content))
-                max_dim = 1280
+                max_dim = 960
                 if max(img.width, img.height) > max_dim:
                     img.thumbnail((max_dim, max_dim), Image.Resampling.LANCZOS)
-                if img.mode in ('RGBA', 'P'):
+                if img.mode != 'RGB':
                     img = img.convert('RGB')
                 buffer = BytesIO()
-                img.save(buffer, format="JPEG", quality=80)
+                img.save(buffer, format="JPEG", quality=75)
                 encoded = base64.b64encode(buffer.getvalue()).decode('utf-8')
                 return f"data:image/jpeg;base64,{encoded}"
         except Exception:
@@ -74,30 +75,22 @@ def image_to_base64_data_uri(img_path_or_url):
             from io import BytesIO
             
             img = Image.open(img_path_or_url)
-            max_dim = 1280
+            max_dim = 960
             if max(img.width, img.height) > max_dim:
                 img.thumbnail((max_dim, max_dim), Image.Resampling.LANCZOS)
                 
-            if img.mode in ('RGBA', 'P'):
+            if img.mode != 'RGB':
                 img = img.convert('RGB')
                 
             buffer = BytesIO()
-            img.save(buffer, format="JPEG", quality=80)
-            data = buffer.getvalue()
-            
-            encoded = base64.b64encode(data).decode('utf-8')
+            img.save(buffer, format="JPEG", quality=75)
+            encoded = base64.b64encode(buffer.getvalue()).decode('utf-8')
             return f"data:image/jpeg;base64,{encoded}"
         except Exception as e:
-            with open(img_path_or_url, "rb") as f:
-                data = f.read()
-                encoded = base64.b64encode(data).decode('utf-8')
-                ext = os.path.splitext(img_path_or_url)[1].lower()
-                mime = "image/jpeg"
-                if ext in (".png", ".webp"):
-                    mime = f"image/{ext[1:]}"
-                return f"data:{mime};base64,{encoded}"
+            print(f"Base64 compression fallback warning for {img_path_or_url}: {e}")
+            return None
             
-    raise FileNotFoundError(f"Image source not found: {img_path_or_url}")
+    return None
 
 def generate_wan_image(prompt, image_path, size="2K", output_folder="output", extra_images=None):
     """
@@ -299,24 +292,30 @@ def generate_wan_video(prompt, image_path, resolution="1080P", duration=5, ref_v
         }
         
         if "seedance" in model.lower() and "reference-to-video" in model.lower():
-             # Seedance 2.0 Reference-to-Video (Up to 9 Images + Videos + Audios)
+             # Seedance 2.0 Reference-to-Video (Up to 6 Images + Videos + Audios)
              images_payload = []
-             if img_uri:
-                 images_payload.append(img_uri)
-                 
+             seen_paths = set()
+             
+             if image_path:
+                 seen_paths.add(image_path)
+                 if img_uri:
+                     images_payload.append(img_uri)
+                     
              if extra_images:
-                  for idx, img_p in enumerate(extra_images):
-                       if not img_p: continue
-                       if len(images_payload) >= 9:
-                            logs.append("⚠️ Reached max of 9 reference images for Seedance 2.0.")
-                            break
-                       try:
-                            extra_uri = image_to_base64_data_uri(img_p)
-                            if extra_uri:
-                                 images_payload.append(extra_uri)
-                                 logs.append(f"Encoded reference image {len(images_payload)}")
-                       except Exception as img_err:
-                            logs.append(f"⚠️ Image encoding warning {idx+1}: {img_err}")
+                 for idx, img_p in enumerate(extra_images):
+                     if not img_p or img_p in seen_paths:
+                         continue
+                     seen_paths.add(img_p)
+                     if len(images_payload) >= 6:
+                         logs.append("⚠️ Capped at 6 reference images for Seedance 2.0 to maintain lightweight payload.")
+                         break
+                     try:
+                         extra_uri = image_to_base64_data_uri(img_p)
+                         if extra_uri:
+                             images_payload.append(extra_uri)
+                             logs.append(f"Encoded reference image {len(images_payload)}")
+                     except Exception as img_err:
+                         logs.append(f"⚠️ Image encoding warning {idx+1}: {img_err}")
              
              # Reference Videos & Cascading Video Frame Extraction
              videos_payload = []
