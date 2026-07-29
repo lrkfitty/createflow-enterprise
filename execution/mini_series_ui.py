@@ -905,6 +905,12 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
                             if active_wardrobe_labels:
                                 st.caption("Mapped Reference Attachments: " + " | ".join(active_wardrobe_labels))
                             
+                            active_env_stills = st.session_state.get("selected_env_stills", [])
+                            if active_env_stills:
+                                st.info(f"🏛️ **Location Master Lock**: Attaching **{len(active_env_stills)} Environment Master Stills** of '{series_env}' to Seedance 2.0 for 360° architectural set consistency!")
+                            elif "primary_env_img" in st.session_state and os.path.exists(st.session_state["primary_env_img"]):
+                                st.info(f"🏛️ **Location Master Lock**: Attaching Primary Environment Master Still of '{series_env}' to Seedance 2.0!")
+                            
                             # Cascading Video Continuity Toggle (Only when a prior shot video exists)
                             has_prior_video = (shot_idx > 0) or (scene_idx > 0)
                             use_cascade_vid = False

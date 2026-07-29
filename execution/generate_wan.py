@@ -306,14 +306,14 @@ def generate_wan_video(prompt, image_path, resolution="1080P", duration=5, ref_v
                      if not img_p or img_p in seen_paths:
                          continue
                      seen_paths.add(img_p)
-                     if len(images_payload) >= 6:
-                         logs.append("⚠️ Capped at 6 reference images for Seedance 2.0 to maintain lightweight payload.")
+                     if len(images_payload) >= 9:
+                         logs.append("⚠️ Reached max of 9 reference images for Seedance 2.0.")
                          break
                      try:
                          extra_uri = image_to_base64_data_uri(img_p)
                          if extra_uri:
                              images_payload.append(extra_uri)
-                             logs.append(f"Encoded reference image {len(images_payload)}")
+                             logs.append(f"Encoded reference image #{len(images_payload)}: {os.path.basename(img_p)}")
                      except Exception as img_err:
                          logs.append(f"⚠️ Image encoding warning {idx+1}: {img_err}")
              
