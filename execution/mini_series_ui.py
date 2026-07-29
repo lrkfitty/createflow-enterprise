@@ -10,6 +10,7 @@ from execution.load_assets import get_assets_by_category
 from execution.kling_client import KlingClient
 from execution.sora_client import SoraClient
 from execution.s3_uploader import upload_file_obj
+from execution.series_cache_manager import cache_asset_locally, save_series_project_session, load_series_project_session
 
 
 def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_base, auth_mgr, get_user_out_dir_func, campaign_mgr=None):
@@ -318,7 +319,28 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
                         )
                         cast_acting_profile_map[member_basename] = act_profile
 
-    # --- STEP 2: HIGGSFIELD ENVIRONMENT MASTER GENERATION ---
+                # Build & Permanently Cache Cast Lookup Map
+                user_out_dir = get_user_out_dir_func("Series")
+                cast_lookup_map = {}
+                for member in cast_selection:
+                    c_data = all_cast_opts.get(member)
+                    c_path = c_data.get('default_img') if isinstance(c_data, dict) else c_data
+                    member_basename = member.split('/')[-1].replace('.png','').replace('.jpg','').strip()
+                    
+                    cached_c_path = cache_asset_locally(c_path, user_out_dir, prefix=f"cast_{member_basename}") or c_path
+                    cast_lookup_map[member] = cached_c_path
+                    cast_lookup_map[member_basename] = cached_c_path
+                    cast_lookup_map[member_basename.replace('_', ' ').split(' ')[0]] = cached_c_path
+                    
+                    sel_fit = cast_wardrobe_map.get(member)
+                    if sel_fit and sel_fit != "Default Outfit":
+                        o_path = outfits_data.get(sel_fit)
+                        if isinstance(o_path, dict): o_path = o_path.get('default_img')
+                        if o_path:
+                            cache_asset_locally(o_path, user_out_dir, prefix=f"wardrobe_{sel_fit}")
+
+                st.session_state["cast_lookup_map"] = cast_lookup_map
+                st.session_state["cast_wardrobe_map_snapshot"] = cast_wardrobe_map
     st.markdown("---")
     with st.expander("🌄 Step 2: Higgsfield AI Environment Master Studio", expanded=True):
         st.markdown("Generate 8K Environment Master Stills with **Cascading Knowledge Continuity** & multi-model comparison before writing the script.")
@@ -953,21 +975,26 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
                                         elif "primary_env_img" in st.session_state and os.path.exists(st.session_state["primary_env_img"]):
                                             ref_images.append(st.session_state["primary_env_img"])
                                             
-                                        # 2. Selected Cast Character References
+                                        # 2. Selected Cast Character References (Permanent Cache - Never Times Out)
+                                        user_out_dir = get_user_out_dir_func("Series")
                                         for c_ref_name in sel_anim_cast:
                                             c_path = st.session_state.cast_lookup_map.get(c_ref_name)
-                                            if c_path and os.path.exists(c_path):
-                                                ref_images.append(c_path)
+                                            if c_path:
+                                                cached_c_path = cache_asset_locally(c_path, user_out_dir, prefix=f"cast_{c_ref_name}")
+                                                if cached_c_path and cached_c_path not in ref_images:
+                                                    ref_images.append(cached_c_path)
                                                 
-                                        # 3. Wardrobe References
+                                        # 3. Wardrobe References (Permanent Cache - Never Times Out)
                                         w_snapshot = st.session_state.get('cast_wardrobe_map_snapshot', {})
                                         for c_ref_name in sel_anim_cast:
-                                            o_key = w_snapshot.get(c_ref_name)
+                                            o_key = shot_wardrobe_map.get(c_ref_name) or w_snapshot.get(c_ref_name) or w_snapshot.get(c_ref_name.replace('_', ' ').split(' ')[0])
                                             if o_key and o_key != "Default Outfit" and o_key != "Default":
                                                 o_path = outfits_data.get(o_key)
                                                 if isinstance(o_path, dict): o_path = o_path.get('default_img')
-                                                if o_path and os.path.exists(o_path):
-                                                    ref_images.append(o_path)
+                                                if o_path:
+                                                    cached_o_path = cache_asset_locally(o_path, user_out_dir, prefix=f"wardrobe_{o_key}")
+                                                    if cached_o_path and cached_o_path not in ref_images:
+                                                        ref_images.append(cached_o_path)
 
                                         # 4. Cascading Prior Shot Image Reference
                                         prior_img_key = f"img_s{scene_idx}_sh{shot_idx - 1}" if shot_idx > 0 else (f"img_s{scene_idx - 1}_sh0" if scene_idx > 0 else None)
