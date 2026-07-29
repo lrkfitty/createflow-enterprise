@@ -401,10 +401,30 @@ def generate_wan_video(prompt, image_path, resolution="1080P", duration=5, ref_v
              payload["prompt_extend"] = True
         
         logs.append(f"Submitting job to Atlas API for {model}...")
-        response = requests.post(generate_url, headers=headers, json=payload)
         
-        if response.status_code != 200:
-            return {"status": "failed", "error": f"API Request Failed: HTTP {response.status_code} - {response.text}", "logs": logs}
+        response = None
+        for attempt in range(1, 4):
+            try:
+                logs.append(f"Sending request to Atlas Cloud (Attempt {attempt}/3)...")
+                response = requests.post(generate_url, headers=headers, json=payload, timeout=60)
+                if response.status_code == 200:
+                    break
+                elif response.status_code in [500, 502, 503, 504, 429]:
+                    logs.append(f"⚠️ Atlas Cloud returned transient HTTP {response.status_code}. Retrying in 3 seconds...")
+                    time.sleep(3)
+                else:
+                    break
+            except Exception as req_err:
+                logs.append(f"⚠️ Connection attempt {attempt} failed: {req_err}")
+                time.sleep(3)
+                
+        if not response or response.status_code != 200:
+            raw_err = response.text if response else "No response from server"
+            if "<html" in raw_err.lower() or (response and response.status_code in [502, 503, 504]):
+                clean_err = "Atlas Cloud API temporary Gateway Timeout (HTTP 502). The backend server experienced a brief spike. Please click 'Animate Shot with Seedance' again to retry."
+            else:
+                clean_err = f"API Request Failed: HTTP {response.status_code if response else 'ERR'} - {raw_err[:250]}"
+            return {"status": "failed", "error": clean_err, "logs": logs}
             
         result_json = response.json()
         if "data" not in result_json or "id" not in result_json["data"]:

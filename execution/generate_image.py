@@ -426,10 +426,29 @@ def generate_image_nano(prompt_data, output_folder, reference_image_path, outfit
             }
         
         logs.append(f"Submitting job to Atlas Cloud API for model {model_name}...")
-        response = requests.post(url, headers=headers, json=payload)
         
-        if response.status_code != 200:
-            raise Exception(f"Atlas API request failed with status code {response.status_code}: {response.text}")
+        response = None
+        for attempt in range(1, 4):
+            try:
+                response = requests.post(url, headers=headers, json=payload, timeout=60)
+                if response.status_code == 200:
+                    break
+                elif response.status_code in [500, 502, 503, 504, 429]:
+                    logs.append(f"⚠️ Atlas Cloud transient HTTP {response.status_code}. Retrying in 3s...")
+                    time.sleep(3)
+                else:
+                    break
+            except Exception as req_err:
+                logs.append(f"⚠️ Network error on attempt {attempt}: {req_err}")
+                time.sleep(3)
+                
+        if not response or response.status_code != 200:
+            raw_err = response.text if response else "No response from server"
+            if "<html" in raw_err.lower() or (response and response.status_code in [502, 503, 504]):
+                clean_err = "Atlas Cloud API temporary Gateway Timeout (HTTP 502). The server experienced a brief spike. Please click generate again to retry."
+            else:
+                clean_err = f"Atlas API request failed with status code {response.status_code if response else 'ERR'}: {raw_err[:250]}"
+            raise Exception(clean_err)
             
         result_json = response.json()
         prediction_id = result_json["data"]["id"]
