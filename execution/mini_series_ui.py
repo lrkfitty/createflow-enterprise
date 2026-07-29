@@ -321,7 +321,7 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
     # --- STEP 2: HIGGSFIELD ENVIRONMENT MASTER GENERATION ---
     st.markdown("---")
     with st.expander("🌄 Step 2: Higgsfield AI Environment Master Studio", expanded=True):
-        st.markdown("Generate 8K Environment Master Stills before writing the script, incorporating your Series Bible & Cinematography Settings.")
+        st.markdown("Generate 8K Environment Master Stills with **Cascading Knowledge Continuity** & multi-model comparison before writing the script.")
         
         all_locs = list(vibes_data.keys()) + list(assets.get('locations', {}).keys())
         
@@ -331,7 +331,6 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
             series_env = st.selectbox("Choose Preset Location (Optional)", ["None"] + all_locs, key="series_env_sel")
             custom_env_title = st.text_input("Custom Location / Set Name", placeholder="e.g. Luxury Beverly Hills Penthouse", key="custom_env_title")
             
-            # Active Location Name resolution
             target_env_name = custom_env_title if custom_env_title else (series_env if series_env != "None" else "Main Production Environment")
 
             if series_env and series_env != "None":
@@ -339,39 +338,6 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
                 if path:
                     if isinstance(path, dict): path = path.get('default_img')
                     st.image(path, caption="Preset Location Reference", width=220)
-                
-            st.markdown("##### 🌄 Higgsfield 8K Environment Master Generator")
-            env_custom_notes = st.text_input(
-                "Environmental Textures & Details",
-                placeholder="Wet asphalt, rain reflections, volumetric fog 30%, neon sign flickering",
-                key="env_notes"
-            )
-            
-            if st.button("✨ Generate 8K Environment Master Still", type="primary", key="gen_env_btn", use_container_width=True):
-                with st.spinner(f"⚡ AI Generating 8K Higgsfield Environment Master for '{target_env_name}'..."):
-                    from execution.series_processor import generate_environment_master_prompt
-                    env_data = generate_environment_master_prompt(
-                        location_name=f"{target_env_name}. {env_custom_notes}" if env_custom_notes else target_env_name,
-                        genre=s_genre,
-                        tone=f"{s_tone}. Lighting: {s_lighting}. Camera: {s_camera}, {s_lens}. LUT: {s_film_stock}, Grade: {s_filter_look}, Style: {s_movie_style}"
-                    )
-                    env_p = env_data.get("environment_prompt")
-                    p_data = {
-                        "positive_prompt": env_p,
-                        "model_type": "nano",
-                        "aspect_ratio": st.session_state.get('series_ar', '16:9'),
-                        "image_size": "2K"
-                    }
-                    res_env = generate_image_from_prompt(p_data, get_user_out_dir_func("Series/Environments"))
-                    if res_env.get("status") == "success":
-                        st.session_state["primary_env_img"] = res_env["image_path"]
-                        st.toast("✅ Generated 8K Higgsfield Environment Master Still!")
-                        st.rerun()
-                    else:
-                        st.error(f"Environment Generation Failed: {res_env.get('logs')}")
-
-            if "primary_env_img" in st.session_state and os.path.exists(st.session_state["primary_env_img"]):
-                st.image(st.session_state["primary_env_img"], caption=f"✨ Generated 8K Higgsfield Environment Master Still ({target_env_name})", use_container_width=True)
 
         with e_col2:
             st.write("**Secondary Location** (B-Roll / Cutaway Set)")
@@ -382,6 +348,107 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
                 if path_sec:
                     if isinstance(path_sec, dict): path_sec = path_sec.get('default_img')
                     st.image(path_sec, caption="Secondary B-Roll Environment", width=220)
+
+        st.markdown("---")
+        st.markdown("##### ⚙️ Environment Still Generator & Model Options")
+        
+        m_col1, m_col2, m_col3 = st.columns([2, 1, 2])
+        with m_col1:
+            env_model_choice = st.selectbox(
+                "Image Model Engine",
+                [
+                    "Google Nano Banana 2 (Recommended / Multi-Ref)",
+                    "SeaDream 5.0 (ByteDance / Ultra Photorealistic)",
+                    "Flux 1.1 Pro (Black Forest Labs)",
+                    "Ideogram 2.0 (High Contrast)",
+                    "DALL-E 3 / GPT Image 2.0"
+                ],
+                key="env_model_choice"
+            )
+        with m_col2:
+            env_still_count = st.slider("Stills to Generate", 1, 4, 3, key="env_still_count", help="Cascading stills: each generated still references the previous for 100% architectural continuity!")
+        with m_col3:
+            env_custom_notes = st.text_input(
+                "Environmental Textures & Details",
+                placeholder="Wet asphalt, rain reflections, volumetric fog 30%, neon sign flickering",
+                key="env_notes"
+            )
+
+        if st.button("✨ Generate Cascading 8K Environment Stills", type="primary", key="gen_env_btn", use_container_width=True):
+            with st.spinner(f"⚡ AI Generating {env_still_count} Cascading Environment Stills for '{target_env_name}'..."):
+                from execution.series_processor import generate_environment_master_prompt
+                
+                angles = [
+                    "Master Establishing Wide View (107° FOV)",
+                    "Reverse Angle Depth View (84° FOV)",
+                    "Medium Focal Action Space (63° FOV)",
+                    "Macro Architectural Texture Detail (29° FOV)"
+                ]
+                
+                generated_stills = []
+                logs_all = []
+                
+                for idx in range(env_still_count):
+                    angle_label = angles[idx if idx < len(angles) else 0]
+                    st.toast(f"⚡ Rendering Still {idx+1}/{env_still_count}: {angle_label}")
+                    
+                    env_data = generate_environment_master_prompt(
+                        location_name=f"{target_env_name}. {env_custom_notes}" if env_custom_notes else target_env_name,
+                        genre=s_genre,
+                        tone=f"{s_tone}. Lighting: {s_lighting}. Camera: {s_camera}, {s_lens}. LUT: {s_film_stock}, Grade: {s_filter_look}, Style: {s_movie_style}",
+                        shot_angle_type=angle_label
+                    )
+                    env_p = env_data.get("environment_prompt")
+                    
+                    # Cascading Knowledge Continuity: Pass prior generated still as reference
+                    payload_assets = []
+                    if generated_stills and os.path.exists(generated_stills[-1]):
+                        payload_assets.append({
+                            "path": generated_stills[-1],
+                            "label": f"Prior Environment Reference Still #{len(generated_stills)} (MATCH ARCHITECTURE, COLORS & LIGHTING)"
+                        })
+                    
+                    p_data = {
+                        "positive_prompt": env_p,
+                        "model_type": env_model_choice,
+                        "assets": payload_assets,
+                        "aspect_ratio": st.session_state.get('series_ar', '16:9'),
+                        "image_size": "2K"
+                    }
+                    
+                    res_env = generate_image_from_prompt(p_data, get_user_out_dir_func("Series/Environments"))
+                    if res_env.get("status") == "success":
+                        generated_stills.append(res_env["image_path"])
+                    else:
+                        st.error(f"Still #{idx+1} Generation Failed: {res_env.get('logs')}")
+                        break
+                
+                if generated_stills:
+                    st.session_state["env_stills_list"] = generated_stills
+                    st.session_state["primary_env_img"] = generated_stills[0]
+                    st.toast(f"✅ Generated {len(generated_stills)} Cascading 8K Environment Stills!")
+                    st.rerun()
+
+        # Display Cascading Gallery & Active Anchor Selector
+        if "env_stills_list" in st.session_state and st.session_state["env_stills_list"]:
+            st.markdown("##### 🖼️ Cascading Environment Gallery & Active Master Anchor")
+            st.caption("Each still builds upon the previous for seamless set continuity. Choose which still serves as the Primary Location Anchor for your episode:")
+            
+            stills = [s for s in st.session_state["env_stills_list"] if os.path.exists(s)]
+            if stills:
+                cols = st.columns(len(stills))
+                for i, s_path in enumerate(stills):
+                    with cols[i]:
+                        st.image(s_path, caption=f"Still #{i+1} (Angle {i+1})", use_container_width=True)
+                        is_active = (st.session_state.get("primary_env_img") == s_path)
+                        if st.button(f"{'🎯 Active Master' if is_active else 'Select Still #' + str(i+1)}", key=f"sel_env_still_{i}", type="primary" if is_active else "secondary", use_container_width=True):
+                            st.session_state["primary_env_img"] = s_path
+                            st.toast(f"🎯 Set Still #{i+1} as Active Master Environment Anchor!")
+                            st.rerun()
+                        with open(s_path, "rb") as f_img:
+                            st.download_button(f"⬇️ Download #{i+1}", f_img, file_name=os.path.basename(s_path), mime="image/png", key=f"dl_env_still_{i}")
+        elif "primary_env_img" in st.session_state and os.path.exists(st.session_state["primary_env_img"]):
+            st.image(st.session_state["primary_env_img"], caption=f"✨ Generated 8K Higgsfield Environment Master Still ({target_env_name})", use_container_width=True)
 
     # --- STEP 3: WRITER'S ROOM ---
     st.markdown("---")

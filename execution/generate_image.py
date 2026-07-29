@@ -85,7 +85,21 @@ def generate_image_nano(prompt_data, output_folder, reference_image_path, outfit
             positive_prompt = multi_ref_instruction + positive_prompt
 
     try:
-        model_name = 'google/nano-banana-2/reference-to-image-developer'
+        requested_model = prompt_data.get("model_type") or prompt_data.get("model") or ""
+        if "seadream" in str(requested_model).lower():
+            model_name = "bytedance/seadream-5.0"
+        elif "flux" in str(requested_model).lower():
+            model_name = "black-forest-labs/flux-1.1-pro"
+        elif "ideogram" in str(requested_model).lower():
+            model_name = "ideogram/ideogram-v2"
+        elif "dalle" in str(requested_model).lower() or "gpt" in str(requested_model).lower():
+            model_name = "openai/dall-e-3"
+        elif "recraft" in str(requested_model).lower():
+            model_name = "recraft/recraft-v3"
+        else:
+            model_name = "google/nano-banana-2/reference-to-image-developer"
+            
+        logs.append(f"Selected Atlas Cloud Model Engine: {model_name}")
         url = "https://api.atlascloud.ai/api/v1/model/generateImage"
         headers = { 
             "Content-Type": "application/json",
