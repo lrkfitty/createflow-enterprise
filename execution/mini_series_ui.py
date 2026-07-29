@@ -426,30 +426,58 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
                 
                 if generated_stills:
                     st.session_state["env_stills_list"] = generated_stills
+                    st.session_state["selected_env_stills"] = list(generated_stills)
                     st.session_state["primary_env_img"] = generated_stills[0]
-                    st.toast(f"✅ Generated {len(generated_stills)} Cascading 8K Environment Stills!")
+                    st.toast(f"✅ Generated {len(generated_stills)} Real 35mm Environment Stills (Full Scene Coverage Attached)!")
                     st.rerun()
 
-        # Display Cascading Gallery & Active Anchor Selector
+        # Display Cascading Gallery & Full Coverage References Selector
         if "env_stills_list" in st.session_state and st.session_state["env_stills_list"]:
-            st.markdown("##### 🖼️ Cascading Environment Gallery & Active Master Anchor")
-            st.caption("Each still builds upon the previous for seamless set continuity. Choose which still serves as the Primary Location Anchor for your episode:")
+            st.markdown("##### 🖼️ Cascading Environment Gallery & Full Coverage References")
+            st.caption("All generated stills build full 360° coverage of your scene. Select which stills to include as location references for Seedance 2.0 & Director AI:")
             
             stills = [s for s in st.session_state["env_stills_list"] if os.path.exists(s)]
             if stills:
+                if "selected_env_stills" not in st.session_state:
+                    st.session_state["selected_env_stills"] = list(stills)
+                    
+                sel_cols1, sel_cols2 = st.columns([1.5, 3])
+                with sel_cols1:
+                    if st.button("✅ Select All for Full Coverage", key="select_all_env_stills", use_container_width=True):
+                        st.session_state["selected_env_stills"] = list(stills)
+                        st.toast("✅ Selected All Environment Stills for Full Coverage!")
+                        st.rerun()
+                with sel_cols2:
+                    st.caption(f"**{len(st.session_state.get('selected_env_stills', []))} / {len(stills)} Environment Stills Attached** as Location References to Seedance 2.0 & Director AI.")
+
                 cols = st.columns(len(stills))
                 for i, s_path in enumerate(stills):
                     with cols[i]:
                         st.image(s_path, caption=f"Still #{i+1} (Angle {i+1})", use_container_width=True)
-                        is_active = (st.session_state.get("primary_env_img") == s_path)
-                        if st.button(f"{'🎯 Active Master' if is_active else 'Select Still #' + str(i+1)}", key=f"sel_env_still_{i}", type="primary" if is_active else "secondary", use_container_width=True):
-                            st.session_state["primary_env_img"] = s_path
-                            st.toast(f"🎯 Set Still #{i+1} as Active Master Environment Anchor!")
+                        
+                        is_selected = s_path in st.session_state.get("selected_env_stills", [])
+                        chk = st.checkbox(f"Include Still #{i+1} in Coverage", value=is_selected, key=f"chk_env_still_{i}")
+                        if chk != is_selected:
+                            if "selected_env_stills" not in st.session_state:
+                                st.session_state["selected_env_stills"] = []
+                            if chk and s_path not in st.session_state["selected_env_stills"]:
+                                st.session_state["selected_env_stills"].append(s_path)
+                            elif not chk and s_path in st.session_state["selected_env_stills"]:
+                                st.session_state["selected_env_stills"].remove(s_path)
                             st.rerun()
+                            
+                        is_active = (st.session_state.get("primary_env_img") == s_path)
+                        if st.button(f"{'🎯 Primary Master' if is_active else 'Set Primary #' + str(i+1)}", key=f"sel_env_still_{i}", type="primary" if is_active else "secondary", use_container_width=True):
+                            st.session_state["primary_env_img"] = s_path
+                            if s_path not in st.session_state.get("selected_env_stills", []):
+                                st.session_state.setdefault("selected_env_stills", []).append(s_path)
+                            st.toast(f"🎯 Set Still #{i+1} as Primary Master Anchor!")
+                            st.rerun()
+                            
                         with open(s_path, "rb") as f_img:
                             st.download_button(f"⬇️ Download #{i+1}", f_img, file_name=os.path.basename(s_path), mime="image/png", key=f"dl_env_still_{i}")
         elif "primary_env_img" in st.session_state and os.path.exists(st.session_state["primary_env_img"]):
-            st.image(st.session_state["primary_env_img"], caption=f"✨ Generated 8K Higgsfield Environment Master Still ({target_env_name})", use_container_width=True)
+            st.image(st.session_state["primary_env_img"], caption=f"✨ Generated 35mm Higgsfield Environment Master Still ({target_env_name})", use_container_width=True)
 
     # --- STEP 3: WRITER'S ROOM ---
     st.markdown("---")
@@ -759,10 +787,18 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
                                                     if o_path: 
                                                         final_assets_payload.append({"path": o_path, "label": f"Outfit for {raw_name}"})
 
-                                        # Location (Prefer Generated Higgsfield AI Environment Master Still)
+                                        # Location (Pass ALL selected Higgsfield AI Environment Master Stills for full 360° coverage)
                                         target_env = sec_env if is_broll and sec_env != "None" else series_env
-                                        if "primary_env_img" in st.session_state and os.path.exists(st.session_state["primary_env_img"]) and not is_broll:
-                                            final_assets_payload.append({"path": st.session_state["primary_env_img"], "label": f"Location Master (HIGGSFIELD SEEDANCE V2 ENVIRONMENT): {target_env}"})
+                                        selected_env_stills = st.session_state.get("selected_env_stills", [])
+                                        if selected_env_stills and not is_broll:
+                                            for env_idx, env_s_path in enumerate(selected_env_stills):
+                                                if os.path.exists(env_s_path):
+                                                    final_assets_payload.append({
+                                                        "path": env_s_path,
+                                                        "label": f"Location Master Angle #{env_idx+1} (FULL COVERAGE): {target_env}"
+                                                    })
+                                        elif "primary_env_img" in st.session_state and os.path.exists(st.session_state["primary_env_img"]) and not is_broll:
+                                            final_assets_payload.append({"path": st.session_state["primary_env_img"], "label": f"Location Master: {target_env}"})
                                         else:
                                             env_path = vibes_data.get(target_env) or assets.get('locations', {}).get(target_env)
                                             if isinstance(env_path, dict): env_path = env_path.get('default_img')
@@ -886,8 +922,13 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
                                         # Assemble Multi-Reference Array (Up to 9 images)
                                         ref_images = []
                                         
-                                        # 1. Environment Master Still
-                                        if "primary_env_img" in st.session_state and os.path.exists(st.session_state["primary_env_img"]):
+                                        # 1. Environment Master Stills (Pass ALL selected stills for full 360° scene coverage)
+                                        selected_env_stills = st.session_state.get("selected_env_stills", [])
+                                        if selected_env_stills:
+                                            for env_s_path in selected_env_stills:
+                                                if os.path.exists(env_s_path) and env_s_path not in ref_images:
+                                                    ref_images.append(env_s_path)
+                                        elif "primary_env_img" in st.session_state and os.path.exists(st.session_state["primary_env_img"]):
                                             ref_images.append(st.session_state["primary_env_img"])
                                             
                                         # 2. Selected Cast Character References
