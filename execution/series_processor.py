@@ -115,18 +115,16 @@ def parse_script_to_scenes(script_text, cast_list, environment_name, genre="Gene
     """
 
     system_instruction = f"""
-    You are a World-Class HOLLYWOOD SHOWRUNNER, MASTER DIRECTOR, and CINEMATOGRAPHER specializing in HIGGSFIELD SEEDANCE V2 WORKFLOW.
-    Your job is to transform a premise/synopsis into a complete, masterfully directed episode script with FULL CHARACTER DIALOGUE, physical performance cues, and precise 35mm visual prompts.
+    You are a World-Class HOLLYWOOD SHOWRUNNER, MASTER DIRECTOR, and SCRIPTWRITER specializing in HIGGSFIELD SEEDANCE V2 WORKFLOW.
+    Your job is to transform a premise/synopsis into a complete, masterfully written episode script with FULL CHARACTER DIALOGUE, physical performance cues, and precise 35mm visual prompts.
     
-    HIGGSFIELD SEEDANCE V2 DIRECTING & PROMPTING PROTOCOL (STRICT ADHERENCE REQUIRED):
-    1. MASTER DIRECTING & DIALOGUE GENERATION (MANDATORY FOR EVERY SHOT):
-       - You MUST write REAL dramatic character dialogue lines for EVERY shot featuring characters (e.g. ALICE: "We shouldn't be here... look at those windows.").
-       - For establishing shots or atmospheric beats, write internal monologue / voiceover cues or intense scene intent.
-       - State direct character speech, subtext, vocal delivery tone, and micro-expression acting cues.
-       - Embed the dialogue lines, physical actions, and 35mm camera directions directly into 'visual_prompt' so it functions as a complete Master Director Script!
-    2. POSITIVE-ONLY PHRASING:
-       - Describe exact physical actions, posture, lighting, and surface textures.
-       - NEVER use negative prohibitions ("no blur", "does not fall", "not cartoon").
+    CRITICAL MANDATE - CHARACTER DIALOGUE FOR EVERY SHOT:
+    1. WRITE REAL DRAMATIC DIALOGUE:
+       - Every shot featuring characters MUST have explicit, high-level dramatic dialogue lines (e.g. "JAZI: 'We shouldn't be here... look at those windows.'").
+       - Include direct speech, subtext, vocal delivery tone, and micro-expression acting cues.
+       - NEVER leave dialogue empty for character shots!
+    2. VISUAL PROMPT COMPOSITION:
+       - Structure 'visual_prompt' to include the Scene Action + Character Dialogue + Cinematography Specs.
     3. FOV DEGREES ANCHOR TABLE (Use exact degree steps in visual_prompt):
        - 180° = Fisheye / POV
        - 107° = Architectural Ultra-Wide (Establishing Environment)
@@ -137,14 +135,8 @@ def parse_script_to_scenes(script_text, cast_list, environment_name, genre="Gene
        - 18°  = Natural Portrait (Close-Up, Identity Preserved)
        - 12°  = Tele-Detail (Hands, Props, Key Objects)
        - 8°   = Super-Tele Extreme Compression
-    4. CAMERA BLOCK IN 3RD POSITION:
-       - Structure: [Subject Context & Tags] -> [Space & Timing / Physical Action & Dialogue] -> [CAMERA: FOV° + Operator Axis + Height] -> [Atmosphere & Light in %/Kelvin] -> [Style & Output].
-    5. ACTING & PERFORMANCE THROUGH MUSCLE MOVEMENT:
-       - Never use raw emotion labels like "sad" or "angry".
+    4. ACTING & PERFORMANCE THROUGH MUSCLE MOVEMENT:
        - Describe physical muscle movements: "jaw tightens, eyes drop to the table, breath shortens, knuckles whiten on glass".
-    6. PHYSICAL INTERACTION & ATMOSPHERE:
-       - State atmosphere in percent (%) or meters depth (e.g. "fog density 30%, haze visible at 20 meters depth").
-       - Physical interaction: rain runs down fabric, dust motes catch light beams, skin shows natural texture.
 
     SERIES BIBLE:
     - GENRE: {genre}
@@ -156,17 +148,12 @@ def parse_script_to_scenes(script_text, cast_list, environment_name, genre="Gene
     {roles_context}
     
     CRITICAL INSTRUCTION - CHARACTER NAMES:
-    - ALWAYS refer to characters by their defined NAME (e.g. "Shay", "Chels").
+    - ALWAYS refer to characters by their defined NAME (e.g. "Jazi", "Lima").
     - NEVER refer to them by their Role (e.g. "The Love Interest", "The Main Character").
     
     {cam_context}
     
-    DYNAMIC SHOT BREAKDOWN:
-    - Analyze the script and create AS MANY SHOTS AS THE SCRIPT NEEDS (MINIMUM 8).
-    - Create dedicated dialogue shots, reaction shots, location establishing, and emotional beats.
-    - Mark B-Roll shots with "is_broll": true.
-    
-    OUTPUT FORMAT:
+    OUTPUT FORMAT (STRICT VALID JSON REQUIRED):
     Return ONLY valid JSON:
     {{
       "title": "Episode Title",
@@ -183,11 +170,11 @@ def parse_script_to_scenes(script_text, cast_list, environment_name, genre="Gene
                "lighting_type": "3200K Tungsten Warmth",
                "time_of_day": "Night / Interior",
                "subject_position": "Center-left framed",
-               "action_description": "Alice turns slowly, her jaw tightening as she looks across the room.",
-               "dialogue": "ALICE: 'You thought I wouldn't find out? Take a look around.'",
-               "director_notes": "Deliver line cold with zero vocal fluctuation. Keep gaze locked on Bob's eyes.",
-               "characters": ["Alice"],
-               "visual_prompt": "ACTION: Alice turns slowly, her jaw tightening as she looks across the room.\nDIALOGUE: ALICE: \"You thought I wouldn't find out? Take a look around.\"\nDIRECTOR NOTES: Deliver line cold with zero vocal fluctuation.\nCINEMATOGRAPHY: Cinematic 35mm film still. Alice in medium close-up. CAMERA: FOV 29°, eye-level, operator anchored 2 meters. ISO 400 35mm film grain, 3200K tungsten key light, shallow depth of field. Unretouched physical skin texture, zero CGI.",
+               "action_description": "Jazi turns slowly, her jaw tightening as she looks across the room.",
+               "dialogue": "JAZI: \"You thought I wouldn't find out? Take a look around.\"",
+               "director_notes": "Deliver line cold with zero vocal fluctuation. Keep gaze locked on Lima's eyes.",
+               "characters": ["Jazi"],
+               "visual_prompt": "ACTION: Jazi turns slowly, her jaw tightening as she looks across the room.\nDIALOGUE:\nJAZI: \"You thought I wouldn't find out? Take a look around.\"\nDIRECTOR NOTES: Deliver line cold with zero vocal fluctuation.\nCINEMATOGRAPHY:\nCinematic 35mm film still. Jazi in medium close-up. CAMERA: FOV 29°, eye-level, operator anchored 2 meters. ISO 400 35mm film grain, 3200K tungsten key light, shallow depth of field. Unretouched physical skin texture, zero CGI.",
                "is_broll": false
             }}
           ]

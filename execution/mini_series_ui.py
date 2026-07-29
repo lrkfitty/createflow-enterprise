@@ -759,110 +759,103 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
                         shot_prompt = st.text_area("Master Director Script & Visual Prompt", value=master_script_block, height=220, key=f"p_{key_base}", label_visibility="collapsed", help="Edit character dialogue lines, physical action cues, or 35mm camera directions here.")
                         st.caption(f"Length: {len(shot_prompt) if shot_prompt else 0} chars (Target: 800+)")
                         
-                        c_gen, c_type = st.columns([1, 1.5])
-                        with c_gen:
-                            if st.button(f"Generate Shot {shot_idx+1}", key=f"btn_{key_base}"):
-                                user = st.session_state.current_user.get("username")
-                                if not auth_mgr.deduct_credits(user, 1):
-                                    st.error("❌ No Credits!")
-                                else:
-                                    with st.spinner("Rolling camera..."):
-                                        final_assets_payload = []
-                                        
-                                        # Resolve Cast Assets (Robust)
-                                        target_chars = shot.get('characters', [])
-                                        is_broll = shot.get('is_broll', False)
-                                        if not target_chars and cast_selection and not is_broll:
-                                             pass 
+                        if st.button(f"📸 Generate Shot {shot_idx+1} Still (Nano Banana 2)", key=f"btn_{key_base}", use_container_width=True):
+                            user = st.session_state.current_user.get("username")
+                            if not auth_mgr.deduct_credits(user, 1):
+                                st.error("❌ No Credits!")
+                            else:
+                                with st.spinner("Rolling camera..."):
+                                    final_assets_payload = []
+                                    
+                                    # Resolve Cast Assets (Robust)
+                                    target_chars = shot.get('characters', [])
+                                    is_broll = shot.get('is_broll', False)
+                                    if not target_chars and cast_selection and not is_broll:
+                                         pass 
 
-                                        for raw_name in target_chars:
-                                            c_path = st.session_state.cast_lookup_map.get(raw_name)
-                                            if not c_path:
-                                                 first_w = raw_name.replace('_', ' ').split(' ')[0]
-                                                 c_path = st.session_state.cast_lookup_map.get(first_w)
+                                    for raw_name in target_chars:
+                                        c_path = st.session_state.cast_lookup_map.get(raw_name)
+                                        if not c_path:
+                                             first_w = raw_name.replace('_', ' ').split(' ')[0]
+                                             c_path = st.session_state.cast_lookup_map.get(first_w)
+                                        
+                                        if c_path:
+                                            final_assets_payload.append({"path": c_path, "label": f"Cast: {raw_name}"})
+                                            # Outfit from shot level override, fallback to snapshot
+                                            o_key = shot_wardrobe_map.get(raw_name)
+                                            if not o_key:
+                                                first_w = raw_name.replace('_', ' ').split(' ')[0]
+                                                o_key = shot_wardrobe_map.get(first_w)
+                                            if not o_key:
+                                                w_snapshot = st.session_state.get('cast_wardrobe_map_snapshot', {})
+                                                o_key = w_snapshot.get(raw_name) or w_snapshot.get(raw_name.replace('_', ' ').split(' ')[0], "Default Outfit")
                                             
-                                            if c_path:
-                                                final_assets_payload.append({"path": c_path, "label": f"Cast: {raw_name}"})
-                                                # Outfit from shot level override, fallback to snapshot
-                                                o_key = shot_wardrobe_map.get(raw_name)
-                                                if not o_key:
-                                                    first_w = raw_name.replace('_', ' ').split(' ')[0]
-                                                    o_key = shot_wardrobe_map.get(first_w)
-                                                if not o_key:
-                                                    w_snapshot = st.session_state.get('cast_wardrobe_map_snapshot', {})
-                                                    o_key = w_snapshot.get(raw_name) or w_snapshot.get(raw_name.replace('_', ' ').split(' ')[0], "Default Outfit")
-                                                
-                                                if o_key and o_key != "Default Outfit" and o_key != "Default":
-                                                    o_path = outfits_data.get(o_key)
-                                                    if isinstance(o_path, dict): o_path = o_path.get('default_img')
-                                                    if o_path: 
-                                                        final_assets_payload.append({"path": o_path, "label": f"Outfit for {raw_name}"})
+                                            if o_key and o_key != "Default Outfit" and o_key != "Default":
+                                                o_path = outfits_data.get(o_key)
+                                                if isinstance(o_path, dict): o_path = o_path.get('default_img')
+                                                if o_path: 
+                                                    final_assets_payload.append({"path": o_path, "label": f"Outfit for {raw_name}"})
 
-                                        # Location (Pass ALL selected Higgsfield AI Environment Master Stills for full 360° coverage)
-                                        target_env = sec_env if is_broll and sec_env != "None" else series_env
-                                        selected_env_stills = st.session_state.get("selected_env_stills", [])
-                                        if selected_env_stills and not is_broll:
-                                            for env_idx, env_s_path in enumerate(selected_env_stills):
-                                                if os.path.exists(env_s_path):
-                                                    final_assets_payload.append({
-                                                        "path": env_s_path,
-                                                        "label": f"Location Master Angle #{env_idx+1} (FULL COVERAGE): {target_env}"
-                                                    })
-                                        elif "primary_env_img" in st.session_state and os.path.exists(st.session_state["primary_env_img"]) and not is_broll:
-                                            final_assets_payload.append({"path": st.session_state["primary_env_img"], "label": f"Location Master: {target_env}"})
-                                        else:
-                                            env_path = vibes_data.get(target_env) or assets.get('locations', {}).get(target_env)
-                                            if isinstance(env_path, dict): env_path = env_path.get('default_img')
-                                            if env_path: final_assets_payload.append({"path": env_path, "label": f"Location: {target_env}"})
-                                        
-                                        # Prompt — Structured Camera Direction + Scene Still
-                                        time_setting = shot.get('time_of_day', 'Day')
-                                        
-                                        # Build camera direction block from shot metadata
-                                        cam_parts = []
-                                        if shot.get('shot_size'): cam_parts.append(f"Shot: {shot['shot_size']}")
-                                        if shot.get('camera_angle'): cam_parts.append(f"Angle: {shot['camera_angle']}")
-                                        if shot.get('composition'): cam_parts.append(f"Composition: {shot['composition']}")
-                                        if shot.get('depth_of_field'): cam_parts.append(f"DoF: {shot['depth_of_field']}")
-                                        if shot.get('lighting_type'): cam_parts.append(f"Lighting: {shot['lighting_type']}")
-                                        cam_direction = ". ".join(cam_parts) + "." if cam_parts else ""
-                                        
-                                        final_shot_prompt = f"Photorealistic film still. Time of Day: {time_setting}. {cam_direction}\n{shot_prompt}"
-                                        
-                                        # Cascading context — attach prior shot for scene consistency
-                                        prior_key = f"img_s{scene_idx}_sh{shot_idx - 1}" if shot_idx > 0 else None
-                                        prior_path = st.session_state.get(prior_key) if prior_key else None
-                                        
-                                        if prior_path and os.path.exists(prior_path):
-                                            final_shot_prompt += (
-                                                "\n\nSCENE CONTINUITY: The attached 'Prior Shot' image shows the PREVIOUS moment "
-                                                "from this same scene. Match the EXACT environment, lighting, color palette, "
-                                                "set design, and character wardrobe from that image."
-                                            )
-                                            final_assets_payload.append({
-                                                "path": prior_path,
-                                                "label": "Prior Shot (SCENE CONTINUITY - MATCH ENVIRONMENT & LIGHTING)"
-                                            })
-                                        
-                                        p_data = {
-                                             "positive_prompt": final_shot_prompt,
-                                             "model_type": "nano", 
-                                             "assets": final_assets_payload,
-                                             "aspect_ratio": st.session_state.get('series_ar', '16:9'),
-                                             "image_size": st.session_state.get('series_res', '1K')
-                                        }
-                                        
-                                        res = generate_image_from_prompt(p_data, get_user_out_dir_func("Series"))
-                                        if res["status"] == "success":
-                                            st.session_state[f"img_{key_base}"] = res["image_path"]
-                                            st.success("Shot Captured!")
-                                        else:
-                                            st.error(f"Error: {res.get('logs')}")
-                        
-                        with c_type:
-                            motion_type = st.radio("Media", ["Still", "Kling Video", "Sora 2 Video", "Mocap"], key=f"m_{key_base}", horizontal=True, label_visibility="collapsed")
-                            if motion_type == "Mocap":
-                                mocap_file = st.file_uploader("Ref", type=['mp4'], key=f"up_{key_base}", label_visibility="collapsed")
+                                    # Location (Pass ALL selected Higgsfield AI Environment Master Stills for full 360° coverage)
+                                    target_env = sec_env if is_broll and sec_env != "None" else series_env
+                                    selected_env_stills = st.session_state.get("selected_env_stills", [])
+                                    if selected_env_stills and not is_broll:
+                                        for env_idx, env_s_path in enumerate(selected_env_stills):
+                                            if os.path.exists(env_s_path):
+                                                final_assets_payload.append({
+                                                    "path": env_s_path,
+                                                    "label": f"Location Master Angle #{env_idx+1} (FULL COVERAGE): {target_env}"
+                                                })
+                                    elif "primary_env_img" in st.session_state and os.path.exists(st.session_state["primary_env_img"]) and not is_broll:
+                                        final_assets_payload.append({"path": st.session_state["primary_env_img"], "label": f"Location Master: {target_env}"})
+                                    else:
+                                        env_path = vibes_data.get(target_env) or assets.get('locations', {}).get(target_env)
+                                        if isinstance(env_path, dict): env_path = env_path.get('default_img')
+                                        if env_path: final_assets_payload.append({"path": env_path, "label": f"Location: {target_env}"})
+                                    
+                                    # Prompt — Structured Camera Direction + Scene Still
+                                    time_setting = shot.get('time_of_day', 'Day')
+                                    
+                                    # Build camera direction block from shot metadata
+                                    cam_parts = []
+                                    if shot.get('shot_size'): cam_parts.append(f"Shot: {shot['shot_size']}")
+                                    if shot.get('camera_angle'): cam_parts.append(f"Angle: {shot['camera_angle']}")
+                                    if shot.get('composition'): cam_parts.append(f"Composition: {shot['composition']}")
+                                    if shot.get('depth_of_field'): cam_parts.append(f"DoF: {shot['depth_of_field']}")
+                                    if shot.get('lighting_type'): cam_parts.append(f"Lighting: {shot['lighting_type']}")
+                                    cam_direction = ". ".join(cam_parts) + "." if cam_parts else ""
+                                    
+                                    final_shot_prompt = f"Photorealistic film still. Time of Day: {time_setting}. {cam_direction}\n{shot_prompt}"
+                                    
+                                    # Cascading context — attach prior shot for scene consistency
+                                    prior_key = f"img_s{scene_idx}_sh{shot_idx - 1}" if shot_idx > 0 else None
+                                    prior_path = st.session_state.get(prior_key) if prior_key else None
+                                    
+                                    if prior_path and os.path.exists(prior_path):
+                                        final_shot_prompt += (
+                                            "\n\nSCENE CONTINUITY: The attached 'Prior Shot' image shows the PREVIOUS moment "
+                                            "from this same scene. Match the EXACT environment, lighting, color palette, "
+                                            "set design, and character wardrobe from that image."
+                                        )
+                                        final_assets_payload.append({
+                                            "path": prior_path,
+                                            "label": "Prior Shot (SCENE CONTINUITY - MATCH ENVIRONMENT & LIGHTING)"
+                                        })
+                                    
+                                    p_data = {
+                                         "positive_prompt": final_shot_prompt,
+                                         "model_type": "nano", 
+                                         "assets": final_assets_payload,
+                                         "aspect_ratio": st.session_state.get('series_ar', '16:9'),
+                                         "image_size": st.session_state.get('series_res', '1K')
+                                    }
+                                    
+                                    res = generate_image_from_prompt(p_data, get_user_out_dir_func("Series"))
+                                    if res["status"] == "success":
+                                        st.session_state[f"img_{key_base}"] = res["image_path"]
+                                        st.success("Shot Captured!")
+                                    else:
+                                        st.error(f"Error: {res.get('logs')}")
 
                     with col_img:
                         # 1. Display Generated Keyframe Still (if captured)
