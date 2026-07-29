@@ -314,25 +314,74 @@ def generate_image_nano(prompt_data, output_folder, reference_image_path, outfit
         if image_size:
             res_val = image_size.lower()
 
-        payload = {
-            "model": model_name,
-            "prompt": positive_prompt,
-            "images": input_images,
-            "video_clips": [
-                {
-                    "url": "https://www.youtube.com/watch?v=TnG89ChN9LQ",
-                    "start": 0,
-                    "ends": 1,
-                    "fps": 1
+        model_type = prompt_data.get("model_type", "nano")
+        has_images = len(input_images) > 0
+        
+        if model_type == "wan":
+            if has_images:
+                model_name = "alibaba/wan-2.7-pro/image-edit"
+                payload = {
+                    "model": model_name,
+                    "prompt": positive_prompt,
+                    "images": input_images,
+                    "size": "2K" if res_val in ["2k", "4k"] else "1K",
+                    "thinking_mode": False,
+                    "seed": -1,
+                    "enable_sync_mode": False,
+                    "enable_base64_output": False
                 }
-            ],
-            "aspect_ratio": ar_val,
-            "resolution": res_val,
-            "thinking_level": "default",
-            "enable_sync_mode": False,
-            "enable_base64_output": False,
-            "enable_web_search": False
-        }
+            else:
+                model_name = "alibaba/wan-2.7-pro/text-to-image"
+                payload = {
+                    "model": model_name,
+                    "prompt": positive_prompt,
+                    "aspect_ratio": ar_val,
+                    "resolution": res_val,
+                    "enable_sync_mode": False,
+                    "enable_base64_output": False
+                }
+        elif model_type == "gpt":
+            if has_images:
+                model_name = "openai/gpt-image-2-developer/edit"
+                payload = {
+                    "model": model_name,
+                    "prompt": positive_prompt,
+                    "images": input_images,
+                    "resolution": res_val,
+                    "enable_sync_mode": False,
+                    "enable_base64_output": False
+                }
+            else:
+                model_name = "openai/gpt-image-2-developer/text-to-image"
+                payload = {
+                    "model": model_name,
+                    "prompt": positive_prompt,
+                    "aspect_ratio": ar_val,
+                    "resolution": res_val,
+                    "enable_sync_mode": False,
+                    "enable_base64_output": False
+                }
+        else: # nano
+            model_name = "google/nano-banana-2/reference-to-image-developer"
+            payload = {
+                "model": model_name,
+                "prompt": positive_prompt,
+                "images": input_images,
+                "video_clips": [
+                    {
+                        "url": "https://www.youtube.com/watch?v=TnG89ChN9LQ",
+                        "start": 0,
+                        "ends": 1,
+                        "fps": 1
+                    }
+                ],
+                "aspect_ratio": ar_val,
+                "resolution": res_val,
+                "thinking_level": "default",
+                "enable_sync_mode": False,
+                "enable_base64_output": False,
+                "enable_web_search": False
+            }
         
         logs.append(f"Submitting job to Atlas Cloud API for model {model_name}...")
         response = requests.post(url, headers=headers, json=payload)
@@ -378,7 +427,12 @@ def generate_image_nano(prompt_data, output_folder, reference_image_path, outfit
 
         # Download result
         import uuid
-        filename = f"gen_nano2_{int(time.time())}_{str(uuid.uuid4())[:8]}.jpg"
+        prefix = "gen_nano2"
+        if model_type == "wan":
+            prefix = "wan27"
+        elif model_type == "gpt":
+            prefix = "gptimg2"
+        filename = f"{prefix}_{int(time.time())}_{str(uuid.uuid4())[:8]}.jpg"
         filepath = os.path.join(output_folder, filename)
         
         logs.append(f"Downloading output image from: {output_url}")

@@ -30,6 +30,20 @@ def render_character_studio(characters_data, get_user_out_dir_func, campaign_mgr
 
         st.markdown("#### Design Specs")
         
+        # 1.5 Model Engine Selection
+        st.markdown("**Image Engine**")
+        model_opt = st.selectbox("Select Model", [
+            "Nano (SDXL Fine-Tuned)",
+            "Wan 2.7 (High Fidelity)",
+            "GPT Image 2.0 (DALL-E 3)"
+        ], index=0)
+        
+        model_key = "nano"
+        if "Wan" in model_opt:
+            model_key = "wan"
+        elif "GPT" in model_opt:
+            model_key = "gpt"
+            
         # 2. Output Mode (Outside Form for Instant Reactivity)
         st.markdown("**Output Format**")
         output_mode = st.selectbox("Generation Mode", [
@@ -583,7 +597,7 @@ def render_character_studio(characters_data, get_user_out_dir_func, campaign_mgr
                              "width": target_w, "height": target_h,
                              "aspect_ratio": ar,
                              "image_size": "4K",
-                             "model_type": "nano",
+                             "model_type": model_key,
                              "assets": assets
                         },
                         settings={"batch_count": 1},
@@ -642,7 +656,7 @@ def render_character_studio(characters_data, get_user_out_dir_func, campaign_mgr
                                             "width": target_w, "height": target_h,
                                             "aspect_ratio": ar,
                                             "image_size": "4K",
-                                            "model_type": "nano",
+                                            "model_type": model_key,
                                             "assets": current_assets
                                         }
                                         res = generate_image_from_prompt(payload, get_user_out_dir_func("Characters/Concepts"))
@@ -689,7 +703,7 @@ def render_character_studio(characters_data, get_user_out_dir_func, campaign_mgr
                                      "width": target_w, "height": target_h,
                                      "aspect_ratio": ar,
                                      "image_size": "4K",
-                                     "model_type": "nano",
+                                     "model_type": model_key,
                                      "assets": assets
                                  }
                                  
@@ -860,7 +874,7 @@ def render_character_studio(characters_data, get_user_out_dir_func, campaign_mgr
                             "width": target_w, "height": target_h,
                             "aspect_ratio": "4:5",
                             "image_size": "4K",
-                            "model_type": "nano",
+                            "model_type": model_key,
                             "assets": assets
                         }
                     res = generate_image_from_prompt(payload, get_user_out_dir_func("Characters/Concepts"))
