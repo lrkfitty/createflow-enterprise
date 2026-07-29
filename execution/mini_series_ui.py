@@ -739,13 +739,24 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
                         sel_trans = st.selectbox("Transition", trans_opts, key=f"trans_{key_base}", label_visibility="collapsed")
                         shot['transition'] = sel_trans
                         
-                        # Display Dialogue and Director Notes
-                        if shot.get('dialogue'):
-                            st.markdown(f"💬 **Dialogue**: *{shot.get('dialogue')}*")
-                        if shot.get('director_notes'):
-                            st.caption(f"🎬 **Director Note**: {shot.get('director_notes')}")
+                        # Format Master Director Script block combining Action, Dialogue, Notes & Camera
+                        raw_vp = shot.get('visual_prompt', '')
+                        raw_dial = shot.get('dialogue', '')
+                        raw_notes = shot.get('director_notes', '')
+                        raw_action = shot.get('action_description', '')
+                        
+                        if "DIALOGUE:" not in raw_vp and "ACTION:" not in raw_vp:
+                            master_script_block = ""
+                            if raw_action: master_script_block += f"ACTION: {raw_action}\n"
+                            if raw_dial: master_script_block += f"DIALOGUE:\n{raw_dial}\n"
+                            if raw_notes: master_script_block += f"DIRECTOR NOTES: {raw_notes}\n"
+                            if master_script_block: master_script_block += f"CINEMATOGRAPHY:\n{raw_vp}"
+                            else: master_script_block = raw_vp
+                        else:
+                            master_script_block = raw_vp
 
-                        shot_prompt = st.text_area("Visual Prompt", value=shot.get('visual_prompt'), height=200, key=f"p_{key_base}", label_visibility="collapsed")
+                        st.write("**🎬 Master Director Script & Prompt**")
+                        shot_prompt = st.text_area("Master Director Script & Visual Prompt", value=master_script_block, height=220, key=f"p_{key_base}", label_visibility="collapsed", help="Edit character dialogue lines, physical action cues, or 35mm camera directions here.")
                         st.caption(f"Length: {len(shot_prompt) if shot_prompt else 0} chars (Target: 800+)")
                         
                         c_gen, c_type = st.columns([1, 1.5])

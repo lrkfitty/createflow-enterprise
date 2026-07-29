@@ -119,10 +119,11 @@ def parse_script_to_scenes(script_text, cast_list, environment_name, genre="Gene
     Your job is to transform a premise/synopsis into a complete, masterfully directed episode script with FULL CHARACTER DIALOGUE, physical performance cues, and precise 35mm visual prompts.
     
     HIGGSFIELD SEEDANCE V2 DIRECTING & PROMPTING PROTOCOL (STRICT ADHERENCE REQUIRED):
-    1. MASTER DIRECTING & DIALOGUE GENERATION:
-       - Write REAL dramatic character dialogue lines for each shot based on the script synopsis and intent.
-       - Include direct character speech, subtext, tone of delivery, and micro-expression acting cues.
-       - Provide dedicated director beat notes for the actor's performance and camera operator.
+    1. MASTER DIRECTING & DIALOGUE GENERATION (MANDATORY FOR EVERY SHOT):
+       - You MUST write REAL dramatic character dialogue lines for EVERY shot featuring characters (e.g. ALICE: "We shouldn't be here... look at those windows.").
+       - For establishing shots or atmospheric beats, write internal monologue / voiceover cues or intense scene intent.
+       - State direct character speech, subtext, vocal delivery tone, and micro-expression acting cues.
+       - Embed the dialogue lines, physical actions, and 35mm camera directions directly into 'visual_prompt' so it functions as a complete Master Director Script!
     2. POSITIVE-ONLY PHRASING:
        - Describe exact physical actions, posture, lighting, and surface textures.
        - NEVER use negative prohibitions ("no blur", "does not fall", "not cartoon").
@@ -137,13 +138,12 @@ def parse_script_to_scenes(script_text, cast_list, environment_name, genre="Gene
        - 12°  = Tele-Detail (Hands, Props, Key Objects)
        - 8°   = Super-Tele Extreme Compression
     4. CAMERA BLOCK IN 3RD POSITION:
-       - Structure: [Subject Context & Tags] -> [Space & Timing / Physical Action] -> [CAMERA: FOV° + Operator Axis + Height] -> [Atmosphere & Light in %/Kelvin] -> [Style & Output].
+       - Structure: [Subject Context & Tags] -> [Space & Timing / Physical Action & Dialogue] -> [CAMERA: FOV° + Operator Axis + Height] -> [Atmosphere & Light in %/Kelvin] -> [Style & Output].
     5. ACTING & PERFORMANCE THROUGH MUSCLE MOVEMENT:
        - Never use raw emotion labels like "sad" or "angry".
        - Describe physical muscle movements: "jaw tightens, eyes drop to the table, breath shortens, knuckles whiten on glass".
     6. PHYSICAL INTERACTION & ATMOSPHERE:
        - State atmosphere in percent (%) or meters depth (e.g. "fog density 30%, haze visible at 20 meters depth").
-       - State speeds in km/h (e.g. "subject moves at 15 km/h", "camera pans at 3 km/h").
        - Physical interaction: rain runs down fabric, dust motes catch light beams, skin shows natural texture.
 
     SERIES BIBLE:
@@ -187,7 +187,7 @@ def parse_script_to_scenes(script_text, cast_list, environment_name, genre="Gene
                "dialogue": "ALICE: 'You thought I wouldn't find out? Take a look around.'",
                "director_notes": "Deliver line cold with zero vocal fluctuation. Keep gaze locked on Bob's eyes.",
                "characters": ["Alice"],
-               "visual_prompt": "Cinematic 35mm film still. Alice in medium close-up, turning her head slowly. CAMERA: FOV 29°, eye-level, operator anchored 2 meters. ISO 400 35mm film grain, 3200K tungsten key light, shallow depth of field. Unretouched physical skin texture, zero CGI.",
+               "visual_prompt": "ACTION: Alice turns slowly, her jaw tightening as she looks across the room.\nDIALOGUE: ALICE: \"You thought I wouldn't find out? Take a look around.\"\nDIRECTOR NOTES: Deliver line cold with zero vocal fluctuation.\nCINEMATOGRAPHY: Cinematic 35mm film still. Alice in medium close-up. CAMERA: FOV 29°, eye-level, operator anchored 2 meters. ISO 400 35mm film grain, 3200K tungsten key light, shallow depth of field. Unretouched physical skin texture, zero CGI.",
                "is_broll": false
             }}
           ]
