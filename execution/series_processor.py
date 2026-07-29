@@ -46,23 +46,25 @@ def resize_bytes_to_jpeg(image_bytes, max_size=1280):
 
 def generate_environment_master_prompt(location_name, genre="General", tone="Neutral", camera="Auto", lighting="Auto", style="Auto", shot_angle_type="Master Establishing View"):
     """
-    Generates a Higgsfield Seedance V2 compliant Environment Master Image Prompt for a location.
-    Enforces 3-layer depth, WB in Kelvin, FOV degrees (107° / 84°), and atmospheric physical details.
+    Generates a Real-World Organic 35mm Film Texture Environment Master Prompt for a location.
+    Enforces tactile physical textures, 3-layer depth, WB in Kelvin, optical lens falloff, and NO CGI/artificial sharpness.
     """
     atlas_key = os.getenv("ATLASCLOUD_API_KEY")
     prompt_req = f"""
-    ROLE: You are Higgsfield Seedance Production Environment Designer.
-    TASK: Write a master 8K photorealistic environment architecture prompt for location: '{location_name}'.
+    ROLE: You are an Oscar-Winning Master Director of Photography and Film Production Designer.
+    TASK: Write a master real-world 35mm motion picture film camera location prompt for: '{location_name}'.
     SHOT PERSPECTIVE / ANGLE: {shot_angle_type}.
     GENRE: {genre}, TONE: {tone}, CAMERA/LIGHT: {camera}, {lighting}, STYLE: {style}.
     
-    HIGGSFIELD SEEDANCE V2 RULES:
-    1. POSITIVE-ONLY: Describe exact visual surfaces, architecture, lighting beams, reflections, atmospheric haze (in % or meters depth).
-    2. OPTICS: Match perspective '{shot_angle_type}' (use FOV degrees like 107° for wide, 84° for reverse angle, 63° for medium detail, 29° for texture macro).
-    3. 3-LAYER DEPTH: State foreground (occlusion/props), midground (action area), and background architecture.
-    4. LIGHTING & COLOR: State White Balance in Kelvin (5600K daylight or 3200K tungsten), light beam sources, specular highlights.
-    5. NO PEOPLE in this environment shot. Pure cinematic set design.
-    6. Return ONLY valid JSON: {{"environment_prompt": "Photorealistic film set still of...", "location": "{location_name}"}}
+    REAL-WORLD CINEMATIC FILM RULES:
+    1. RAW TACTILE SURFACES: Describe authentic unpolished physical textures (weathered wood grain, peeling plaster, matte concrete, dust motes in air, moisture, rust, raw fabrics).
+    2. ZERO CGI / ZERO PLASTIC: Do NOT use digital jargon or buzzwords like '8K', 'photorealistic', 'hyperrealistic', '3D render', 'volumetric light beams', 'masterpiece', 'unreal engine'.
+    3. REAL OPTICS & FILM: Describe 35mm motion picture film stock, natural ISO 400 optical film grain, realistic optical depth of field, natural shadow falloff, anamorphic lens flare/aberration.
+    4. OPTICS & FOV: Match perspective '{shot_angle_type}' (use FOV degrees: 107° for wide establishing, 84° for reverse angle, 63° for medium detail, 29° for texture macro).
+    5. 3-LAYER DEPTH: Foreground physical props/occlusion, midground main space, deep background architecture.
+    6. LIGHTING: Natural exposure, White Balance in Kelvin (5600K daylight or 3200K tungsten), unretouched specular reflections.
+    7. NO PEOPLE in this environment shot. Pure cinematic set design.
+    8. Return ONLY valid JSON: {{"environment_prompt": "Cinematic 35mm film still of...", "location": "{location_name}"}}
     """
     if atlas_key:
         try:
@@ -80,7 +82,7 @@ def generate_environment_master_prompt(location_name, genre="General", tone="Neu
         except Exception as e:
             print(f"Environment prompt generation error: {e}")
             
-    default_prompt = f"Photorealistic 8K film set still of {location_name}. 107° ultra-wide FOV, 3-layer depth composition with foreground architectural details, midground main space, and deep background layers. Atmospheric haze 25%, 5600K daylight balance, volumetric light beams, rich surface textures, photorealistic cinematic lighting, RAW photography."
+    default_prompt = f"Cinematic 35mm motion picture film still of {location_name}. 107° ultra-wide FOV, 3-layer depth composition with weathered foreground architectural details, midground main space, and deep background layers. Natural 35mm film grain, ISO 400, unpolished physical surfaces with realistic dust and patina, 5600K daylight balance, natural unretouched shadow falloff, optical lens depth of field, RAW photography, zero CGI."
     return {"environment_prompt": default_prompt, "location": location_name}
 
 

@@ -374,8 +374,8 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
                 key="env_notes"
             )
 
-        if st.button("✨ Generate Cascading 8K Environment Stills", type="primary", key="gen_env_btn", use_container_width=True):
-            with st.spinner(f"⚡ AI Generating {env_still_count} Cascading Environment Stills for '{target_env_name}'..."):
+        if st.button("✨ Generate Cascading Real 35mm Cinematic Environment Stills", type="primary", key="gen_env_btn", use_container_width=True):
+            with st.spinner(f"⚡ AI Generating {env_still_count} Real 35mm Film Environment Stills for '{target_env_name}'..."):
                 from execution.series_processor import generate_environment_master_prompt
                 
                 angles = [

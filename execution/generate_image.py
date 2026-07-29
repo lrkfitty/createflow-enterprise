@@ -30,18 +30,32 @@ def generate_image_nano(prompt_data, output_folder, reference_image_path, outfit
 
     positive_prompt = prompt_data.get("positive_prompt", "")
     
-    # SYSTEM PREAMBLE (Force Continuity)
+    # --- REAL-WORLD ORGANIC CINEMATIC TEXTURE MANDATE ---
+    real_world_texture_directive = (
+        "CRITICAL VISUAL QUALITY MANDATE: Generate ONLY authentic, real-world live-action 35mm film photography with raw, organic tactile physical textures. "
+        "STRICTLY FORBID plastic skin, artificial smooth surfaces, digital CGI sharpness, video-game rendering, 3D graphics, unreal engine gloss, or over-sharpened AI artifacts. "
+        "Capture natural optical lens imperfections, genuine 35mm film grain (ISO 400), unpolished physical surfaces (weathered wood, dusty air, matte concrete, raw fabric, peeling paint), "
+        "and true-to-life optical shadow falloff. Must look indistinguishable from an unretouched 35mm cinematic film frame. \n\n"
+    )
+    
+    # Strip CGI / Digital buzzwords that trigger artificial rendering
+    import re
+    cgi_buzzwords = [r"\b8K\b", r"\b4K\b", r"\bphotorealistic\b", r"\bhyperrealistic\b", r"\b3D render\b", r"\bunreal engine\b", r"\boctane render\b", r"\bvolumetric light beams\b", r"\bmasterpiece\b"]
+    for bw in cgi_buzzwords:
+        positive_prompt = re.sub(bw, "", positive_prompt, flags=re.IGNORECASE)
+    
     system_instruction = (
-        "SYSTEM INSTRUCTION: You are a continuity engine. Your primary goal is to generate the scene described below "
-        "while EXPERTLY matching the visual identities of the provided character reference images. "
-        "You must match their face, hair, and outfit details exactly. Do not hallucinate new features. Pay close attention to character-outfit pairings indicated by binding text. \n\n"
+        real_world_texture_directive + 
+        "SYSTEM INSTRUCTION: You are a master cinematography & continuity engine. Your primary goal is to generate raw 35mm cinematic film stills "
+        "while EXPERTLY matching the visual identities and environmental architecture of provided reference images. "
+        "Match faces, hair, outfit, and location details with genuine organic film texture. Do not hallucinate CGI features. \n\n"
     )
     multi_ref_instruction = (
         "MULTI-REFERENCE FUSION MODE: Multiple reference images of the SAME person have been provided. "
         "You MUST fuse all provided facial references into ONE single composite identity. "
         "Analyze all reference images together and extract the definitive facial structure, skin tone, "
         "eye shape, nose, lips, and distinctive features. The output must portray ONE person whose face "
-        "is consistent across all provided references. Do NOT treat these as different people. \n\n"
+        "is consistent across all provided references with natural unretouched skin texture. \n\n"
     )
     if "SYSTEM INSTRUCTION" not in positive_prompt:
         positive_prompt = system_instruction + positive_prompt
