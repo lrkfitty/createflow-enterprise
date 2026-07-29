@@ -93,16 +93,17 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
                         if c_path:
                             assets_payload.append({"path": c_path, "label": f"Cast: {c_name}"})
                             
-                            # Outfit
-                            w_snapshot = st.session_state.get('cast_wardrobe_map_snapshot', {})
-                            # Try simple key then full
-                            outfit_name = w_snapshot.get(c_key) or w_snapshot.get(c_name, "Default")
+                            # Outfit (Check per-shot override first, then fallback to Series Bible)
+                            shot_w = shot.get('wardrobe', {})
+                            outfit_name = shot_w.get(c_key) or shot_w.get(c_name)
+                            if not outfit_name:
+                                w_snapshot = st.session_state.get('cast_wardrobe_map_snapshot', {})
+                                outfit_name = w_snapshot.get(c_key) or w_snapshot.get(c_name, "Default Outfit")
                             
-                            if outfit_name and outfit_name != "Default":
+                            if outfit_name and outfit_name != "Default Outfit" and outfit_name != "Default":
                                 o_path = outfits_data.get(outfit_name)
                                 if isinstance(o_path, dict): o_path = o_path.get('default_img')
                                 if o_path:
-                                    # Use "Outfit for {character}" format for explicit pairing
                                     assets_payload.append({"path": o_path, "label": f"Outfit for {c_name}"})
 
                     # Prompt Construction — Structured Camera Direction + Scene Still
@@ -522,6 +523,41 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
                         )
                         shot['characters'] = selected_chars
                         
+                        # Per-shot Wardrobe Selection (See, Select, & Reselect mapped outfits)
+                        shot_wardrobe_map = {}
+                        if selected_chars:
+                            with st.expander("👕 Cast Wardrobe for Shot (Select / Change)", expanded=True):
+                                for c_name in selected_chars:
+                                    w_snapshot = st.session_state.get('cast_wardrobe_map_snapshot', {})
+                                    orig_outfit = w_snapshot.get(c_name) or w_snapshot.get(c_name.replace('_', ' ').split(' ')[0], "Default Outfit")
+                                    if orig_outfit == "Default":
+                                        orig_outfit = "Default Outfit"
+                                        
+                                    outfit_options = ["Default Outfit"] + list(outfits_data.keys())
+                                    def_fit_idx = 0
+                                    if orig_outfit in outfit_options:
+                                        def_fit_idx = outfit_options.index(orig_outfit)
+                                        
+                                    w_col1, w_col2 = st.columns([3, 1])
+                                    with w_col1:
+                                        sel_fit = st.selectbox(
+                                            f"Outfit for {c_name}",
+                                            outfit_options,
+                                            index=def_fit_idx,
+                                            key=f"shot_fit_{key_base}_{c_name}"
+                                        )
+                                        shot_wardrobe_map[c_name] = sel_fit
+                                    with w_col2:
+                                        if sel_fit and sel_fit != "Default Outfit" and sel_fit != "Default":
+                                            o_path = outfits_data.get(sel_fit)
+                                            if isinstance(o_path, dict): o_path = o_path.get('default_img')
+                                            if o_path and os.path.exists(o_path):
+                                                st.image(o_path, caption=sel_fit[:15], width=60)
+                                        else:
+                                            st.caption("Default Outfit")
+                                            
+                        shot['wardrobe'] = shot_wardrobe_map
+                        
                         time_opts = ["Morning", "Noon", "Afternoon", "Golden Hour", "Blue Hour", "Night", "Midnight"]
                         ai_time = shot.get('time_of_day', 'Day')
                         ai_time_norm = ai_time.title() if ai_time else "Day"
@@ -559,36 +595,31 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
                                         
                                         # Resolve Cast Assets (Robust)
                                         target_chars = shot.get('characters', [])
-                                        # If empty and not B-Roll, force first cast
                                         is_broll = shot.get('is_broll', False)
                                         if not target_chars and cast_selection and not is_broll:
-                                             # Fallback protagonist
                                              pass 
 
                                         for raw_name in target_chars:
                                             c_path = st.session_state.cast_lookup_map.get(raw_name)
                                             if not c_path:
-                                                 # Try first word
                                                  first_w = raw_name.replace('_', ' ').split(' ')[0]
                                                  c_path = st.session_state.cast_lookup_map.get(first_w)
                                             
                                             if c_path:
                                                 final_assets_payload.append({"path": c_path, "label": f"Cast: {raw_name}"})
-                                                # Outfit
-                                                w_snapshot = st.session_state.get('cast_wardrobe_map_snapshot', {})
-                                                o_key = w_snapshot.get(raw_name)
-                                                
+                                                # Outfit from shot level override, fallback to snapshot
+                                                o_key = shot_wardrobe_map.get(raw_name)
                                                 if not o_key:
-                                                    # Try first word
                                                     first_w = raw_name.replace('_', ' ').split(' ')[0]
-                                                    o_key = w_snapshot.get(first_w)
+                                                    o_key = shot_wardrobe_map.get(first_w)
+                                                if not o_key:
+                                                    w_snapshot = st.session_state.get('cast_wardrobe_map_snapshot', {})
+                                                    o_key = w_snapshot.get(raw_name) or w_snapshot.get(raw_name.replace('_', ' ').split(' ')[0], "Default Outfit")
                                                 
-                                                if not o_key: o_key = "Default"
-                                                if o_key != "Default":
+                                                if o_key and o_key != "Default Outfit" and o_key != "Default":
                                                     o_path = outfits_data.get(o_key)
                                                     if isinstance(o_path, dict): o_path = o_path.get('default_img')
                                                     if o_path: 
-                                                        # Use "Outfit for {character}" format for explicit pairing
                                                         final_assets_payload.append({"path": o_path, "label": f"Outfit for {raw_name}"})
 
                                         # Location
