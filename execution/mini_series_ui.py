@@ -328,45 +328,50 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
         e_col1, e_col2 = st.columns(2)
         with e_col1:
             st.write("**Primary Location** (Main Action Set)")
-            series_env = st.selectbox("Choose Primary Set", ["None"] + all_locs, key="series_env_sel")
+            series_env = st.selectbox("Choose Preset Location (Optional)", ["None"] + all_locs, key="series_env_sel")
+            custom_env_title = st.text_input("Custom Location / Set Name", placeholder="e.g. Luxury Beverly Hills Penthouse", key="custom_env_title")
             
+            # Active Location Name resolution
+            target_env_name = custom_env_title if custom_env_title else (series_env if series_env != "None" else "Main Production Environment")
+
             if series_env and series_env != "None":
                 path = vibes_data.get(series_env) or assets.get('locations', {}).get(series_env)
                 if path:
                     if isinstance(path, dict): path = path.get('default_img')
-                    st.image(path, caption="Preset Environment Reference", width=220)
+                    st.image(path, caption="Preset Location Reference", width=220)
                 
-                env_custom_notes = st.text_input(
-                    "Environmental Textures & Details",
-                    placeholder="Wet asphalt, rain reflections, volumetric fog 30%, neon sign flickering",
-                    key="env_notes"
-                )
-                
-                if st.button("✨ Generate 8K Environment Master Still", type="primary", key="gen_env_btn", use_container_width=True):
-                    with st.spinner("⚡ AI Generating 8K Higgsfield Environment Master Still..."):
-                        from execution.series_processor import generate_environment_master_prompt
-                        env_data = generate_environment_master_prompt(
-                            location_name=f"{series_env}. {env_custom_notes}" if env_custom_notes else series_env,
-                            genre=s_genre,
-                            tone=f"{s_tone}. Lighting: {s_lighting}. Camera: {s_camera}, {s_lens}. LUT: {s_film_stock}, Grade: {s_filter_look}, Style: {s_movie_style}"
-                        )
-                        env_p = env_data.get("environment_prompt")
-                        p_data = {
-                            "positive_prompt": env_p,
-                            "model_type": "nano",
-                            "aspect_ratio": st.session_state.get('series_ar', '16:9'),
-                            "image_size": "2K"
-                        }
-                        res_env = generate_image_from_prompt(p_data, get_user_out_dir_func("Series/Environments"))
-                        if res_env.get("status") == "success":
-                            st.session_state["primary_env_img"] = res_env["image_path"]
-                            st.toast("✅ Generated 8K Higgsfield Environment Master Still!")
-                            st.rerun()
-                        else:
-                            st.error(f"Environment Generation Failed: {res_env.get('logs')}")
+            st.markdown("##### 🌄 Higgsfield 8K Environment Master Generator")
+            env_custom_notes = st.text_input(
+                "Environmental Textures & Details",
+                placeholder="Wet asphalt, rain reflections, volumetric fog 30%, neon sign flickering",
+                key="env_notes"
+            )
+            
+            if st.button("✨ Generate 8K Environment Master Still", type="primary", key="gen_env_btn", use_container_width=True):
+                with st.spinner(f"⚡ AI Generating 8K Higgsfield Environment Master for '{target_env_name}'..."):
+                    from execution.series_processor import generate_environment_master_prompt
+                    env_data = generate_environment_master_prompt(
+                        location_name=f"{target_env_name}. {env_custom_notes}" if env_custom_notes else target_env_name,
+                        genre=s_genre,
+                        tone=f"{s_tone}. Lighting: {s_lighting}. Camera: {s_camera}, {s_lens}. LUT: {s_film_stock}, Grade: {s_filter_look}, Style: {s_movie_style}"
+                    )
+                    env_p = env_data.get("environment_prompt")
+                    p_data = {
+                        "positive_prompt": env_p,
+                        "model_type": "nano",
+                        "aspect_ratio": st.session_state.get('series_ar', '16:9'),
+                        "image_size": "2K"
+                    }
+                    res_env = generate_image_from_prompt(p_data, get_user_out_dir_func("Series/Environments"))
+                    if res_env.get("status") == "success":
+                        st.session_state["primary_env_img"] = res_env["image_path"]
+                        st.toast("✅ Generated 8K Higgsfield Environment Master Still!")
+                        st.rerun()
+                    else:
+                        st.error(f"Environment Generation Failed: {res_env.get('logs')}")
 
-                if "primary_env_img" in st.session_state and os.path.exists(st.session_state["primary_env_img"]):
-                    st.image(st.session_state["primary_env_img"], caption="✨ Generated 8K Higgsfield Environment Master Still", use_container_width=True)
+            if "primary_env_img" in st.session_state and os.path.exists(st.session_state["primary_env_img"]):
+                st.image(st.session_state["primary_env_img"], caption=f"✨ Generated 8K Higgsfield Environment Master Still ({target_env_name})", use_container_width=True)
 
         with e_col2:
             st.write("**Secondary Location** (B-Roll / Cutaway Set)")
@@ -760,7 +765,7 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
                                     ],
                                     key=f"v_eng_{key_base}"
                                 )
-                                v_res = st.selectbox("Resolution", ["1080P", "720P"], key=f"v_res_{key_base}")
+                                v_res = st.selectbox("Resolution", ["720P (Half Cost / Fast)", "1080P"], index=0, key=f"v_res_{key_base}")
                                 v_dur = st.slider("Duration (Sec)", 2, 10, 5, key=f"v_dur_{key_base}")
                                 
                                 all_cast_keys = list(st.session_state.cast_lookup_map.keys())
