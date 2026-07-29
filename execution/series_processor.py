@@ -63,8 +63,8 @@ def generate_environment_master_prompt(location_name, genre="General", tone="Neu
     4. OPTICS & FOV: Match perspective '{shot_angle_type}' (use FOV degrees: 107° for wide establishing, 84° for reverse angle, 63° for medium detail, 29° for texture macro).
     5. 3-LAYER DEPTH: Foreground physical props/occlusion, midground main space, deep background architecture.
     6. LIGHTING: Natural exposure, White Balance in Kelvin (5600K daylight or 3200K tungsten), unretouched specular reflections.
-    7. NO PEOPLE in this environment shot. Pure cinematic set design.
-    8. Return ONLY valid JSON: {{"environment_prompt": "Cinematic 35mm film still of...", "location": "{location_name}"}}
+    7. STRICT EMPTY SET MANDATE: Absolutely NO PEOPLE, NO CHARACTERS, NO HUMAN FIGURES, NO SILHOUETTES, NO PERSONS. This is a pure empty architectural film set location still (unless 'extras' or 'people' is explicitly stated in the location prompt).
+    8. Return ONLY valid JSON: {{"environment_prompt": "PURE EMPTY SET STILL (NO PEOPLE, NO CHARACTERS, NO HUMAN FIGURES). Cinematic 35mm film still of...", "location": "{location_name}"}}
     """
     if atlas_key:
         try:
@@ -82,7 +82,7 @@ def generate_environment_master_prompt(location_name, genre="General", tone="Neu
         except Exception as e:
             print(f"Environment prompt generation error: {e}")
             
-    default_prompt = f"Cinematic 35mm motion picture film still of {location_name}. 107° ultra-wide FOV, 3-layer depth composition with weathered foreground architectural details, midground main space, and deep background layers. Natural 35mm film grain, ISO 400, unpolished physical surfaces with realistic dust and patina, 5600K daylight balance, natural unretouched shadow falloff, optical lens depth of field, RAW photography, zero CGI."
+    default_prompt = f"PURE EMPTY SET STILL (NO PEOPLE, NO CHARACTERS, NO HUMAN FIGURES). Cinematic 35mm motion picture film still of {location_name}. 107° ultra-wide FOV, 3-layer depth composition with weathered foreground architectural details, midground main space, and deep background layers. Natural 35mm film grain, ISO 400, unpolished physical surfaces with realistic dust and patina, 5600K daylight balance, natural unretouched shadow falloff, optical lens depth of field, RAW photography, zero CGI, zero people."
     return {"environment_prompt": default_prompt, "location": location_name}
 
 

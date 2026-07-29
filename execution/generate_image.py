@@ -44,12 +44,26 @@ def generate_image_nano(prompt_data, output_folder, reference_image_path, outfit
     for bw in cgi_buzzwords:
         positive_prompt = re.sub(bw, "", positive_prompt, flags=re.IGNORECASE)
     
-    system_instruction = (
-        real_world_texture_directive + 
-        "SYSTEM INSTRUCTION: You are a master cinematography & continuity engine. Your primary goal is to generate raw 35mm cinematic film stills "
-        "while EXPERTLY matching the visual identities and environmental architecture of provided reference images. "
-        "Match faces, hair, outfit, and location details with genuine organic film texture. Do not hallucinate CGI features. \n\n"
-    )
+    # Check if this is an environment still (Empty Set Mandate)
+    is_empty_env = prompt_data.get("is_environment_still", False) or "PURE EMPTY SET" in positive_prompt or "NO PEOPLE" in positive_prompt or "ENVIRONMENT" in prompt_data.get("model_type", "").upper()
+    has_explicit_people = any(w in positive_prompt.lower() for w in ["extras", "crowd", "person", "character", "actor", "standing", "sitting"])
+    
+    if is_empty_env and not has_explicit_people:
+        system_instruction = (
+            real_world_texture_directive + 
+            "PURE EMPTY ARCHITECTURAL SET MANDATE: You are a master film production location designer. "
+            "Your task is to generate a PURE EMPTY cinematic film location set still. "
+            "STRICTLY DO NOT INCLUDE ANY PEOPLE, CHARACTERS, HUMAN FIGURES, ACTORS, OR SILHOUETTES IN THIS IMAGE. "
+            "Focus 100% purely on empty architectural space, set design, furniture, lighting, and raw surface textures. \n\n"
+        )
+    else:
+        system_instruction = (
+            real_world_texture_directive + 
+            "SYSTEM INSTRUCTION: You are a master cinematography & continuity engine. Your primary goal is to generate raw 35mm cinematic film stills "
+            "while EXPERTLY matching the visual identities and environmental architecture of provided reference images. "
+            "Match faces, hair, outfit, and location details with genuine organic film texture. Do not hallucinate CGI features. \n\n"
+        )
+        
     multi_ref_instruction = (
         "MULTI-REFERENCE FUSION MODE: Multiple reference images of the SAME person have been provided. "
         "You MUST fuse all provided facial references into ONE single composite identity. "
@@ -57,7 +71,7 @@ def generate_image_nano(prompt_data, output_folder, reference_image_path, outfit
         "eye shape, nose, lips, and distinctive features. The output must portray ONE person whose face "
         "is consistent across all provided references with natural unretouched skin texture. \n\n"
     )
-    if "SYSTEM INSTRUCTION" not in positive_prompt:
+    if "SYSTEM INSTRUCTION" not in positive_prompt and "PURE EMPTY ARCHITECTURAL SET MANDATE" not in positive_prompt:
         positive_prompt = system_instruction + positive_prompt
     aspect_ratio = prompt_data.get("aspect_ratio")
     image_size = prompt_data.get("image_size", "1K")  # "512px", "1K", "2K", "4K"

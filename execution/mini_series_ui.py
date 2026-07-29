@@ -411,6 +411,7 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
                     p_data = {
                         "positive_prompt": env_p,
                         "model_type": env_model_choice,
+                        "is_environment_still": True,
                         "assets": payload_assets,
                         "aspect_ratio": st.session_state.get('series_ar', '16:9'),
                         "image_size": "2K"
