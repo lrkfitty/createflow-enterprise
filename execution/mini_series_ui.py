@@ -904,6 +904,14 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
                             if active_wardrobe_labels:
                                 st.caption("Mapped Reference Attachments: " + " | ".join(active_wardrobe_labels))
                             
+                            # Cascading Video Continuity Toggle
+                            use_cascade_vid = st.checkbox(
+                                "🔗 Cascading Video Continuity (Reference Shot N-1 Video)",
+                                value=True,
+                                key=f"v_casc_{key_base}",
+                                help="Automatically passes the previously generated shot video into Seedance 2.0 for 100% lighting, camera motion, and character continuity across clips!"
+                            )
+                            
                             c_vref_col, c_aref_col = st.columns(2)
                             with c_vref_col:
                                 up_vref = st.file_uploader("Reference Motion / Video (MP4)", type=["mp4", "mov"], key=f"v_vref_{key_base}")
@@ -951,6 +959,11 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
                                                 if o_path and os.path.exists(o_path):
                                                     ref_images.append(o_path)
 
+                                        # 4. Cascading Prior Shot Image Reference
+                                        prior_img_key = f"img_s{scene_idx}_sh{shot_idx - 1}" if shot_idx > 0 else (f"img_s{scene_idx - 1}_sh0" if scene_idx > 0 else None)
+                                        if prior_img_key and prior_img_key in st.session_state and os.path.exists(st.session_state[prior_img_key]):
+                                            ref_images.append(st.session_state[prior_img_key])
+
                                         # Primary image: keyframe still if generated; fallback to environment master image or character reference
                                         primary_img_path = img_p
                                         if not primary_img_path or not os.path.exists(primary_img_path):
@@ -959,13 +972,24 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
                                             elif ref_images:
                                                 primary_img_path = ref_images[0]
 
-                                        # Save Uploaded Video Reference if provided
+                                        # Save Uploaded Video Reference if provided, or use Cascading Video Continuity
                                         temp_v_path = None
                                         if up_vref:
                                             temp_v_dir = get_user_out_dir_func("Series/TempUploads")
                                             temp_v_path = os.path.join(temp_v_dir, f"ref_v_{key_base}.mp4")
                                             with open(temp_v_path, "wb") as f_v:
                                                 f_v.write(up_vref.getbuffer())
+                                        elif use_cascade_vid:
+                                            # Find prior shot video
+                                            prior_vid_key = f"vid_s{scene_idx}_sh{shot_idx - 1}" if shot_idx > 0 else None
+                                            if not prior_vid_key and scene_idx > 0:
+                                                prev_shots = sb.get('scenes', [])[scene_idx - 1].get('shots', [])
+                                                if prev_shots:
+                                                    prior_vid_key = f"vid_s{scene_idx - 1}_sh{len(prev_shots) - 1}"
+                                                    
+                                            if prior_vid_key and prior_vid_key in st.session_state and os.path.exists(st.session_state[prior_vid_key]):
+                                                temp_v_path = st.session_state[prior_vid_key]
+                                                st.toast(f"🔗 Cascading Video Continuity: Attached Shot Video '{os.path.basename(temp_v_path)}' as Motion Reference!")
 
                                         # Save Uploaded Audio / Voiceover Reference if provided
                                         temp_a_path = None
