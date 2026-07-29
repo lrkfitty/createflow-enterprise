@@ -228,10 +228,10 @@ def generate_wan_image(prompt, image_path, size="2K", output_folder="output", ex
     except Exception as e:
         return {"status": "failed", "error": str(e), "logs": logs}
 
-def generate_wan_video(prompt, image_path, resolution="1080P", duration=5, ref_video_path=None, extra_images=None, extra_videos=None, model="alibaba/wan-2.7/image-to-video", output_folder="output"):
+def generate_wan_video(prompt, image_path, resolution="1080P", duration=5, ref_video_path=None, ref_audio_path=None, extra_images=None, extra_videos=None, model="alibaba/wan-2.7/image-to-video", output_folder="output"):
     """
-    Animates an image using Alibaba Wan 2.7 models (Image-to-Video or Reference-to-Video) via Atlas Cloud API.
-    Supports multi-subject references (extra_images, extra_videos) for Reference-to-Video.
+    Animates an image using Seedance 2.0 or Wan 2.7 models via Atlas Cloud API.
+    Supports multi-subject image references (up to 9), video references, and audio/voiceover references for Seedance 2.0 Reference-to-Video.
     """
     brand_name = "Seedance 2.0" if "seedance" in model.lower() else "Wan 2.7"
     file_prefix = "seedance20_video" if "seedance" in model.lower() else "wan27_video"
@@ -246,9 +246,8 @@ def generate_wan_video(prompt, image_path, resolution="1080P", duration=5, ref_v
         os.makedirs(output_folder)
         
     try:
-        # Convert image to Base64 URI or keep URL
         logs.append("Processing input image...")
-        img_uri = image_to_base64_data_uri(image_path)
+        img_uri = image_to_base64_data_uri(image_path) if image_path else None
         logs.append(f"Source image processed (length: {len(img_uri) if img_uri else 0})")
         
         generate_url = "https://api.atlascloud.ai/api/v1/model/generateVideo"
@@ -257,7 +256,6 @@ def generate_wan_video(prompt, image_path, resolution="1080P", duration=5, ref_v
             "Authorization": f"Bearer {api_key}"
         }
         
-        # Build API payload
         payload = {
             "model": model,
             "prompt": prompt,
@@ -267,22 +265,71 @@ def generate_wan_video(prompt, image_path, resolution="1080P", duration=5, ref_v
         }
         
         if "seedance" in model.lower() and "reference-to-video" in model.lower():
-             # Seedance 2.0 Reference-to-Video (Image + Character/Photo References)
-             images_payload = [img_uri] if img_uri else []
+             # Seedance 2.0 Reference-to-Video (Up to 9 Images + Videos + Audios)
+             images_payload = []
+             if img_uri:
+                 images_payload.append(img_uri)
+                 
              if extra_images:
                   for idx, img_p in enumerate(extra_images):
                        if not img_p: continue
+                       if len(images_payload) >= 9:
+                            logs.append("⚠️ Reached max of 9 reference images for Seedance 2.0.")
+                            break
                        try:
                             extra_uri = image_to_base64_data_uri(img_p)
                             if extra_uri:
                                  images_payload.append(extra_uri)
-                                 logs.append(f"Encoded extra reference image {idx+2}")
+                                 logs.append(f"Encoded reference image {len(images_payload)}")
                        except Exception as img_err:
-                            logs.append(f"⚠️ Image encoding warning {idx+2}: {img_err}")
+                            logs.append(f"⚠️ Image encoding warning {idx+1}: {img_err}")
              
              payload["reference_images"] = images_payload
+             
+             # Reference Videos
+             videos_payload = []
              if ref_video_path:
-                  payload["reference_videos"] = [ref_video_path]
+                 v_url = ref_video_path
+                 if not v_url.startswith(("http://", "https://")) and os.path.exists(v_url):
+                     try:
+                         from execution.s3_uploader import upload_file_obj
+                         with open(v_url, "rb") as f_ref:
+                             s3_url = upload_file_obj(f_ref, object_name=f"ref_videos/{os.path.basename(v_url)}")
+                         if s3_url: v_url = s3_url
+                     except Exception as s3_e:
+                         logs.append(f"⚠️ Video S3 Upload warning: {s3_e}")
+                 videos_payload.append(v_url)
+                 
+             if extra_videos:
+                 for v_item in extra_videos:
+                     if not v_item: continue
+                     v_url = v_item
+                     if not v_url.startswith(("http://", "https://")) and os.path.exists(v_url):
+                         try:
+                             from execution.s3_uploader import upload_file_obj
+                             with open(v_url, "rb") as f_ref:
+                                 s3_url = upload_file_obj(f_ref, object_name=f"ref_videos/{os.path.basename(v_url)}")
+                             if s3_url: v_url = s3_url
+                         except Exception as s3_e:
+                             logs.append(f"⚠️ Video S3 Upload warning: {s3_e}")
+                     videos_payload.append(v_url)
+                     
+             if videos_payload:
+                 payload["reference_videos"] = videos_payload
+                 
+             # Reference Audios / Voiceover
+             if ref_audio_path:
+                 a_url = ref_audio_path
+                 if not a_url.startswith(("http://", "https://")) and os.path.exists(a_url):
+                     try:
+                         from execution.s3_uploader import upload_file_obj
+                         with open(a_url, "rb") as f_ref:
+                             s3_url = upload_file_obj(f_ref, object_name=f"ref_audios/{os.path.basename(a_url)}")
+                         if s3_url: a_url = s3_url
+                     except Exception as s3_e:
+                         logs.append(f"⚠️ Audio S3 Upload warning: {s3_e}")
+                 payload["reference_audios"] = [a_url]
+                 
         elif "reference-to-video" in model:
              if not ref_video_path:
                   return {"status": "failed", "error": "Missing reference video for Wan Reference-to-Video model.", "logs": logs}

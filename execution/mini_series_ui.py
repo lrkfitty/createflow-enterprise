@@ -166,7 +166,7 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
             series_title = st.text_input("🎬 Series Title", placeholder="The Influencer Life")
             series_logline = st.text_area("📝 Series Logline & High-Concept Premise", placeholder="A high-stakes drama following rival creators maneuvering through Miami's elite scene...", height=80)
             
-            st.markdown("#### 🆔 Identity, Tone & Aesthetics Matrix")
+            st.markdown("#### 🆔 Identity, Tone & Format")
             c_gen, c_tone = st.columns(2)
             with c_gen:
                 s_genre = st.selectbox("Genre", [
@@ -208,7 +208,60 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
                     "60 Seconds (Mini Episode — 16-18 Shots)"
                 ])
 
-            # Cast Selection (Characters + Friends)
+            # CINEMATOGRAPHY SETTINGS (Selected FIRST so it influences Environment Generation!)
+            st.markdown("#### 🎥 Cinematography & Lens Package")
+            c_cam, c_lens = st.columns(2)
+            with c_cam:
+                 cam_opts = [
+                     "Auto", 
+                     "Arri Alexa 65 (Large Format)", "Arri Alexa Mini LF", "Sony Venice 2 (8K)", 
+                     "RED V-Raptor [VV]", "Panavision Millennium DXL2", 
+                     "IMAX 15/70mm Film", "Kodak Vision3 35mm Film", "16mm Bolex", "Super 8mm",
+                     "iPhone 15 Pro Max (ProRes)", "VHS Camcorder (90s)", "CCTV Security Cam"
+                 ]
+                 s_camera = st.selectbox("Camera Body", cam_opts, key="s_camera")
+                 
+                 stock_opts = [
+                     "Auto", 
+                     "Kodak Portra 400", "Kodak Portra 800", "Fujifilm Velvia 100", 
+                     "Cinestill 800T (Halation)", "Kodak Tri-X 400 (B&W)", "Ilford HP5 (Grainy B&W)",
+                     "Technicolor (3-Strip)", "Bleach Bypass (Gritty)"
+                 ]
+                 s_film_stock = st.selectbox("Film Stock / LUT", stock_opts, key="s_film_stock")
+
+            with c_lens:
+                 lens_opts = [
+                     "Auto", 
+                     "Arri Signature Prime", "Cooke S4/i Prime", "Panavision Primo 70", "Canon K-35 Vintage",
+                     "Atlas Orion Anamorphic", "Laowa Probe Lens",
+                     "14mm Ultra Wide", "24mm Wide", "35mm Standard", "50mm Standard", 
+                     "85mm Portrait", "105mm Macro", "200mm Telephoto", "600mm Sniper"
+                 ]
+                 s_lens = st.selectbox("Lens Glass", lens_opts, key="s_lens")
+
+                 grade_opts = ["Auto", "Teal & Orange (Blockbuster)", "Vintage Warmth", "Cool Blue", "Noir B&W", "Matrix Green", "Euphoria Purple"]
+                 s_filter_look = st.selectbox("Color Grade", grade_opts, key="s_filter_look")
+            
+            c_light, c_style = st.columns(2)
+            with c_light:
+                 light_opts = ["Auto", "Golden Hour", "Studio Softbox", "Rembrandt", "Neon Cyberpunk", "Natural Diffused", "Hard Flash", "Silhouette", "God Rays"]
+                 s_lighting = st.selectbox("Lighting", light_opts, key="s_lighting")
+            with c_style:
+                 style_opts = [
+                     "Auto", 
+                     "Wes Anderson (Symmetrical/Pastel)", "Christopher Nolan (IMAX/Cold)", "Denis Villeneuve (Brutalist)",
+                     "Wong Kar-wai (Step Printing)", "Quentin Tarantino (Low Angle)", 
+                     "Euphoria (Glitter/A24)", "Cyberpunk (Neon)", "1950s Technicolor", "1990s Sitcom"
+                 ]
+                 s_movie_style = st.selectbox("Style Reference", style_opts, key="s_movie_style")
+            
+            c_ar_col, c_res_col = st.columns(2)
+            with c_ar_col:
+                 s_aspect_ratio = st.selectbox("Aspect Ratio", ["16:9", "9:16", "4:5", "1:1"], index=0, key="series_ar")
+            with c_res_col:
+                 s_resolution = st.selectbox("Resolution", ["1K", "2K", "4K"], index=0, key="series_res", help="Higher = sharper but slower + more expensive")
+
+        with col_sb2:
             st.markdown("#### 🎭 Cast Engine & Character Chemistry")
             
             char_opts = get_assets_by_category("characters", user_asset_path)
@@ -265,21 +318,23 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
                         )
                         cast_acting_profile_map[member_basename] = act_profile
 
-        with col_sb2:
-            st.markdown("#### 🌍 World Building & Environment Master Studio")
-            all_locs = list(vibes_data.keys()) + list(assets.get('locations', {}).keys())
-            
+    # --- STEP 2: HIGGSFIELD ENVIRONMENT MASTER GENERATION ---
+    st.markdown("---")
+    with st.expander("🌄 Step 2: Higgsfield AI Environment Master Studio", expanded=True):
+        st.markdown("Generate 8K Environment Master Stills before writing the script, incorporating your Series Bible & Cinematography Settings.")
+        
+        all_locs = list(vibes_data.keys()) + list(assets.get('locations', {}).keys())
+        
+        e_col1, e_col2 = st.columns(2)
+        with e_col1:
             st.write("**Primary Location** (Main Action Set)")
-            series_env = st.selectbox("Choose Primary Set", ["None"] + all_locs)
+            series_env = st.selectbox("Choose Primary Set", ["None"] + all_locs, key="series_env_sel")
             
             if series_env and series_env != "None":
                 path = vibes_data.get(series_env) or assets.get('locations', {}).get(series_env)
                 if path:
                     if isinstance(path, dict): path = path.get('default_img')
-                    st.image(path, caption="Preset Environment Reference", width=200)
-                
-                st.markdown("##### 🌄 Higgsfield AI Environment Master")
-                st.caption("Generate an 8K Master Environment Still following Higgsfield 3-Layer Depth & Kelvin Lighting rules.")
+                    st.image(path, caption="Preset Environment Reference", width=220)
                 
                 env_custom_notes = st.text_input(
                     "Environmental Textures & Details",
@@ -293,7 +348,7 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
                         env_data = generate_environment_master_prompt(
                             location_name=f"{series_env}. {env_custom_notes}" if env_custom_notes else series_env,
                             genre=s_genre,
-                            tone=f"{s_tone}. Lighting Mood: {s_wb_lighting}"
+                            tone=f"{s_tone}. Lighting: {s_lighting}. Camera: {s_camera}, {s_lens}. LUT: {s_film_stock}, Grade: {s_filter_look}, Style: {s_movie_style}"
                         )
                         env_p = env_data.get("environment_prompt")
                         p_data = {
@@ -312,7 +367,8 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
 
                 if "primary_env_img" in st.session_state and os.path.exists(st.session_state["primary_env_img"]):
                     st.image(st.session_state["primary_env_img"], caption="✨ Generated 8K Higgsfield Environment Master Still", use_container_width=True)
-            
+
+        with e_col2:
             st.write("**Secondary Location** (B-Roll / Cutaway Set)")
             sec_env = st.selectbox("Choose B-Roll Set", ["None"] + all_locs, key="sec_env")
             
@@ -320,70 +376,16 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
                 path_sec = vibes_data.get(sec_env) or assets.get('locations', {}).get(sec_env)
                 if path_sec:
                     if isinstance(path_sec, dict): path_sec = path_sec.get('default_img')
-                    st.image(path_sec, caption="Secondary B-Roll Environment", width=200)
+                    st.image(path_sec, caption="Secondary B-Roll Environment", width=220)
 
-    # --- STEP 2: WRITER'S ROOM ---
+    # --- STEP 3: WRITER'S ROOM ---
     st.markdown("---")
-    st.markdown("### ✍️ Writer's Room")
+    st.markdown("### ✍️ Step 3: Writer's Room & Director Vision AI")
     
     c_script, c_action = st.columns([3, 1])
     with c_script:
         with st.form(key="director_form"):
             series_script = st.text_area("Episode Synopsis & Dialogue Intent", height=200, placeholder="Synopsis: She finds out he's been lying, but he doesn't know she knows yet.\n\nIntent:\nALICE: Cold, distant.\nBOB: Trying too hard to be casual.")
-            
-            # V3: Hollywood Camera Controls - Restored & Expanded
-            with st.expander("🎥 Cinematography Settings", expanded=False):
-                c_cam, c_lens = st.columns(2)
-                with c_cam:
-                     cam_opts = [
-                         "Auto", 
-                         "Arri Alexa 65 (Large Format)", "Arri Alexa Mini LF", "Sony Venice 2 (8K)", 
-                         "RED V-Raptor [VV]", "Panavision Millennium DXL2", 
-                         "IMAX 15/70mm Film", "Kodak Vision3 35mm Film", "16mm Bolex", "Super 8mm",
-                         "iPhone 15 Pro Max (ProRes)", "VHS Camcorder (90s)", "CCTV Security Cam"
-                     ]
-                     s_camera = st.selectbox("Camera Body", cam_opts)
-                     
-                     stock_opts = [
-                         "Auto", 
-                         "Kodak Portra 400", "Kodak Portra 800", "Fujifilm Velvia 100", 
-                         "Cinestill 800T (Halation)", "Kodak Tri-X 400 (B&W)", "Ilford HP5 (Grainy B&W)",
-                         "Technicolor (3-Strip)", "Bleach Bypass (Gritty)"
-                     ]
-                     s_film_stock = st.selectbox("Film Stock / LUT", stock_opts)
-
-                with c_lens:
-                     lens_opts = [
-                         "Auto", 
-                         "Arri Signature Prime", "Cooke S4/i Prime", "Panavision Primo 70", "Canon K-35 Vintage",
-                         "Atlas Orion Anamorphic", "Laowa Probe Lens",
-                         "14mm Ultra Wide", "24mm Wide", "35mm Standard", "50mm Standard", 
-                         "85mm Portrait", "105mm Macro", "200mm Telephoto", "600mm Sniper"
-                     ]
-                     s_lens = st.selectbox("Lens Glass", lens_opts)
-
-                     grade_opts = ["Auto", "Teal & Orange (Blockbuster)", "Vintage Warmth", "Cool Blue", "Noir B&W", "Matrix Green", "Euphoria Purple"]
-                     s_filter_look = st.selectbox("Color Grade", grade_opts)
-                
-                c_light, c_style = st.columns(2)
-                with c_light:
-                     light_opts = ["Auto", "Golden Hour", "Studio Softbox", "Rembrandt", "Neon Cyberpunk", "Natural Diffused", "Hard Flash", "Silhouette", "God Rays"]
-                     s_lighting = st.selectbox("Lighting", light_opts)
-                with c_style:
-                     style_opts = [
-                         "Auto", 
-                         "Wes Anderson (Symmetrical/Pastel)", "Christopher Nolan (IMAX/Cold)", "Denis Villeneuve (Brutalist)",
-                         "Wong Kar-wai (Step Printing)", "Quentin Tarantino (Low Angle)", 
-                         "Euphoria (Glitter/A24)", "Cyberpunk (Neon)", "1950s Technicolor", "1990s Sitcom"
-                     ]
-                     s_movie_style = st.selectbox("Style Reference", style_opts)
-                
-                c_ar_col, c_res_col = st.columns(2)
-                with c_ar_col:
-                     s_aspect_ratio = st.selectbox("Aspect Ratio", ["16:9", "9:16", "4:5", "1:1"], index=0, key="series_ar")
-                with c_res_col:
-                     s_resolution = st.selectbox("Resolution", ["1K", "2K", "4K"], index=0, key="series_res", help="Higher = sharper but slower + more expensive")
-            
             s_transition_style = st.selectbox("Transition Pacing", ["Standard", "Fast / TikTok", "Slow / Cinematic", "Match Cut"])
             
             st.markdown("<br>", unsafe_allow_html=True)
@@ -746,7 +748,7 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
                                     
                             # HIGGSFIELD MOTION RIG & SEEDANCE ANIMATION
                             with st.expander(f"🎬 Higgsfield Motion Rig & Seedance Video", expanded=False):
-                                st.caption("Animate this shot using Seedance 2.0 or Wan 2.7 with your CreateFlow character references.")
+                                st.caption("Animate this shot using Seedance 2.0 Reference-to-Video (Atlas Cloud) with your characters, environment master, video motion, and voiceovers.")
                                 
                                 v_engine = st.selectbox(
                                     "Video Engine", 
@@ -770,6 +772,12 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
                                     help="Select cast members to pass their CreateFlow account reference images to Seedance / Wan for 100% likeness lock."
                                 )
                                 
+                                c_vref_col, c_aref_col = st.columns(2)
+                                with c_vref_col:
+                                    up_vref = st.file_uploader("Reference Motion / Video (MP4)", type=["mp4", "mov"], key=f"v_vref_{key_base}")
+                                with c_aref_col:
+                                    up_aref = st.file_uploader("Reference Voiceover / Audio (MP3/WAV)", type=["mp3", "wav", "m4a"], key=f"v_aref_{key_base}")
+
                                 motion_prompt_input = st.text_area(
                                     "Motion Action Prompt",
                                     value=shot_prompt,
@@ -777,18 +785,51 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
                                     key=f"v_p_{key_base}"
                                 )
 
-                                if st.button(f"🎥 Animate Shot {shot_idx+1}", type="primary", key=f"v_btn_{key_base}", use_container_width=True):
+                                if st.button(f"🎥 Animate Shot {shot_idx+1} with Seedance", type="primary", key=f"v_btn_{key_base}", use_container_width=True):
                                     user = st.session_state.current_user.get("username") if "current_user" in st.session_state and st.session_state.current_user else "guest"
                                     if not auth_mgr.deduct_credits(user, 3):
                                         st.error("❌ Not enough credits! Video generation requires 3 credits.")
                                     else:
                                         with st.spinner("⚡ Animating shot with Seedance 2.0 / Wan 2.7 on Atlas Cloud..."):
+                                            # Assemble Multi-Reference Array (Up to 9 images)
                                             ref_images = []
+                                            
+                                            # 1. Environment Master Still
+                                            if "primary_env_img" in st.session_state and os.path.exists(st.session_state["primary_env_img"]):
+                                                ref_images.append(st.session_state["primary_env_img"])
+                                                
+                                            # 2. Selected Cast Character References
                                             for c_ref_name in sel_anim_cast:
                                                 c_path = st.session_state.cast_lookup_map.get(c_ref_name)
                                                 if c_path and os.path.exists(c_path):
                                                     ref_images.append(c_path)
-                                            
+                                                    
+                                            # 3. Wardrobe References
+                                            w_snapshot = st.session_state.get('cast_wardrobe_map_snapshot', {})
+                                            for c_ref_name in sel_anim_cast:
+                                                o_key = w_snapshot.get(c_ref_name)
+                                                if o_key and o_key != "Default Outfit" and o_key != "Default":
+                                                    o_path = outfits_data.get(o_key)
+                                                    if isinstance(o_path, dict): o_path = o_path.get('default_img')
+                                                    if o_path and os.path.exists(o_path):
+                                                        ref_images.append(o_path)
+
+                                            # Save Uploaded Video Reference if provided
+                                            temp_v_path = None
+                                            if up_vref:
+                                                temp_v_dir = get_user_out_dir_func("Series/TempUploads")
+                                                temp_v_path = os.path.join(temp_v_dir, f"ref_v_{key_base}.mp4")
+                                                with open(temp_v_path, "wb") as f_v:
+                                                    f_v.write(up_vref.getbuffer())
+
+                                            # Save Uploaded Audio / Voiceover Reference if provided
+                                            temp_a_path = None
+                                            if up_aref:
+                                                temp_a_dir = get_user_out_dir_func("Series/TempUploads")
+                                                temp_a_path = os.path.join(temp_a_dir, f"ref_a_{key_base}.mp3")
+                                                with open(temp_a_path, "wb") as f_a:
+                                                    f_a.write(up_aref.getbuffer())
+
                                             if "Seedance 2.0 Mini" in v_engine:
                                                 target_model = "bytedance/seedance-2.0-mini/reference-to-video"
                                             elif "Seedance 2.0 (Image" in v_engine:
@@ -804,6 +845,8 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
                                                 image_path=img_p,
                                                 resolution=v_res,
                                                 duration=v_dur,
+                                                ref_video_path=temp_v_path,
+                                                ref_audio_path=temp_a_path,
                                                 extra_images=ref_images if ref_images else None,
                                                 model=target_model,
                                                 output_folder=get_user_out_dir_func("Series/Videos")
@@ -811,7 +854,7 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
                                             
                                             if res_video.get("status") == "success":
                                                 st.session_state[f"vid_{key_base}"] = res_video["video_path"]
-                                                st.toast(f"✅ Shot {shot_idx+1} Animated Successfully!")
+                                                st.toast(f"✅ Shot {shot_idx+1} Animated Successfully with Seedance!")
                                                 st.rerun()
                                             else:
                                                 auth_mgr.add_credits(user, 3)
