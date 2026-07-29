@@ -39,9 +39,59 @@ def generate_storyboard_prompts(scenario_name, context, model="gemini", camera_s
         return _generate_gemini(system_instruction)
 
 def _generate_gemini(prompt):
+    # Try Atlas Cloud API first (Atlas Key - zero quota limits)
+    atlas_key = os.getenv("ATLASCLOUD_API_KEY")
+    if atlas_key:
+        atlas_models = ["google/gemini-2.5-flash", "google/gemini-2.0-flash", "openai/gpt-4o-mini", "deepseek-ai/deepseek-v4-flash"]
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {atlas_key}"
+        }
+        for m_name in atlas_models:
+            payload = {
+                "model": m_name,
+                "messages": [{"role": "user", "content": prompt}]
+            }
+            try:
+                resp = requests.post("https://api.atlascloud.ai/v1/chat/completions", headers=headers, json=payload, timeout=30)
+                if resp.status_code == 200:
+                    res_json = resp.json()
+                    text = res_json['choices'][0]['message']['content']
+                    text = text.replace('```json', '').replace('```', '').strip()
+                    
+                    start_bracket = min([i for i in (text.find('['), text.find('{')) if i != -1], default=-1)
+                    end_bracket = max([text.rfind(']'), text.rfind('}')])
+                    if start_bracket != -1 and end_bracket != -1 and end_bracket > start_bracket:
+                        text = text[start_bracket:end_bracket+1]
+
+                    params = json.loads(text)
+                    if isinstance(params, dict):
+                        for key, val in params.items():
+                            if isinstance(val, list):
+                                params = val
+                                break
+
+                    if isinstance(params, list) and len(params) >= 1:
+                        clean_prompts = []
+                        for item in params:
+                            if isinstance(item, str):
+                                clean_prompts.append(item.strip())
+                            elif isinstance(item, dict):
+                                str_val = item.get("prompt") or item.get("description") or item.get("text") or list(item.values())[0]
+                                clean_prompts.append(str(str_val).strip())
+                        
+                        while len(clean_prompts) < 4:
+                            clean_prompts.append(clean_prompts[-1] if clean_prompts else prompt)
+                            
+                        return clean_prompts[:4]
+            except Exception as atlas_e:
+                print(f"Atlas Cloud LLM Warning ({m_name}): {atlas_e}")
+                continue
+
+    # Fallback: Direct Google API Key
     api_key = os.getenv("GOOGLE_API_KEY")
     if not api_key:
-        return ["Error: Missing GOOGLE_API_KEY", "", "", ""]
+        return ["Error: Missing ATLASCLOUD_API_KEY and GOOGLE_API_KEY", "", "", ""]
         
     models_to_try = ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-flash-latest', 'gemini-pro-latest', 'gemini-2.0-flash-001', 'gemini-2.5-pro']
     headers = { "Content-Type": "application/json" }
@@ -64,8 +114,6 @@ def _generate_gemini(prompt):
                 continue
                 
             res_json = response.json()
-            
-            # Extract text
             if 'candidates' not in res_json or not res_json['candidates']:
                 last_error_msg = f"No candidates: {res_json.get('promptFeedback', res_json)}"
                 continue
@@ -73,7 +121,6 @@ def _generate_gemini(prompt):
             text = res_json['candidates'][0]['content']['parts'][0]['text']
             text = text.replace('```json', '').replace('```', '').strip()
             
-            # Extract JSON block if surrounded by extra text
             start_bracket = min([i for i in (text.find('['), text.find('{')) if i != -1], default=-1)
             end_bracket = max([text.rfind(']'), text.rfind('}')])
             if start_bracket != -1 and end_bracket != -1 and end_bracket > start_bracket:
@@ -96,11 +143,9 @@ def _generate_gemini(prompt):
                     if isinstance(item, str):
                         clean_prompts.append(item.strip())
                     elif isinstance(item, dict):
-                        # Extract the main text value from dict
                         str_val = item.get("prompt") or item.get("description") or item.get("text") or list(item.values())[0]
                         clean_prompts.append(str(str_val).strip())
                 
-                # Pad to at least 4 items if fewer returned
                 while len(clean_prompts) < 4:
                     clean_prompts.append(clean_prompts[-1] if clean_prompts else prompt)
                     

@@ -2127,26 +2127,46 @@ CRITICAL REQUIREMENTS:
 Write an immersive, detailed prompt now:"""
                         
                         try:
-                            import google.generativeai as genai
-                            _google_key = os.getenv("GOOGLE_API_KEY")
-                            if not _google_key:
-                                raise ValueError("GOOGLE_API_KEY not configured")
-                            genai.configure(api_key=_google_key)
-                            # Try models sequentially during generate_content execution
-                            models_to_try = ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-flash-latest', 'gemini-pro-latest', 'gemini-2.0-flash-001', 'gemini-2.5-pro']
-                            response = None
-                            last_err = "No models succeeded."
-                            for m_name in models_to_try:
+                            generated_prompt = None
+                            _atlas_key = os.getenv("ATLASCLOUD_API_KEY")
+                            if _atlas_key:
                                 try:
-                                    model = genai.GenerativeModel(m_name)
-                                    response = model.generate_content(director_prompt, generation_config={"temperature": sel_temperature})
-                                    break
-                                except Exception as e:
-                                    last_err = str(e)
-                                    continue
-                            if not response:
-                                raise ValueError(f"Generative AI execution failed: {last_err}")
-                            generated_prompt = response.text.strip()
+                                    _headers = {
+                                        "Content-Type": "application/json",
+                                        "Authorization": f"Bearer {_atlas_key}"
+                                    }
+                                    _payload = {
+                                        "model": "google/gemini-2.5-flash",
+                                        "messages": [{"role": "user", "content": director_prompt}],
+                                        "temperature": sel_temperature
+                                    }
+                                    _resp = requests.post("https://api.atlascloud.ai/v1/chat/completions", headers=_headers, json=_payload, timeout=30)
+                                    if _resp.status_code == 200:
+                                        _res_json = _resp.json()
+                                        generated_prompt = _res_json['choices'][0]['message']['content'].strip()
+                                except Exception as _atlas_err:
+                                    print(f"Atlas Director AI Warning: {_atlas_err}")
+
+                            if not generated_prompt:
+                                import google.generativeai as genai
+                                _google_key = os.getenv("GOOGLE_API_KEY")
+                                if not _google_key:
+                                    raise ValueError("ATLASCLOUD_API_KEY or GOOGLE_API_KEY not configured")
+                                genai.configure(api_key=_google_key)
+                                models_to_try = ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-flash-latest', 'gemini-pro-latest', 'gemini-2.0-flash-001', 'gemini-2.5-pro']
+                                response = None
+                                last_err = "No models succeeded."
+                                for m_name in models_to_try:
+                                    try:
+                                        model = genai.GenerativeModel(m_name)
+                                        response = model.generate_content(director_prompt, generation_config={"temperature": sel_temperature})
+                                        break
+                                    except Exception as e:
+                                        last_err = str(e)
+                                        continue
+                                if not response:
+                                    raise ValueError(f"Generative AI execution failed: {last_err}")
+                                generated_prompt = response.text.strip()
                             
                             # Remove any markdown artifacts if present
                             if "```" in generated_prompt:

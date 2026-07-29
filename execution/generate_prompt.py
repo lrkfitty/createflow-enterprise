@@ -402,6 +402,35 @@ def generate_prompt_content(vibe, outfit, character,
                         continue
                         
             if not success or not response:
+                # Try Atlas Cloud API fallback using ATLASCLOUD_API_KEY
+                atlas_key = os.getenv("ATLASCLOUD_API_KEY")
+                if atlas_key:
+                    try:
+                        print("⚡ Falling back to Atlas Cloud LLM (Zero Quota)...")
+                        headers = {
+                            "Content-Type": "application/json",
+                            "Authorization": f"Bearer {atlas_key}"
+                        }
+                        atlas_payload = {
+                            "model": "google/gemini-2.5-flash",
+                            "messages": [
+                                {"role": "user", "content": f"{system_prompt}\n\nUSER REQUEST:\n{user_text_content}"}
+                            ]
+                        }
+                        a_resp = requests.post("https://api.atlascloud.ai/v1/chat/completions", headers=headers, json=atlas_payload, timeout=30)
+                        if a_resp.status_code == 200:
+                            a_json = a_resp.json()
+                            raw_text = a_json['choices'][0]['message']['content']
+                            if "```json" in raw_text:
+                                try: raw_text = raw_text.split("```json")[1].split("```")[0].strip()
+                                except IndexError: pass
+                            elif "{" in raw_text:
+                                start = raw_text.find("{")
+                                end = raw_text.rfind("}") + 1
+                                raw_text = raw_text[start:end]
+                            return json.loads(raw_text)
+                    except Exception as atlas_e:
+                        print(f"Atlas LLM Fallback Error: {atlas_e}")
                 raise last_err
             
             # Parse JSON
