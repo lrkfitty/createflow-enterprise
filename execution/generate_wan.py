@@ -266,9 +266,26 @@ def generate_wan_video(prompt, image_path, resolution="1080P", duration=5, ref_v
             "seed": -1
         }
         
-        if "reference-to-video" in model:
+        if "seedance" in model.lower() and "reference-to-video" in model.lower():
+             # Seedance 2.0 Reference-to-Video (Image + Character/Photo References)
+             images_payload = [img_uri] if img_uri else []
+             if extra_images:
+                  for idx, img_p in enumerate(extra_images):
+                       if not img_p: continue
+                       try:
+                            extra_uri = image_to_base64_data_uri(img_p)
+                            if extra_uri:
+                                 images_payload.append(extra_uri)
+                                 logs.append(f"Encoded extra reference image {idx+2}")
+                       except Exception as img_err:
+                            logs.append(f"⚠️ Image encoding warning {idx+2}: {img_err}")
+             
+             payload["reference_images"] = images_payload
+             if ref_video_path:
+                  payload["reference_videos"] = [ref_video_path]
+        elif "reference-to-video" in model:
              if not ref_video_path:
-                  return {"status": "failed", "error": "Missing reference video for Reference-to-Video model.", "logs": logs}
+                  return {"status": "failed", "error": "Missing reference video for Wan Reference-to-Video model.", "logs": logs}
              
              # Primary reference video
              ref_video_url = ref_video_path

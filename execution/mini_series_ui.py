@@ -652,9 +652,90 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
                             st.image(img_p, caption=f"Shot {shot_idx+1}", use_container_width=True)
                             if os.path.exists(img_p):
                                 with open(img_p, "rb") as file:
-                                    st.download_button("⬇️", file, file_name=os.path.basename(img_p), mime="image/png", key=f"dl_{key_base}")
+                                    st.download_button("⬇️ Download Still", file, file_name=os.path.basename(img_p), mime="image/png", key=f"dl_{key_base}")
+                                    
+                            # HIGGSFIELD MOTION RIG & SEEDANCE ANIMATION
+                            with st.expander(f"🎬 Higgsfield Motion Rig & Seedance Video", expanded=False):
+                                st.caption("Animate this shot using Seedance 2.0 or Wan 2.7 with your CreateFlow character references.")
+                                
+                                v_engine = st.selectbox(
+                                    "Video Engine", 
+                                    [
+                                        "Seedance 2.0 Mini (Reference-to-Video)",
+                                        "Seedance 2.0 (Image-to-Video)",
+                                        "Wan 2.7 (Image-to-Video)",
+                                        "Kling 1.6 Video"
+                                    ],
+                                    key=f"v_eng_{key_base}"
+                                )
+                                v_res = st.selectbox("Resolution", ["1080P", "720P"], key=f"v_res_{key_base}")
+                                v_dur = st.slider("Duration (Sec)", 2, 10, 5, key=f"v_dur_{key_base}")
+                                
+                                all_cast_keys = list(st.session_state.cast_lookup_map.keys())
+                                sel_anim_cast = st.multiselect(
+                                    "Character References (Likeness Lock)",
+                                    options=all_cast_keys,
+                                    default=[c for c in shot.get('characters', []) if c in all_cast_keys],
+                                    key=f"v_cast_{key_base}",
+                                    help="Select cast members to pass their CreateFlow account reference images to Seedance / Wan for 100% likeness lock."
+                                )
+                                
+                                motion_prompt_input = st.text_area(
+                                    "Motion Action Prompt",
+                                    value=shot_prompt,
+                                    height=100,
+                                    key=f"v_p_{key_base}"
+                                )
+
+                                if st.button(f"🎥 Animate Shot {shot_idx+1}", type="primary", key=f"v_btn_{key_base}", use_container_width=True):
+                                    user = st.session_state.current_user.get("username") if "current_user" in st.session_state and st.session_state.current_user else "guest"
+                                    if not auth_mgr.deduct_credits(user, 3):
+                                        st.error("❌ Not enough credits! Video generation requires 3 credits.")
+                                    else:
+                                        with st.spinner("⚡ Animating shot with Seedance 2.0 / Wan 2.7 on Atlas Cloud..."):
+                                            ref_images = []
+                                            for c_ref_name in sel_anim_cast:
+                                                c_path = st.session_state.cast_lookup_map.get(c_ref_name)
+                                                if c_path and os.path.exists(c_path):
+                                                    ref_images.append(c_path)
+                                            
+                                            if "Seedance 2.0 Mini" in v_engine:
+                                                target_model = "bytedance/seedance-2.0-mini/reference-to-video"
+                                            elif "Seedance 2.0 (Image" in v_engine:
+                                                target_model = "bytedance/seedance-2.0/image-to-video"
+                                            elif "Wan" in v_engine:
+                                                target_model = "alibaba/wan-2.7/image-to-video"
+                                            else:
+                                                target_model = "bytedance/seedance-2.0/image-to-video"
+                                                
+                                            from execution.generate_wan import generate_wan_video
+                                            res_video = generate_wan_video(
+                                                prompt=motion_prompt_input,
+                                                image_path=img_p,
+                                                resolution=v_res,
+                                                duration=v_dur,
+                                                extra_images=ref_images if ref_images else None,
+                                                model=target_model,
+                                                output_folder=get_user_out_dir_func("Series/Videos")
+                                            )
+                                            
+                                            if res_video.get("status") == "success":
+                                                st.session_state[f"vid_{key_base}"] = res_video["video_path"]
+                                                st.toast(f"✅ Shot {shot_idx+1} Animated Successfully!")
+                                                st.rerun()
+                                            else:
+                                                auth_mgr.add_credits(user, 3)
+                                                st.error(f"Video Generation Failed: {res_video.get('error')}")
+                                                with st.expander("View Logs"):
+                                                    st.code("\n".join(res_video.get("logs", [])))
+
+                            if f"vid_{key_base}" in st.session_state and os.path.exists(st.session_state[f"vid_{key_base}"]):
+                                vid_p = st.session_state[f"vid_{key_base}"]
+                                st.video(vid_p)
+                                with open(vid_p, "rb") as v_file:
+                                    st.download_button("⬇️ Download Motion Video", v_file, file_name=os.path.basename(vid_p), mime="video/mp4", key=f"dl_vid_{key_base}")
                         else:
-                            st.info("No Image")
+                            st.info("Generate photo first to animate")
                     
                     st.divider()
 
@@ -662,10 +743,11 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
                         "scene_id": scene.get('id'),
                         "shot_id": shot_idx + 1,
                         "prompt": shot_prompt,
-                        "type": motion_type, # Fixed scope
+                        "type": motion_type,
                         "mocap": mocap_file,
                         "characters": shot.get('characters'),
                         "environment": series_env,
                         "transition": shot.get('transition'),
-                        "generated_still": st.session_state.get(f"img_{key_base}") 
+                        "generated_still": st.session_state.get(f"img_{key_base}"),
+                        "generated_video": st.session_state.get(f"vid_{key_base}")
                     })
