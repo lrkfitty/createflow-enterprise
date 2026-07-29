@@ -115,14 +115,18 @@ def parse_script_to_scenes(script_text, cast_list, environment_name, genre="Gene
     """
 
     system_instruction = f"""
-    You are a World-Class HOLLYWOOD DIRECTOR and CINEMATOGRAPHER specializing in HIGGSFIELD SEEDANCE V2 WORKFLOW.
-    Your job is to visualize a script into a precise, high-end storyboard of PHOTOREALISTIC SCENE STILLS (film stills).
+    You are a World-Class HOLLYWOOD SHOWRUNNER, MASTER DIRECTOR, and CINEMATOGRAPHER specializing in HIGGSFIELD SEEDANCE V2 WORKFLOW.
+    Your job is to transform a premise/synopsis into a complete, masterfully directed episode script with FULL CHARACTER DIALOGUE, physical performance cues, and precise 35mm visual prompts.
     
-    HIGGSFIELD SEEDANCE V2 PROMPTING PROTOCOL (STRICT ADHERENCE REQUIRED):
-    1. POSITIVE-ONLY PHRASING:
+    HIGGSFIELD SEEDANCE V2 DIRECTING & PROMPTING PROTOCOL (STRICT ADHERENCE REQUIRED):
+    1. MASTER DIRECTING & DIALOGUE GENERATION:
+       - Write REAL dramatic character dialogue lines for each shot based on the script synopsis and intent.
+       - Include direct character speech, subtext, tone of delivery, and micro-expression acting cues.
+       - Provide dedicated director beat notes for the actor's performance and camera operator.
+    2. POSITIVE-ONLY PHRASING:
        - Describe exact physical actions, posture, lighting, and surface textures.
        - NEVER use negative prohibitions ("no blur", "does not fall", "not cartoon").
-    2. FOV DEGREES ANCHOR TABLE (Use exact degree steps in visual_prompt):
+    3. FOV DEGREES ANCHOR TABLE (Use exact degree steps in visual_prompt):
        - 180° = Fisheye / POV
        - 107° = Architectural Ultra-Wide (Establishing Environment)
        - 84°  = Wide Shot (Group Blocking)
@@ -132,17 +136,15 @@ def parse_script_to_scenes(script_text, cast_list, environment_name, genre="Gene
        - 18°  = Natural Portrait (Close-Up, Identity Preserved)
        - 12°  = Tele-Detail (Hands, Props, Key Objects)
        - 8°   = Super-Tele Extreme Compression
-    3. CAMERA BLOCK IN 3RD POSITION:
+    4. CAMERA BLOCK IN 3RD POSITION:
        - Structure: [Subject Context & Tags] -> [Space & Timing / Physical Action] -> [CAMERA: FOV° + Operator Axis + Height] -> [Atmosphere & Light in %/Kelvin] -> [Style & Output].
-    4. ACTING & PERFORMANCE THROUGH MUSCLE MOVEMENT:
+    5. ACTING & PERFORMANCE THROUGH MUSCLE MOVEMENT:
        - Never use raw emotion labels like "sad" or "angry".
        - Describe physical muscle movements: "jaw tightens, eyes drop to the table, breath shortens, knuckles whiten on glass".
-    5. PHYSICAL INTERACTION & ATMOSPHERE:
+    6. PHYSICAL INTERACTION & ATMOSPHERE:
        - State atmosphere in percent (%) or meters depth (e.g. "fog density 30%, haze visible at 20 meters depth").
        - State speeds in km/h (e.g. "subject moves at 15 km/h", "camera pans at 3 km/h").
        - Physical interaction: rain runs down fabric, dust motes catch light beams, skin shows natural texture.
-    6. COLOR VIA MATERIAL & LIGHT:
-       - Tie color directly to material + light beam + compositional role (e.g. "crimson velvet jacket catching the 3200K tungsten spill").
 
     SERIES BIBLE:
     - GENRE: {genre}
@@ -161,7 +163,7 @@ def parse_script_to_scenes(script_text, cast_list, environment_name, genre="Gene
     
     DYNAMIC SHOT BREAKDOWN:
     - Analyze the script and create AS MANY SHOTS AS THE SCRIPT NEEDS (MINIMUM 8).
-    - Dialogue lines, reaction shots, location establishing, emotional beats each get dedicated coverage.
+    - Create dedicated dialogue shots, reaction shots, location establishing, and emotional beats.
     - Mark B-Roll shots with "is_broll": true.
     
     OUTPUT FORMAT:
@@ -174,16 +176,18 @@ def parse_script_to_scenes(script_text, cast_list, environment_name, genre="Gene
           "location": "{environment_name}",
           "shots": [
             {{
-               "shot_size": "Wide Shot",
+               "shot_size": "Medium Close-Up",
                "camera_angle": "Eye Level",
                "composition": "Rule of Thirds",
                "depth_of_field": "Shallow depth of field",
-               "lighting_type": "Golden Hour",
-               "time_of_day": "Golden Hour",
-               "subject_position": "Center framed",
-               "action_description": "...",
-               "characters": ["Name1"],
-               "visual_prompt": "Photorealistic film still. [Subject] [Action]. CAMERA: FOV 47°, eye-level, operator anchored 3 meters. Atmospheric haze 20%, 5600K daylight, rim lighting on fabric. Ultra-detailed 8K RAW photography.",
+               "lighting_type": "3200K Tungsten Warmth",
+               "time_of_day": "Night / Interior",
+               "subject_position": "Center-left framed",
+               "action_description": "Alice turns slowly, her jaw tightening as she looks across the room.",
+               "dialogue": "ALICE: 'You thought I wouldn't find out? Take a look around.'",
+               "director_notes": "Deliver line cold with zero vocal fluctuation. Keep gaze locked on Bob's eyes.",
+               "characters": ["Alice"],
+               "visual_prompt": "Cinematic 35mm film still. Alice in medium close-up, turning her head slowly. CAMERA: FOV 29°, eye-level, operator anchored 2 meters. ISO 400 35mm film grain, 3200K tungsten key light, shallow depth of field. Unretouched physical skin texture, zero CGI.",
                "is_broll": false
             }}
           ]

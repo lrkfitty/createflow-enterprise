@@ -711,7 +711,13 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
                         sel_trans = st.selectbox("Transition", trans_opts, key=f"trans_{key_base}", label_visibility="collapsed")
                         shot['transition'] = sel_trans
                         
-                        shot_prompt = st.text_area("Visual Prompt", value=shot.get('visual_prompt'), height=250, key=f"p_{key_base}", label_visibility="collapsed")
+                        # Display Dialogue and Director Notes
+                        if shot.get('dialogue'):
+                            st.markdown(f"💬 **Dialogue**: *{shot.get('dialogue')}*")
+                        if shot.get('director_notes'):
+                            st.caption(f"🎬 **Director Note**: {shot.get('director_notes')}")
+
+                        shot_prompt = st.text_area("Visual Prompt", value=shot.get('visual_prompt'), height=200, key=f"p_{key_base}", label_visibility="collapsed")
                         st.caption(f"Length: {len(shot_prompt) if shot_prompt else 0} chars (Target: 800+)")
                         
                         c_gen, c_type = st.columns([1, 1.5])
@@ -844,6 +850,19 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
                                 key=f"v_cast_{key_base}",
                                 help="Select cast members to pass their CreateFlow account reference images to Seedance / Wan for 100% likeness lock."
                             )
+                            
+                            # Explicit Wardrobe Mapping Indicator
+                            w_snapshot = st.session_state.get('cast_wardrobe_map_snapshot', {})
+                            active_wardrobe_labels = []
+                            for c_ref in sel_anim_cast:
+                                o_k = shot_wardrobe_map.get(c_ref) or w_snapshot.get(c_ref) or w_snapshot.get(c_ref.replace('_', ' ').split(' ')[0])
+                                if o_k and o_k != "Default Outfit" and o_k != "Default":
+                                    active_wardrobe_labels.append(f"👗 {c_ref}: {o_k}")
+                                else:
+                                    active_wardrobe_labels.append(f"👔 {c_ref}: Default Outfit")
+                            
+                            if active_wardrobe_labels:
+                                st.caption("Mapped Reference Attachments: " + " | ".join(active_wardrobe_labels))
                             
                             c_vref_col, c_aref_col = st.columns(2)
                             with c_vref_col:
