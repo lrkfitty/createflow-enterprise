@@ -159,112 +159,141 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
         st.session_state.series_storyboard = None
 
     # --- STEP 1: SERIES BIBLE ---
-    with st.expander("📖 Step 1: Series Bible", expanded=True):
-        col_sb1, col_sb2 = st.columns([1, 1])
+    with st.expander("📖 Step 1: Series Bible & Production Blueprint", expanded=True):
+        col_sb1, col_sb2 = st.columns([1.1, 0.9])
         
         with col_sb1:
-            series_title = st.text_input("Series Title", placeholder="The Influencer Life")
+            series_title = st.text_input("🎬 Series Title", placeholder="The Influencer Life")
+            series_logline = st.text_area("📝 Series Logline & High-Concept Premise", placeholder="A high-stakes drama following rival creators maneuvering through Miami's elite scene...", height=80)
             
-            # IDENTITY (New V2 Fields)
-            st.markdown("#### 🆔 Identity & Tone")
+            st.markdown("#### 🆔 Identity, Tone & Aesthetics Matrix")
             c_gen, c_tone = st.columns(2)
             with c_gen:
-                s_genre = st.selectbox("Genre", ["General", "Rom-com", "Drama", "Crime", "Thriller", "Horror", "Slice of Life"])
+                s_genre = st.selectbox("Genre", [
+                    "General / Drama", 
+                    "A24 Psychological Drama", 
+                    "Cyberpunk / Sci-Fi", 
+                    "Neo-Noir Crime / Thriller", 
+                    "High-Fashion / Luxury", 
+                    "Rom-Com / Romance", 
+                    "Horror / Supernatural", 
+                    "Slice of Life / Realism"
+                ])
             with c_tone:
-                s_tone = st.selectbox("Tone", ["Neutral", "Luxury", "Gritty", "Dark", "Soft / Romantic", "Comedic"])
+                s_tone = st.selectbox("Tone & Mood", [
+                    "A24 Moody & Atmospheric", 
+                    "Hyper-Luxury Gloss", 
+                    "Gritty Cinematic", 
+                    "Dark & Suspenseful", 
+                    "Warm Golden Nostalgia", 
+                    "Documentary / Raw", 
+                    "Comedic & Energetic"
+                ])
             
-            s_len = st.radio("Episode Length", ["30 Seconds", "45 Seconds"], horizontal=True)
+            c_wb, c_len = st.columns(2)
+            with c_wb:
+                s_wb_lighting = st.selectbox("Lighting & White Balance Mood", [
+                    "5600K Natural Daylight (Clean & Crisp)",
+                    "3200K Tungsten Warmth (Golden Hour / Interior)",
+                    "4000K Neutral Studio Flash",
+                    "Neon Cyberpunk (Pink & Cyan Spill)",
+                    "8500K Cold Blue Haze (Suspense & Rain)",
+                    "High-Contrast Chiaroscuro (Deep Shadows)"
+                ])
+            with c_len:
+                s_len = st.selectbox("Target Episode Format", [
+                    "30 Seconds (Commercial / Short — 8-10 Shots)",
+                    "15 Seconds (TikTok / Reel — 4-6 Shots)",
+                    "45 Seconds (Dramatic Short — 12-14 Shots)",
+                    "60 Seconds (Mini Episode — 16-18 Shots)"
+                ])
 
             # Cast Selection (Characters + Friends)
-            st.markdown("#### 🎭 Cast Selection")
+            st.markdown("#### 🎭 Cast Engine & Character Chemistry")
             
-            # Use Unified Asset Loader
             char_opts = get_assets_by_category("characters", user_asset_path)
             rel_opts = get_assets_by_category("relations", user_asset_path)
-            # Merge for selection
             all_cast_opts = {**char_opts, **rel_opts}
             
-            # Unified Cast List
-            cast_selection = st.multiselect("Select Cast Members", list(all_cast_opts.keys()))
+            cast_selection = st.multiselect("Select Cast Members for Episode", list(all_cast_opts.keys()))
             
-            # Wardrobe & Role Mapping (V2)
             cast_wardrobe_map = {}
             cast_role_map = {}
+            cast_acting_profile_map = {}
             
             if cast_selection:
-                st.caption("Assign Roles & Wardrobe:")
+                st.caption("Configure Roles, Wardrobe & Micro-Expression Acting Profiles:")
                 for member in cast_selection:
                     st.divider()
-                    c_img, c_info = st.columns([1, 4])
+                    c_img, c_info = st.columns([1, 3.5])
                     
-                    # Resolve Data & Path (Robust Logic)
                     c_data = all_cast_opts.get(member)
-                    c_path = None
-                    if isinstance(c_data, dict):
-                        c_path = c_data.get('default_img')
-                    else:
-                        c_path = c_data
+                    c_path = c_data.get('default_img') if isinstance(c_data, dict) else c_data
+                    member_basename = member.split('/')[-1].replace('.png','').replace('.jpg','').strip()
 
-                    # Show Thumbnail
                     with c_img:
                         if c_path:
                             try:
                                 st.image(c_path, use_container_width=True)
                             except Exception as e:
-                                st.warning("Image Error")
-                                st.caption(f"{e}")
+                                st.warning("IMG Error")
                         else:
-                             st.warning("No IMG Data")
+                            st.warning("No Image")
 
                     with c_info:
-                        st.write(f"**{member.split('/')[-1]}**")
+                        st.markdown(f"**{member_basename}**")
                         c1, c2 = st.columns(2)
-                        
                         with c1:
-                             # Role Select
-                             role = st.selectbox(f"Role", ["Main Character", "Love Interest", "Antagonist", "Friend", "Background"], key=f"role_{member}")
-                             cast_role_map[member] = role
+                            role = st.selectbox(f"Role", ["Protagonist / Lead", "Co-Lead / Love Interest", "Antagonist / Rival", "Confidant / Best Friend", "Supporting Lead"], key=f"role_{member}")
+                            cast_role_map[member] = role
 
                         with c2:
-                             # Outfit Select
-                             outfit_opts = list(outfits_data.keys())
-                             sel_fit = st.selectbox(f"Outfit", ["Default"] + outfit_opts, key=f"series_fit_{member}")
-                             cast_wardrobe_map[member] = sel_fit
-                             
-                             # Show Outfit Preview
-                             if sel_fit != "Default":
-                                 o_path = outfits_data.get(sel_fit)
-                                 if isinstance(o_path, dict): o_path = o_path.get('default_img')
-                                 if o_path:
-                                     st.image(o_path, width=80)
-                                         
-                with st.expander("🛠️ Debug: Wardrobe Selections (Raw)", expanded=False):
-                    st.write(cast_wardrobe_map)
+                            outfit_opts = list(outfits_data.keys())
+                            sel_fit = st.selectbox(f"Wardrobe", ["Default Outfit"] + outfit_opts, key=f"series_fit_{member}")
+                            cast_wardrobe_map[member] = sel_fit
+                            if sel_fit != "Default Outfit":
+                                o_path = outfits_data.get(sel_fit)
+                                if isinstance(o_path, dict): o_path = o_path.get('default_img')
+                                if o_path and os.path.exists(o_path):
+                                    st.image(o_path, width=70)
+                                    
+                        act_profile = st.text_input(
+                            f"Micro-Expression Profile",
+                            value="Eyes locked, jaw tightens, subtle breathing pattern",
+                            key=f"act_{member}",
+                            help="Higgsfield Seedance V2 muscle-movement performance description."
+                        )
+                        cast_acting_profile_map[member_basename] = act_profile
 
         with col_sb2:
-            st.markdown("#### 🌍 Series Environments")
-            # Combine Vibes and Locations
+            st.markdown("#### 🌍 World Building & Environment Master Studio")
             all_locs = list(vibes_data.keys()) + list(assets.get('locations', {}).keys())
             
-            st.write("**Primary Location** (Main Action)")
-            series_env = st.selectbox("Choose Primary", ["None"] + all_locs)
+            st.write("**Primary Location** (Main Action Set)")
+            series_env = st.selectbox("Choose Primary Set", ["None"] + all_locs)
             
             if series_env and series_env != "None":
-                # Preview Preset
                 path = vibes_data.get(series_env) or assets.get('locations', {}).get(series_env)
                 if path:
                     if isinstance(path, dict): path = path.get('default_img')
-                    st.image(path, caption="Preset Location Reference", width=200)
+                    st.image(path, caption="Preset Environment Reference", width=200)
                 
-                # HIGGSFIELD SEEDANCE V2 ENVIRONMENT AI GENERATOR
                 st.markdown("##### 🌄 Higgsfield AI Environment Master")
-                if st.button("✨ Generate Higgsfield Environment Master Still", type="primary", key="gen_env_btn"):
+                st.caption("Generate an 8K Master Environment Still following Higgsfield 3-Layer Depth & Kelvin Lighting rules.")
+                
+                env_custom_notes = st.text_input(
+                    "Environmental Textures & Details",
+                    placeholder="Wet asphalt, rain reflections, volumetric fog 30%, neon sign flickering",
+                    key="env_notes"
+                )
+                
+                if st.button("✨ Generate 8K Environment Master Still", type="primary", key="gen_env_btn", use_container_width=True):
                     with st.spinner("⚡ AI Generating 8K Higgsfield Environment Master Still..."):
                         from execution.series_processor import generate_environment_master_prompt
                         env_data = generate_environment_master_prompt(
-                            location_name=series_env,
+                            location_name=f"{series_env}. {env_custom_notes}" if env_custom_notes else series_env,
                             genre=s_genre,
-                            tone=s_tone
+                            tone=f"{s_tone}. Lighting Mood: {s_wb_lighting}"
                         )
                         env_p = env_data.get("environment_prompt")
                         p_data = {
@@ -276,22 +305,22 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
                         res_env = generate_image_from_prompt(p_data, get_user_out_dir_func("Series/Environments"))
                         if res_env.get("status") == "success":
                             st.session_state["primary_env_img"] = res_env["image_path"]
-                            st.toast("✅ Generated Higgsfield Environment Master Still!")
+                            st.toast("✅ Generated 8K Higgsfield Environment Master Still!")
                             st.rerun()
                         else:
                             st.error(f"Environment Generation Failed: {res_env.get('logs')}")
 
                 if "primary_env_img" in st.session_state and os.path.exists(st.session_state["primary_env_img"]):
-                    st.image(st.session_state["primary_env_img"], caption="✨ Generated Higgsfield AI Environment Master Still", use_container_width=True)
+                    st.image(st.session_state["primary_env_img"], caption="✨ Generated 8K Higgsfield Environment Master Still", use_container_width=True)
             
-            st.write("**Secondary Location** (B-Roll / Cutaways)")
-            sec_env = st.selectbox("Choose B-Roll Vibe", ["None"] + all_locs, key="sec_env")
+            st.write("**Secondary Location** (B-Roll / Cutaway Set)")
+            sec_env = st.selectbox("Choose B-Roll Set", ["None"] + all_locs, key="sec_env")
             
             if sec_env and sec_env != "None":
                 path_sec = vibes_data.get(sec_env) or assets.get('locations', {}).get(sec_env)
                 if path_sec:
                     if isinstance(path_sec, dict): path_sec = path_sec.get('default_img')
-                    st.image(path_sec, caption="Secondary Environment", width=200)
+                    st.image(path_sec, caption="Secondary B-Roll Environment", width=200)
 
     # --- STEP 2: WRITER'S ROOM ---
     st.markdown("---")
