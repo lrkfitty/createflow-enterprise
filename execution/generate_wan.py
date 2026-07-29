@@ -350,6 +350,9 @@ def generate_wan_video(prompt, image_path, resolution="1080P", duration=5, ref_v
                       v_res = process_vid_ref(v_item)
                       if v_res and v_res not in videos_payload: videos_payload.append(v_res)
                       
+             if not images_payload:
+                 return {"status": "failed", "error": "Seedance 2.0 requires at least 1 valid reference image (Keyframe Still or Environment Master).", "logs": logs}
+                 
              payload["reference_images"] = images_payload
              if videos_payload:
                  payload["reference_videos"] = videos_payload
@@ -439,10 +442,11 @@ def generate_wan_video(prompt, image_path, resolution="1080P", duration=5, ref_v
         logs.append(f"Submitting job to Atlas API for {model}...")
         
         response = None
+        last_net_err = None
         for attempt in range(1, 4):
             try:
                 logs.append(f"Sending request to Atlas Cloud (Attempt {attempt}/3)...")
-                response = requests.post(generate_url, headers=headers, json=payload, timeout=60)
+                response = requests.post(generate_url, headers=headers, json=payload, timeout=(15, 120))
                 if response.status_code == 200:
                     break
                 elif response.status_code in [500, 502, 503, 504, 429]:
@@ -451,11 +455,12 @@ def generate_wan_video(prompt, image_path, resolution="1080P", duration=5, ref_v
                 else:
                     break
             except Exception as req_err:
+                last_net_err = str(req_err)
                 logs.append(f"⚠️ Connection attempt {attempt} failed: {req_err}")
                 time.sleep(3)
                 
         if not response or response.status_code != 200:
-            raw_err = response.text if response else "No response from server"
+            raw_err = response.text if response else (last_net_err or "No response from server")
             if "<html" in raw_err.lower() or (response and response.status_code in [502, 503, 504]):
                 clean_err = "Atlas Cloud API temporary Gateway Timeout (HTTP 502). The backend server experienced a brief spike. Please click 'Animate Shot with Seedance' again to retry."
             else:

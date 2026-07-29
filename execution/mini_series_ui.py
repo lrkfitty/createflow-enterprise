@@ -974,6 +974,17 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
                                                 primary_img_path = st.session_state["primary_env_img"]
                                             elif ref_images:
                                                 primary_img_path = ref_images[0]
+                                            else:
+                                                # Asset Fallback
+                                                t_env = sec_env if is_broll and sec_env != "None" else series_env
+                                                fallback_path = vibes_data.get(t_env) or assets.get('locations', {}).get(t_env)
+                                                if isinstance(fallback_path, dict): fallback_path = fallback_path.get('default_img')
+                                                if fallback_path and os.path.exists(fallback_path):
+                                                    primary_img_path = fallback_path
+
+                                        if not primary_img_path and not ref_images:
+                                            st.error("❌ Cannot animate: Please generate a Keyframe Still or Environment Master Still in Step 2 first!")
+                                            st.stop()
 
                                         # Save Uploaded Video Reference if provided, or use Cascading Video Continuity
                                         temp_v_path = None
