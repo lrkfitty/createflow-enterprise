@@ -812,136 +812,142 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
                                 mocap_file = st.file_uploader("Ref", type=['mp4'], key=f"up_{key_base}", label_visibility="collapsed")
 
                     with col_img:
-                        if f"img_{key_base}" in st.session_state:
-                            img_p = st.session_state[f"img_{key_base}"]
-                            st.image(img_p, caption=f"Shot {shot_idx+1}", use_container_width=True)
-                            if os.path.exists(img_p):
-                                with open(img_p, "rb") as file:
-                                    st.download_button("⬇️ Download Still", file, file_name=os.path.basename(img_p), mime="image/png", key=f"dl_{key_base}")
+                        # 1. Display Generated Keyframe Still (if captured)
+                        img_p = st.session_state.get(f"img_{key_base}")
+                        if img_p and os.path.exists(img_p):
+                            st.image(img_p, caption=f"Shot {shot_idx+1} Keyframe Still", use_container_width=True)
+                            with open(img_p, "rb") as file:
+                                st.download_button("⬇️ Download Still", file, file_name=os.path.basename(img_p), mime="image/png", key=f"dl_{key_base}")
                                     
-                            # HIGGSFIELD MOTION RIG & SEEDANCE ANIMATION
-                            with st.expander(f"🎬 Higgsfield Motion Rig & Seedance Video", expanded=False):
-                                st.caption("Animate this shot using Seedance 2.0 Reference-to-Video (Atlas Cloud) with your characters, environment master, video motion, and voiceovers.")
-                                
-                                v_engine = st.selectbox(
-                                    "Video Engine", 
-                                    [
-                                        "Seedance 2.0 Mini (Reference-to-Video)",
-                                        "Seedance 2.0 (Image-to-Video)",
-                                        "Wan 2.7 (Image-to-Video)",
-                                        "Kling 1.6 Video"
-                                    ],
-                                    key=f"v_eng_{key_base}"
-                                )
-                                v_res = st.selectbox("Resolution", ["720P (Half Cost / Fast)", "1080P"], index=0, key=f"v_res_{key_base}")
-                                v_dur = st.slider("Duration (Sec)", 2, 10, 5, key=f"v_dur_{key_base}")
-                                
-                                all_cast_keys = list(st.session_state.cast_lookup_map.keys())
-                                sel_anim_cast = st.multiselect(
-                                    "Character References (Likeness Lock)",
-                                    options=all_cast_keys,
-                                    default=[c for c in shot.get('characters', []) if c in all_cast_keys],
-                                    key=f"v_cast_{key_base}",
-                                    help="Select cast members to pass their CreateFlow account reference images to Seedance / Wan for 100% likeness lock."
-                                )
-                                
-                                c_vref_col, c_aref_col = st.columns(2)
-                                with c_vref_col:
-                                    up_vref = st.file_uploader("Reference Motion / Video (MP4)", type=["mp4", "mov"], key=f"v_vref_{key_base}")
-                                with c_aref_col:
-                                    up_aref = st.file_uploader("Reference Voiceover / Audio (MP3/WAV)", type=["mp3", "wav", "m4a"], key=f"v_aref_{key_base}")
+                        # 2. HIGGSFIELD MOTION RIG & SEEDANCE ANIMATION (ALWAYS AVAILABLE)
+                        with st.expander(f"🎬 Higgsfield Motion Rig & Seedance Video", expanded=True if not img_p else False):
+                            st.caption("Animate this shot using Seedance 2.0 Reference-to-Video (Atlas Cloud) with your characters, environment master, video motion, and voiceovers.")
+                            
+                            v_engine = st.selectbox(
+                                "Video Engine", 
+                                [
+                                    "Seedance 2.0 Mini (Reference-to-Video)",
+                                    "Seedance 2.0 (Image-to-Video)",
+                                    "Wan 2.7 (Image-to-Video)",
+                                    "Kling 1.6 Video"
+                                ],
+                                key=f"v_eng_{key_base}"
+                            )
+                            v_res = st.selectbox("Resolution", ["720P (Half Cost / Fast)", "1080P"], index=0, key=f"v_res_{key_base}")
+                            v_dur = st.slider("Duration (Sec)", 2, 10, 5, key=f"v_dur_{key_base}")
+                            
+                            all_cast_keys = list(st.session_state.cast_lookup_map.keys())
+                            sel_anim_cast = st.multiselect(
+                                "Character References (Likeness Lock)",
+                                options=all_cast_keys,
+                                default=[c for c in shot.get('characters', []) if c in all_cast_keys],
+                                key=f"v_cast_{key_base}",
+                                help="Select cast members to pass their CreateFlow account reference images to Seedance / Wan for 100% likeness lock."
+                            )
+                            
+                            c_vref_col, c_aref_col = st.columns(2)
+                            with c_vref_col:
+                                up_vref = st.file_uploader("Reference Motion / Video (MP4)", type=["mp4", "mov"], key=f"v_vref_{key_base}")
+                            with c_aref_col:
+                                up_aref = st.file_uploader("Reference Voiceover / Audio (MP3/WAV)", type=["mp3", "wav", "m4a"], key=f"v_aref_{key_base}")
 
-                                motion_prompt_input = st.text_area(
-                                    "Motion Action Prompt",
-                                    value=shot_prompt,
-                                    height=100,
-                                    key=f"v_p_{key_base}"
-                                )
+                            motion_prompt_input = st.text_area(
+                                "Motion Action Prompt",
+                                value=shot_prompt,
+                                height=100,
+                                key=f"v_p_{key_base}"
+                            )
 
-                                if st.button(f"🎥 Animate Shot {shot_idx+1} with Seedance", type="primary", key=f"v_btn_{key_base}", use_container_width=True):
-                                    user = st.session_state.current_user.get("username") if "current_user" in st.session_state and st.session_state.current_user else "guest"
-                                    if not auth_mgr.deduct_credits(user, 3):
-                                        st.error("❌ Not enough credits! Video generation requires 3 credits.")
-                                    else:
-                                        with st.spinner("⚡ Animating shot with Seedance 2.0 / Wan 2.7 on Atlas Cloud..."):
-                                            # Assemble Multi-Reference Array (Up to 9 images)
-                                            ref_images = []
+                            if st.button(f"🎥 Animate Shot {shot_idx+1} with Seedance", type="primary", key=f"v_btn_{key_base}", use_container_width=True):
+                                user = st.session_state.current_user.get("username") if "current_user" in st.session_state and st.session_state.current_user else "guest"
+                                if not auth_mgr.deduct_credits(user, 3):
+                                    st.error("❌ Not enough credits! Video generation requires 3 credits.")
+                                else:
+                                    with st.spinner("⚡ Animating shot with Seedance 2.0 / Wan 2.7 on Atlas Cloud..."):
+                                        # Assemble Multi-Reference Array (Up to 9 images)
+                                        ref_images = []
+                                        
+                                        # 1. Environment Master Still
+                                        if "primary_env_img" in st.session_state and os.path.exists(st.session_state["primary_env_img"]):
+                                            ref_images.append(st.session_state["primary_env_img"])
                                             
-                                            # 1. Environment Master Still
+                                        # 2. Selected Cast Character References
+                                        for c_ref_name in sel_anim_cast:
+                                            c_path = st.session_state.cast_lookup_map.get(c_ref_name)
+                                            if c_path and os.path.exists(c_path):
+                                                ref_images.append(c_path)
+                                                
+                                        # 3. Wardrobe References
+                                        w_snapshot = st.session_state.get('cast_wardrobe_map_snapshot', {})
+                                        for c_ref_name in sel_anim_cast:
+                                            o_key = w_snapshot.get(c_ref_name)
+                                            if o_key and o_key != "Default Outfit" and o_key != "Default":
+                                                o_path = outfits_data.get(o_key)
+                                                if isinstance(o_path, dict): o_path = o_path.get('default_img')
+                                                if o_path and os.path.exists(o_path):
+                                                    ref_images.append(o_path)
+
+                                        # Primary image: keyframe still if generated; fallback to environment master image or character reference
+                                        primary_img_path = img_p
+                                        if not primary_img_path or not os.path.exists(primary_img_path):
                                             if "primary_env_img" in st.session_state and os.path.exists(st.session_state["primary_env_img"]):
-                                                ref_images.append(st.session_state["primary_env_img"])
-                                                
-                                            # 2. Selected Cast Character References
-                                            for c_ref_name in sel_anim_cast:
-                                                c_path = st.session_state.cast_lookup_map.get(c_ref_name)
-                                                if c_path and os.path.exists(c_path):
-                                                    ref_images.append(c_path)
-                                                    
-                                            # 3. Wardrobe References
-                                            w_snapshot = st.session_state.get('cast_wardrobe_map_snapshot', {})
-                                            for c_ref_name in sel_anim_cast:
-                                                o_key = w_snapshot.get(c_ref_name)
-                                                if o_key and o_key != "Default Outfit" and o_key != "Default":
-                                                    o_path = outfits_data.get(o_key)
-                                                    if isinstance(o_path, dict): o_path = o_path.get('default_img')
-                                                    if o_path and os.path.exists(o_path):
-                                                        ref_images.append(o_path)
+                                                primary_img_path = st.session_state["primary_env_img"]
+                                            elif ref_images:
+                                                primary_img_path = ref_images[0]
 
-                                            # Save Uploaded Video Reference if provided
-                                            temp_v_path = None
-                                            if up_vref:
-                                                temp_v_dir = get_user_out_dir_func("Series/TempUploads")
-                                                temp_v_path = os.path.join(temp_v_dir, f"ref_v_{key_base}.mp4")
-                                                with open(temp_v_path, "wb") as f_v:
-                                                    f_v.write(up_vref.getbuffer())
+                                        # Save Uploaded Video Reference if provided
+                                        temp_v_path = None
+                                        if up_vref:
+                                            temp_v_dir = get_user_out_dir_func("Series/TempUploads")
+                                            temp_v_path = os.path.join(temp_v_dir, f"ref_v_{key_base}.mp4")
+                                            with open(temp_v_path, "wb") as f_v:
+                                                f_v.write(up_vref.getbuffer())
 
-                                            # Save Uploaded Audio / Voiceover Reference if provided
-                                            temp_a_path = None
-                                            if up_aref:
-                                                temp_a_dir = get_user_out_dir_func("Series/TempUploads")
-                                                temp_a_path = os.path.join(temp_a_dir, f"ref_a_{key_base}.mp3")
-                                                with open(temp_a_path, "wb") as f_a:
-                                                    f_a.write(up_aref.getbuffer())
+                                        # Save Uploaded Audio / Voiceover Reference if provided
+                                        temp_a_path = None
+                                        if up_aref:
+                                            temp_a_dir = get_user_out_dir_func("Series/TempUploads")
+                                            temp_a_path = os.path.join(temp_a_dir, f"ref_a_{key_base}.mp3")
+                                            with open(temp_a_path, "wb") as f_a:
+                                                f_a.write(up_aref.getbuffer())
 
-                                            if "Seedance 2.0 Mini" in v_engine:
-                                                target_model = "bytedance/seedance-2.0-mini/reference-to-video"
-                                            elif "Seedance 2.0 (Image" in v_engine:
-                                                target_model = "bytedance/seedance-2.0/image-to-video"
-                                            elif "Wan" in v_engine:
-                                                target_model = "alibaba/wan-2.7/image-to-video"
-                                            else:
-                                                target_model = "bytedance/seedance-2.0/image-to-video"
-                                                
-                                            from execution.generate_wan import generate_wan_video
-                                            res_video = generate_wan_video(
-                                                prompt=motion_prompt_input,
-                                                image_path=img_p,
-                                                resolution=v_res,
-                                                duration=v_dur,
-                                                ref_video_path=temp_v_path,
-                                                ref_audio_path=temp_a_path,
-                                                extra_images=ref_images if ref_images else None,
-                                                model=target_model,
-                                                output_folder=get_user_out_dir_func("Series/Videos")
-                                            )
+                                        if "Seedance 2.0 Mini" in v_engine:
+                                            target_model = "bytedance/seedance-2.0-mini/reference-to-video"
+                                        elif "Seedance 2.0 (Image" in v_engine:
+                                            target_model = "bytedance/seedance-2.0/image-to-video"
+                                        elif "Wan" in v_engine:
+                                            target_model = "alibaba/wan-2.7/image-to-video"
+                                        else:
+                                            target_model = "bytedance/seedance-2.0/image-to-video"
                                             
-                                            if res_video.get("status") == "success":
-                                                st.session_state[f"vid_{key_base}"] = res_video["video_path"]
-                                                st.toast(f"✅ Shot {shot_idx+1} Animated Successfully with Seedance!")
-                                                st.rerun()
-                                            else:
-                                                auth_mgr.add_credits(user, 3)
-                                                st.error(f"Video Generation Failed: {res_video.get('error')}")
-                                                with st.expander("View Logs"):
-                                                    st.code("\n".join(res_video.get("logs", [])))
+                                        from execution.generate_wan import generate_wan_video
+                                        res_video = generate_wan_video(
+                                            prompt=motion_prompt_input,
+                                            image_path=primary_img_path,
+                                            resolution=v_res,
+                                            duration=v_dur,
+                                            ref_video_path=temp_v_path,
+                                            ref_audio_path=temp_a_path,
+                                            extra_images=ref_images if ref_images else None,
+                                            model=target_model,
+                                            output_folder=get_user_out_dir_func("Series/Videos")
+                                        )
+                                        
+                                        if res_video.get("status") == "success":
+                                            st.session_state[f"vid_{key_base}"] = res_video["video_path"]
+                                            st.toast(f"✅ Shot {shot_idx+1} Animated Successfully with Seedance!")
+                                            st.rerun()
+                                        else:
+                                            auth_mgr.add_credits(user, 3)
+                                            st.error(f"Video Generation Failed: {res_video.get('error')}")
+                                            with st.expander("View Logs"):
+                                                st.code("\n".join(res_video.get("logs", [])))
 
-                            if f"vid_{key_base}" in st.session_state and os.path.exists(st.session_state[f"vid_{key_base}"]):
-                                vid_p = st.session_state[f"vid_{key_base}"]
-                                st.video(vid_p)
-                                with open(vid_p, "rb") as v_file:
-                                    st.download_button("⬇️ Download Motion Video", v_file, file_name=os.path.basename(vid_p), mime="video/mp4", key=f"dl_vid_{key_base}")
-                        else:
-                            st.info("Generate photo first to animate")
+                        if f"vid_{key_base}" in st.session_state and os.path.exists(st.session_state[f"vid_{key_base}"]):
+                            vid_p = st.session_state[f"vid_{key_base}"]
+                            st.video(vid_p)
+                            with open(vid_p, "rb") as v_file:
+                                st.download_button("⬇️ Download Motion Video", v_file, file_name=os.path.basename(vid_p), mime="video/mp4", key=f"dl_vid_{key_base}")
                     
                     st.divider()
 
