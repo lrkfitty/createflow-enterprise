@@ -250,21 +250,48 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
             series_env = st.selectbox("Choose Primary", ["None"] + all_locs)
             
             if series_env and series_env != "None":
-                # Preview
+                # Preview Preset
                 path = vibes_data.get(series_env) or assets.get('locations', {}).get(series_env)
                 if path:
                     if isinstance(path, dict): path = path.get('default_img')
-                    st.image(path, caption="Primary Environment")
+                    st.image(path, caption="Preset Location Reference", width=200)
+                
+                # HIGGSFIELD SEEDANCE V2 ENVIRONMENT AI GENERATOR
+                st.markdown("##### 🌄 Higgsfield AI Environment Master")
+                if st.button("✨ Generate Higgsfield Environment Master Still", type="primary", key="gen_env_btn"):
+                    with st.spinner("⚡ AI Generating 8K Higgsfield Environment Master Still..."):
+                        from execution.series_processor import generate_environment_master_prompt
+                        env_data = generate_environment_master_prompt(
+                            location_name=series_env,
+                            genre=s_genre,
+                            tone=s_tone
+                        )
+                        env_p = env_data.get("environment_prompt")
+                        p_data = {
+                            "positive_prompt": env_p,
+                            "model_type": "nano",
+                            "aspect_ratio": st.session_state.get('series_ar', '16:9'),
+                            "image_size": "2K"
+                        }
+                        res_env = generate_image_from_prompt(p_data, get_user_out_dir_func("Series/Environments"))
+                        if res_env.get("status") == "success":
+                            st.session_state["primary_env_img"] = res_env["image_path"]
+                            st.toast("✅ Generated Higgsfield Environment Master Still!")
+                            st.rerun()
+                        else:
+                            st.error(f"Environment Generation Failed: {res_env.get('logs')}")
+
+                if "primary_env_img" in st.session_state and os.path.exists(st.session_state["primary_env_img"]):
+                    st.image(st.session_state["primary_env_img"], caption="✨ Generated Higgsfield AI Environment Master Still", use_container_width=True)
             
             st.write("**Secondary Location** (B-Roll / Cutaways)")
             sec_env = st.selectbox("Choose B-Roll Vibe", ["None"] + all_locs, key="sec_env")
             
             if sec_env and sec_env != "None":
-                # Preview Secondary
                 path_sec = vibes_data.get(sec_env) or assets.get('locations', {}).get(sec_env)
                 if path_sec:
                     if isinstance(path_sec, dict): path_sec = path_sec.get('default_img')
-                    st.image(path_sec, caption="Secondary Environment")
+                    st.image(path_sec, caption="Secondary Environment", width=200)
 
     # --- STEP 2: WRITER'S ROOM ---
     st.markdown("---")
@@ -622,11 +649,14 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
                                                     if o_path: 
                                                         final_assets_payload.append({"path": o_path, "label": f"Outfit for {raw_name}"})
 
-                                        # Location
+                                        # Location (Prefer Generated Higgsfield AI Environment Master Still)
                                         target_env = sec_env if is_broll and sec_env != "None" else series_env
-                                        env_path = vibes_data.get(target_env) or assets.get('locations', {}).get(target_env)
-                                        if isinstance(env_path, dict): env_path = env_path.get('default_img')
-                                        if env_path: final_assets_payload.append({"path": env_path, "label": f"Location: {target_env}"})
+                                        if "primary_env_img" in st.session_state and os.path.exists(st.session_state["primary_env_img"]) and not is_broll:
+                                            final_assets_payload.append({"path": st.session_state["primary_env_img"], "label": f"Location Master (HIGGSFIELD SEEDANCE V2 ENVIRONMENT): {target_env}"})
+                                        else:
+                                            env_path = vibes_data.get(target_env) or assets.get('locations', {}).get(target_env)
+                                            if isinstance(env_path, dict): env_path = env_path.get('default_img')
+                                            if env_path: final_assets_payload.append({"path": env_path, "label": f"Location: {target_env}"})
                                         
                                         # Prompt — Structured Camera Direction + Scene Still
                                         time_setting = shot.get('time_of_day', 'Day')
