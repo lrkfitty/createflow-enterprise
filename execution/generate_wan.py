@@ -6,15 +6,48 @@ from dotenv import load_dotenv
 
 load_dotenv(override=True)
 
+def extract_last_frame_as_base64(video_path):
+    """
+    Extracts the last frame of a local video MP4 file as a compressed Base64 JPEG data URI.
+    Ensures 100% visual scene continuity without requiring S3 configuration.
+    """
+    if not video_path or not os.path.exists(video_path):
+        return None
+    try:
+        import cv2
+        from PIL import Image
+        from io import BytesIO
+        
+        cap = cv2.VideoCapture(video_path)
+        frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        if frame_count > 0:
+            cap.set(cv2.CAP_PROP_POS_FRAMES, frame_count - 1)
+            ret, frame = cap.read()
+            cap.release()
+            if ret:
+                rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                img = Image.fromarray(rgb_frame)
+                max_dim = 1280
+                if max(img.width, img.height) > max_dim:
+                    img.thumbnail((max_dim, max_dim), Image.Resampling.LANCZOS)
+                buffer = BytesIO()
+                img.save(buffer, format="JPEG", quality=80)
+                encoded = base64.b64encode(buffer.getvalue()).decode('utf-8')
+                return f"data:image/jpeg;base64,{encoded}"
+        cap.release()
+    except Exception as err:
+        print(f"Video last frame extraction warning: {err}")
+    return None
+
 def image_to_base64_data_uri(img_path_or_url):
     """
     Converts a local file path or HTTP URL to a base64 data URI.
-    Optimizes/resizes images to keep request payload size lightweight and prevent Atlas 403 errors.
+    Optimizes/resizes images to keep request payload size lightweight and prevent Atlas timeouts.
     """
     if not img_path_or_url:
         return None
         
-    # If HTTP URL, try fetching locally to convert to base64 (prevents Atlas S3 403 errors)
+    # If HTTP URL, try fetching locally to convert to base64
     if img_path_or_url.startswith(("http://", "https://")):
         try:
             resp = requests.get(img_path_or_url, timeout=10)
@@ -22,13 +55,13 @@ def image_to_base64_data_uri(img_path_or_url):
                 from PIL import Image
                 from io import BytesIO
                 img = Image.open(BytesIO(resp.content))
-                max_dim = 1920
+                max_dim = 1280
                 if max(img.width, img.height) > max_dim:
                     img.thumbnail((max_dim, max_dim), Image.Resampling.LANCZOS)
                 if img.mode in ('RGBA', 'P'):
                     img = img.convert('RGB')
                 buffer = BytesIO()
-                img.save(buffer, format="JPEG", quality=85)
+                img.save(buffer, format="JPEG", quality=80)
                 encoded = base64.b64encode(buffer.getvalue()).decode('utf-8')
                 return f"data:image/jpeg;base64,{encoded}"
         except Exception:
@@ -41,7 +74,7 @@ def image_to_base64_data_uri(img_path_or_url):
             from io import BytesIO
             
             img = Image.open(img_path_or_url)
-            max_dim = 1920
+            max_dim = 1280
             if max(img.width, img.height) > max_dim:
                 img.thumbnail((max_dim, max_dim), Image.Resampling.LANCZOS)
                 
@@ -49,7 +82,7 @@ def image_to_base64_data_uri(img_path_or_url):
                 img = img.convert('RGB')
                 
             buffer = BytesIO()
-            img.save(buffer, format="JPEG", quality=85)
+            img.save(buffer, format="JPEG", quality=80)
             data = buffer.getvalue()
             
             encoded = base64.b64encode(data).decode('utf-8')
@@ -285,36 +318,40 @@ def generate_wan_video(prompt, image_path, resolution="1080P", duration=5, ref_v
                        except Exception as img_err:
                             logs.append(f"⚠️ Image encoding warning {idx+1}: {img_err}")
              
-             payload["reference_images"] = images_payload
-             
-             # Reference Videos
+             # Reference Videos & Cascading Video Frame Extraction
              videos_payload = []
+             
+             def process_vid_ref(vid_path):
+                  if not vid_path: return None
+                  if vid_path.startswith(("http://", "https://")):
+                      return vid_path
+                  if os.path.exists(vid_path):
+                      try:
+                          from execution.s3_uploader import upload_file_obj
+                          with open(vid_path, "rb") as f_ref:
+                              s3_url = upload_file_obj(f_ref, object_name=f"ref_videos/{os.path.basename(vid_path)}")
+                          if s3_url and s3_url.startswith(("http://", "https://")):
+                              return s3_url
+                      except Exception as s3_e:
+                          logs.append(f"⚠️ Video S3 Upload warning: {s3_e}")
+                          
+                      # Fallback: Extract last frame of local MP4 video as image reference
+                      frame_b64 = extract_last_frame_as_base64(vid_path)
+                      if frame_b64 and len(images_payload) < 9:
+                          images_payload.append(frame_b64)
+                          logs.append("🎥 Extracted Shot N-1 last frame as Base64 image reference for visual continuity!")
+                  return None
+
              if ref_video_path:
-                 v_url = ref_video_path
-                 if not v_url.startswith(("http://", "https://")) and os.path.exists(v_url):
-                     try:
-                         from execution.s3_uploader import upload_file_obj
-                         with open(v_url, "rb") as f_ref:
-                             s3_url = upload_file_obj(f_ref, object_name=f"ref_videos/{os.path.basename(v_url)}")
-                         if s3_url: v_url = s3_url
-                     except Exception as s3_e:
-                         logs.append(f"⚠️ Video S3 Upload warning: {s3_e}")
-                 videos_payload.append(v_url)
-                 
+                  v_res = process_vid_ref(ref_video_path)
+                  if v_res: videos_payload.append(v_res)
+                  
              if extra_videos:
-                 for v_item in extra_videos:
-                     if not v_item: continue
-                     v_url = v_item
-                     if not v_url.startswith(("http://", "https://")) and os.path.exists(v_url):
-                         try:
-                             from execution.s3_uploader import upload_file_obj
-                             with open(v_url, "rb") as f_ref:
-                                 s3_url = upload_file_obj(f_ref, object_name=f"ref_videos/{os.path.basename(v_url)}")
-                             if s3_url: v_url = s3_url
-                         except Exception as s3_e:
-                             logs.append(f"⚠️ Video S3 Upload warning: {s3_e}")
-                     videos_payload.append(v_url)
-                     
+                  for v_item in extra_videos:
+                      v_res = process_vid_ref(v_item)
+                      if v_res and v_res not in videos_payload: videos_payload.append(v_res)
+                      
+             payload["reference_images"] = images_payload
              if videos_payload:
                  payload["reference_videos"] = videos_payload
                  
