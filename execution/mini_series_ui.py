@@ -588,6 +588,21 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
                              "label": f"Cast Member: {c_name}"
                          })
 
+                    # Attach Generated Environment Master Stills to Director AI References
+                    sel_env_stills = st.session_state.get("selected_env_stills", [])
+                    if sel_env_stills:
+                        for e_idx, e_s_path in enumerate(sel_env_stills):
+                            if os.path.exists(e_s_path):
+                                director_refs.append({
+                                    "path": e_s_path,
+                                    "label": f"Environment Master Still #{e_idx+1} (360° Architectural Set)"
+                                })
+                    elif "primary_env_img" in st.session_state and os.path.exists(st.session_state["primary_env_img"]):
+                        director_refs.append({
+                            "path": st.session_state["primary_env_img"],
+                            "label": "Primary Environment Master Still"
+                        })
+
                     # V2 API Call
                     sb_data = parse_script_to_scenes(
                         script_text=series_script, 
@@ -880,12 +895,25 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
                                         st.error(f"Error: {res.get('logs')}")
 
                     with col_img:
-                        # 1. Display Generated Keyframe Still (if captured)
+                        # 1. Display Active Anchor Image (Keyframe Still if generated, fallback to Primary Environment Master Still)
                         img_p = st.session_state.get(f"img_{key_base}")
-                        if img_p and os.path.exists(img_p):
-                            st.image(img_p, caption=f"Shot {shot_idx+1} Keyframe Still", use_container_width=True)
-                            with open(img_p, "rb") as file:
-                                st.download_button("⬇️ Download Still", file, file_name=os.path.basename(img_p), mime="image/png", key=f"dl_{key_base}")
+                        active_anchor = img_p if (img_p and os.path.exists(img_p)) else st.session_state.get("primary_env_img")
+                        
+                        if active_anchor and os.path.exists(active_anchor):
+                            is_kf = (active_anchor == img_p)
+                            st.image(
+                                active_anchor,
+                                caption=f"Shot {shot_idx+1} {'Keyframe Still' if is_kf else 'Location Master Anchor'}",
+                                use_container_width=True
+                            )
+                            with open(active_anchor, "rb") as file:
+                                st.download_button(
+                                    f"⬇️ Download {'Still' if is_kf else 'Location Anchor'}",
+                                    file,
+                                    file_name=os.path.basename(active_anchor),
+                                    mime="image/png",
+                                    key=f"dl_{key_base}"
+                                )
                                     
                         # 2. HIGGSFIELD MOTION RIG & SEEDANCE ANIMATION (ALWAYS AVAILABLE)
                         with st.expander(f"🎬 Higgsfield Motion Rig & Seedance Video", expanded=True if not img_p else False):
