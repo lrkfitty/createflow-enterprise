@@ -934,10 +934,32 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
                             v_dur = st.slider("Duration (Sec)", 2, 15, 5, key=f"v_dur_{key_base}")
                             
                             all_cast_keys = list(st.session_state.cast_lookup_map.keys())
+                            
+                            # Robust character matching for multiselect default values
+                            shot_chars = shot.get('characters', [])
+                            matched_defaults = []
+                            for sc in shot_chars:
+                                if sc in all_cast_keys:
+                                    matched_defaults.append(sc)
+                                else:
+                                    # Try matching base name or first word (e.g., "(My) Jazi Concept 1" or "Jazi")
+                                    sc_clean = sc.replace('(My)', '').replace('(User)', '').replace('[My]', '').strip()
+                                    sc_first = sc_clean.replace('_', ' ').split(' ')[0]
+                                    for ak in all_cast_keys:
+                                        ak_clean = ak.replace('(My)', '').replace('(User)', '').replace('[My]', '').strip()
+                                        ak_first = ak_clean.replace('_', ' ').split(' ')[0]
+                                        if sc_clean.lower() in ak_clean.lower() or ak_clean.lower() in sc_clean.lower() or (sc_first and sc_first.lower() == ak_first.lower()):
+                                            if ak not in matched_defaults:
+                                                matched_defaults.append(ak)
+                                                
+                            # Fallback: if no shot character matched, pre-select all available project cast members to guarantee likeness lock
+                            if not matched_defaults and all_cast_keys:
+                                matched_defaults = list(all_cast_keys)
+                                
                             sel_anim_cast = st.multiselect(
                                 "Character References (Likeness Lock)",
                                 options=all_cast_keys,
-                                default=[c for c in shot.get('characters', []) if c in all_cast_keys],
+                                default=matched_defaults,
                                 key=f"v_cast_{key_base}",
                                 help="Select cast members to pass their CreateFlow account reference images to Seedance / Wan for 100% likeness lock."
                             )
@@ -1007,7 +1029,11 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
                                         user_out_dir = get_user_out_dir_func("Series")
                                         for c_ref_name in sel_anim_cast:
                                             c_path = st.session_state.cast_lookup_map.get(c_ref_name)
-                                            if c_path:
+                                            if not c_path:
+                                                c_clean = c_ref_name.replace('(My)', '').replace('(User)', '').replace('[My]', '').strip()
+                                                first_w = c_clean.replace('_', ' ').split(' ')[0]
+                                                c_path = st.session_state.cast_lookup_map.get(c_clean) or st.session_state.cast_lookup_map.get(first_w)
+                                            if c_path and os.path.exists(c_path):
                                                 cached_c_path = cache_asset_locally(c_path, user_out_dir, prefix=f"cast_{c_ref_name}")
                                                 if cached_c_path and cached_c_path not in ref_images:
                                                     ref_images.append(cached_c_path)
