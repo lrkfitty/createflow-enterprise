@@ -189,21 +189,25 @@ def parse_script_to_scenes(script_text, cast_list, environment_name, genre="Gene
     }}
     """
 
-    # Try Atlas Cloud API First (Zero Quota Limits)
+    # Clean up environment location names
+    valid_env = environment_name if environment_name and environment_name != "None" else "Cinematic Production Set"
+    valid_sec_env = secondary_environment if secondary_environment and secondary_environment != "None" else valid_env
+
+    # 1. Try Atlas Cloud LLM (Fast 15s Timeout)
     atlas_key = get_atlas_key()
     if atlas_key:
         try:
-            st.toast("🎬 Generating Higgsfield Seedance Storyboard via Atlas Cloud LLM...")
+            st.toast("🎬 Expanding Premise into 3-Scene Episode via Atlas Cloud LLM...")
             atlas_headers = {
                 "Content-Type": "application/json",
                 "Authorization": f"Bearer {atlas_key}"
             }
-            user_msg = f"{system_instruction}\n\nSCRIPT:\n{script_text}"
+            user_msg = f"{system_instruction}\n\nPREMISE / SCRIPT:\n{script_text}"
             atlas_payload = {
                 "model": "google/gemini-2.5-flash",
                 "messages": [{"role": "user", "content": user_msg}]
             }
-            a_resp = requests.post("https://api.atlascloud.ai/v1/chat/completions", headers=atlas_headers, json=atlas_payload, timeout=60)
+            a_resp = requests.post("https://api.atlascloud.ai/v1/chat/completions", headers=atlas_headers, json=atlas_payload, timeout=8)
             if a_resp.status_code == 200:
                 raw_text = a_resp.json()['choices'][0]['message']['content']
                 if "```json" in raw_text:
@@ -213,47 +217,18 @@ def parse_script_to_scenes(script_text, cast_list, environment_name, genre="Gene
                     end = raw_text.rfind("}") + 1
                     raw_text = raw_text[start:end]
                 data = json.loads(raw_text)
-                st.toast("✅ Storyboard generated successfully via Atlas Cloud!")
-                return data
+                if isinstance(data, dict) and "scenes" in data and len(data["scenes"]) >= 2:
+                    st.toast("✅ Storyboard generated successfully via Atlas Cloud!")
+                    return data
         except Exception as a_err:
             print(f"Atlas Cloud parse_script_to_scenes warning: {a_err}")
 
-    # Fallback Cascade through Google Gemini Flash Models (High Throughput & Quota)
+    # 2. Try Google Gemini Flash Models (High Capacity & Fast Response)
     api_key = os.getenv("GOOGLE_API_KEY")
     if api_key and not api_key.startswith("AQ."):
-        models_to_try = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-2.5-pro"]
+        models_to_try = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"]
         headers = { "Content-Type": "application/json" }
-        
-        parts = []
-        parts.append({ "text": system_instruction })
-        
-        if ref_images:
-            def load_single_ref(img_data):
-                path = img_data.get('path')
-                label = img_data.get('label', 'Image')
-                result_parts = []
-                try:
-                    raw_bytes = None
-                    if path and path.startswith("http"):
-                        resp = requests.get(path, timeout=5)
-                        if resp.status_code == 200: raw_bytes = resp.content
-                    elif path and os.path.exists(path):
-                        with open(path, "rb") as f: raw_bytes = f.read()
-                    if raw_bytes:
-                        optimized_bytes = resize_bytes_to_jpeg(raw_bytes)
-                        b64 = base64.b64encode(optimized_bytes).decode('utf-8')
-                        result_parts.append({ "text": f"VISUAL REFERENCE - {label}:" })
-                        result_parts.append({ "inline_data": { "mime_type": "image/jpeg", "data": b64 } })
-                except Exception as e:
-                    print(f"Error loading {label}: {e}")
-                return result_parts
-
-            with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
-                results = list(executor.map(load_single_ref, ref_images))
-            for res in results:
-                parts.extend(res)
-
-        parts.append({ "text": "\n\nSCRIPT:\n" + script_text })
+        parts = [{ "text": system_instruction }, { "text": "\n\nPREMISE / SCRIPT:\n" + script_text }]
 
         for m_name in models_to_try:
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{m_name}:generateContent?key={api_key}"
@@ -262,8 +237,8 @@ def parse_script_to_scenes(script_text, cast_list, environment_name, genre="Gene
                 "generationConfig": { "responseMimeType": "application/json" }
             }
             try:
-                st.toast(f"🎬 Generating Director Vision via {m_name}...")
-                response = requests.post(url, headers=headers, json=payload, timeout=45)
+                st.toast(f"🎬 Expanding Premise via {m_name}...")
+                response = requests.post(url, headers=headers, json=payload, timeout=15)
                 if response.status_code == 200:
                     res_json = response.json()
                     if 'candidates' in res_json and res_json['candidates']:
@@ -275,82 +250,126 @@ def parse_script_to_scenes(script_text, cast_list, environment_name, genre="Gene
                             end = text.rfind("}") + 1
                             text = text[start:end]
                         data = json.loads(text)
-                        st.toast("✅ Director Vision Storyboard generated successfully!")
-                        return data
-                elif response.status_code == 429:
-                    print(f"⚠️ Gemini model {m_name} rate limited (429). Retrying with next Flash model...")
-                    continue
+                        if isinstance(data, dict) and "scenes" in data and len(data["scenes"]) >= 2:
+                            st.toast("✅ Storyboard generated successfully!")
+                            return data
             except Exception as e:
                 print(f"⚠️ Gemini model {m_name} error: {e}")
                 continue
 
-    # OFFLINE DIRECT SETUP ENGINE (Zero Quota Fallback Guarantee)
-    st.toast("⚡ Assembling Director Script via Production Engine...")
-    parsed_shots = []
-    lines = [l.strip() for l in script_text.split('\n') if l.strip()]
-    chars = cast_list if cast_list else ["Lead"]
+    # 3. DIRECT PRODUCTION NARRATIVE ENGINE (Guarantees Full 3-Scene, 6-Shot Narrative Arc)
+    st.toast("⚡ Assembling Full 3-Scene Episode Script via Production Engine...")
+    chars = cast_list if cast_list else ["Lead Character"]
+    c1_name = chars[0]
+    c2_name = chars[1] if len(chars) > 1 else "Co-Star"
     
-    for i, line in enumerate(lines[:6]):
-        char_idx = i % len(chars)
-        c_name = chars[char_idx]
-        other_char = chars[(char_idx + 1) % len(chars)] if len(chars) > 1 else "the listener"
-        
-        dial_line = f'{c_name}: "{line if len(line) < 80 else line[:75] + "..."}"'
-        action_desc = f"{c_name} reacts intently while speaking in {environment_name}."
-        notes = f"Maintain steady gaze on {other_char}. Keep vocal tone sharp and controlled."
-        
-        fov_step = "29°" if i % 2 == 0 else "47°"
-        shot_size = "Medium Close-Up" if i % 2 == 0 else "Medium Shot"
-        
-        vis_prompt = (
-            f"ACTION: {action_desc}\n"
-            f"DIALOGUE:\n{dial_line}\n"
-            f"DIRECTOR NOTES: {notes}\n"
-            f"CINEMATOGRAPHY:\n"
-            f"Cinematic 35mm film still of {c_name} at {environment_name}. CAMERA: FOV {fov_step}, {shot_size}, eye-level. "
-            f"ISO 400 35mm film grain, 5600K daylight key, shallow depth of field. Unretouched physical skin texture, zero CGI."
-        )
-        
-        parsed_shots.append({
-            "shot_size": shot_size,
+    clean_premise = script_text.strip() if script_text else "A dramatic encounter unfolds"
+    
+    scene1_shots = [
+        {
+            "shot_size": "Wide Establishing",
             "camera_angle": "Eye Level",
             "composition": "Rule of Thirds",
-            "depth_of_field": "Shallow depth of field",
+            "depth_of_field": "Deep focus",
             "lighting_type": "5600K Daylight",
             "time_of_day": "Day",
-            "subject_position": "Center framed",
-            "action_description": action_desc,
-            "dialogue": dial_line,
-            "director_notes": notes,
-            "characters": [c_name],
-            "visual_prompt": vis_prompt,
+            "subject_position": "Wide environmental frame",
+            "action_description": f"{c1_name} enters {valid_env}, noticing {c2_name} across the room as tension fills the air.",
+            "dialogue": f'{c1_name}: "I didn\'t expect to see you here today."',
+            "director_notes": f"Deliver line with guarded curiosity. Keep physical posture tall.",
+            "characters": [c1_name],
+            "visual_prompt": f"ACTION: {c1_name} enters {valid_env}.\nDIALOGUE:\n{c1_name}: \"I didn't expect to see you here today.\"\nDIRECTOR NOTES: Deliver line with guarded curiosity.\nCINEMATOGRAPHY:\nCinematic 35mm film still of {c1_name} at {valid_env}. CAMERA: FOV 84°, Wide Shot, eye-level. ISO 400 35mm film grain, 5600K daylight key, deep focus. Unretouched physical skin texture, zero CGI.",
             "is_broll": False
-        })
-        
+        },
+        {
+            "shot_size": "Medium Close-Up",
+            "camera_angle": "Slight Low Angle",
+            "composition": "Center Framed",
+            "depth_of_field": "Shallow depth of field",
+            "lighting_type": "3200K Tungsten Warmth",
+            "time_of_day": "Day",
+            "subject_position": "Center framed",
+            "action_description": f"{c2_name} turns around slowly, eyes locking onto {c1_name} with an unflinching gaze.",
+            "dialogue": f'{c2_name}: "Well, plans change. We have unresolved business."',
+            "director_notes": f"Deliver cold and direct. No smiling.",
+            "characters": [c2_name],
+            "visual_prompt": f"ACTION: {c2_name} turns around slowly.\nDIALOGUE:\n{c2_name}: \"Well, plans change. We have unresolved business.\"\nDIRECTOR NOTES: Deliver cold and direct.\nCINEMATOGRAPHY:\nCinematic 35mm film still of {c2_name} at {valid_env}. CAMERA: FOV 29°, Medium Close-Up, eye-level. ISO 400 35mm film grain, 3200K tungsten key, shallow depth of field. Unretouched physical skin texture, zero CGI.",
+            "is_broll": False
+        }
+    ]
+
+    scene2_shots = [
+        {
+            "shot_size": "Two Shot Medium",
+            "camera_angle": "Eye Level",
+            "composition": "Over the Shoulder",
+            "depth_of_field": "Medium depth of field",
+            "lighting_type": "Dramatic Chiaroscuro",
+            "time_of_day": "Day",
+            "subject_position": "Two shot interaction",
+            "action_description": f"{c1_name} takes a step closer to {c2_name}, resting a hand on the surface as friction escalates.",
+            "dialogue": f'{c1_name}: "{clean_premise} — and you know exactly how this ends!"',
+            "director_notes": f"Vocal volume rises slightly. Physical distance decreases to 1 meter.",
+            "characters": [c1_name, c2_name],
+            "visual_prompt": f"ACTION: {c1_name} steps closer to {c2_name}.\nDIALOGUE:\n{c1_name}: \"{clean_premise} — and you know exactly how this ends!\"\nDIRECTOR NOTES: Vocal volume rises slightly.\nCINEMATOGRAPHY:\nCinematic 35mm film still of {c1_name} and {c2_name} at {valid_sec_env}. CAMERA: FOV 47°, Medium Two-Shot, eye-level. ISO 400 35mm film grain, chiaroscuro lighting. Unretouched physical skin texture, zero CGI.",
+            "is_broll": False
+        },
+        {
+            "shot_size": "Tight Close-Up",
+            "camera_angle": "High Angle Compression",
+            "composition": "Tight Framing",
+            "depth_of_field": "Razor shallow depth of field",
+            "lighting_type": "Edge Light Highlight",
+            "time_of_day": "Day",
+            "subject_position": "Extreme tight focus",
+            "action_description": f"Close-up of {c2_name}'s expression as jaw tightens and breathing quickens.",
+            "dialogue": f'{c2_name}: "Then don\'t push me any further."',
+            "director_notes": f"Micro-expression acting: eyes narrow, breathing heavy.",
+            "characters": [c2_name],
+            "visual_prompt": f"ACTION: Tight close-up of {c2_name}'s expression.\nDIALOGUE:\n{c2_name}: \"Then don't push me any further.\"\nDIRECTOR NOTES: Micro-expression acting.\nCINEMATOGRAPHY:\nCinematic 35mm film still of {c2_name}. CAMERA: FOV 18°, Tight Close-Up. ISO 400 35mm film grain, razor shallow depth of field. Unretouched physical skin texture, zero CGI.",
+            "is_broll": False
+        }
+    ]
+
+    scene3_shots = [
+        {
+            "shot_size": "Low Angle Hero Close-Up",
+            "camera_angle": "Low Angle",
+            "composition": "Dramatic Center",
+            "depth_of_field": "Shallow depth of field",
+            "lighting_type": "High Contrast Key",
+            "time_of_day": "Dusk / Sunset",
+            "subject_position": "Center hero frame",
+            "action_description": f"{c1_name} holds position, refusing to back down as the revelation lands.",
+            "dialogue": f'{c1_name}: "This is our last chance to get this right."',
+            "director_notes": f"Deliver line with emotional weight and certainty.",
+            "characters": [c1_name],
+            "visual_prompt": f"ACTION: {c1_name} holds position.\nDIALOGUE:\n{c1_name}: \"This is our last chance to get this right.\"\nDIRECTOR NOTES: Deliver with emotional weight.\nCINEMATOGRAPHY:\nCinematic 35mm film still of {c1_name} at {valid_env}. CAMERA: FOV 29°, Low Angle Hero Close-Up. ISO 400 35mm film grain, high contrast key, shallow depth of field. Unretouched physical skin texture, zero CGI.",
+            "is_broll": False
+        },
+        {
+            "shot_size": "Wide Master Outro",
+            "camera_angle": "Eye Level Tracking",
+            "composition": "Wide Environmental Framing",
+            "depth_of_field": "Deep focus",
+            "lighting_type": "Golden Hour Ambient",
+            "time_of_day": "Sunset",
+            "subject_position": "Wide silhouette framing",
+            "action_description": f"Both {c1_name} and {c2_name} stand locked in a tense standoff as the scene fades out.",
+            "dialogue": f'{c2_name}: "We\'ll see about that."',
+            "director_notes": f"Hold final frame for 3 seconds after line delivery.",
+            "characters": [c1_name, c2_name],
+            "visual_prompt": f"ACTION: Both {c1_name} and {c2_name} stand locked in a tense standoff.\nDIALOGUE:\n{c2_name}: \"We'll see about that.\"\nDIRECTOR NOTES: Hold final frame for 3 seconds.\nCINEMATOGRAPHY:\nCinematic 35mm film master establishing shot of {c1_name} and {c2_name} at {valid_env}. CAMERA: FOV 107°, Ultra-Wide Establishing, golden hour lighting.",
+            "is_broll": False
+        }
+    ]
+
     return {
-        "title": f"Episode: {environment_name}",
+        "title": f"Episode: {valid_env}",
         "scenes": [
-            {
-                "id": 1,
-                "location": environment_name,
-                "shots": parsed_shots if parsed_shots else [
-                    {
-                        "shot_size": "Medium Close-Up",
-                        "camera_angle": "Eye Level",
-                        "composition": "Rule of Thirds",
-                        "depth_of_field": "Shallow depth of field",
-                        "lighting_type": "5600K Daylight",
-                        "time_of_day": "Day",
-                        "subject_position": "Center framed",
-                        "action_description": f"{chars[0]} pauses, observing the room.",
-                        "dialogue": f'{chars[0]}: "We need to make our move now."',
-                        "director_notes": "Deliver line with intense focus.",
-                        "characters": [chars[0]],
-                        "visual_prompt": f"ACTION: {chars[0]} pauses.\nDIALOGUE:\n{chars[0]}: \"We need to make our move now.\"\nDIRECTOR NOTES: Deliver line with intense focus.\nCINEMATOGRAPHY:\nCinematic 35mm film still of {chars[0]} at {environment_name}.",
-                        "is_broll": False
-                    }
-                ]
-            }
+            {"id": 1, "location": valid_env, "shots": scene1_shots},
+            {"id": 2, "location": valid_sec_env, "shots": scene2_shots},
+            {"id": 3, "location": valid_env, "shots": scene3_shots}
         ]
     }
 
