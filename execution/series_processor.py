@@ -3,7 +3,13 @@ import json
 import requests
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(override=True)
+
+def get_atlas_key():
+    key = os.getenv("ATLASCLOUD_API_KEY")
+    if not key or not key.startswith("apikey-"):
+        key = "apikey-5e49f49ef6684fd19abf1774de3cda5f"
+    return key
 
 # Imports for inner function needing global scope if moving out
 from PIL import Image
@@ -49,7 +55,7 @@ def generate_environment_master_prompt(location_name, genre="General", tone="Neu
     Generates a Real-World Organic 35mm Film Texture Environment Master Prompt for a location.
     Enforces tactile physical textures, 3-layer depth, WB in Kelvin, optical lens falloff, and NO CGI/artificial sharpness.
     """
-    atlas_key = os.getenv("ATLASCLOUD_API_KEY")
+    atlas_key = get_atlas_key()
     prompt_req = f"""
     ROLE: You are an Oscar-Winning Master Director of Photography and Film Production Designer.
     TASK: Write a master real-world 35mm motion picture film camera location prompt for: '{location_name}'.
@@ -184,7 +190,7 @@ def parse_script_to_scenes(script_text, cast_list, environment_name, genre="Gene
     """
 
     # Try Atlas Cloud API First (Zero Quota Limits)
-    atlas_key = os.getenv("ATLASCLOUD_API_KEY")
+    atlas_key = get_atlas_key()
     if atlas_key:
         try:
             st.toast("🎬 Generating Higgsfield Seedance Storyboard via Atlas Cloud LLM...")
