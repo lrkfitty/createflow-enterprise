@@ -754,6 +754,33 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
                                             
                         shot['wardrobe'] = shot_wardrobe_map
                         
+                        all_cast_keys = list(st.session_state.cast_lookup_map.keys())
+                        shot_chars = shot.get('characters', [])
+                        
+                        # Match current shot characters to available cast keys
+                        matched_shot_cast = []
+                        for sc in shot_chars:
+                            sc_clean = sc.replace('(My)', '').replace('(User)', '').replace('[My]', '').strip()
+                            first_w = sc_clean.replace('_', ' ').split(' ')[0]
+                            for ak in all_cast_keys:
+                                ak_clean = ak.replace('(My)', '').replace('(User)', '').replace('[My]', '').strip()
+                                ak_first = ak_clean.replace('_', ' ').split(' ')[0]
+                                if sc_clean.lower() in ak_clean.lower() or ak_clean.lower() in sc_clean.lower() or (first_w and first_w.lower() == ak_first.lower()):
+                                    if ak not in matched_shot_cast:
+                                        matched_shot_cast.append(ak)
+                                        
+                        if not matched_shot_cast and all_cast_keys:
+                            matched_shot_cast = [all_cast_keys[0]]
+                            
+                        sel_shot_cast = st.multiselect(
+                            "👤 Star Cast Member(s) in this Shot",
+                            options=all_cast_keys,
+                            default=matched_shot_cast,
+                            key=f"shot_star_cast_{key_base}",
+                            help="Select which cast member(s) from your project star in this shot."
+                        )
+                        shot['characters'] = sel_shot_cast
+                        
                         time_opts = ["Morning", "Noon", "Afternoon", "Golden Hour", "Blue Hour", "Night", "Midnight"]
                         ai_time = shot.get('time_of_day', 'Day')
                         ai_time_norm = ai_time.title() if ai_time else "Day"

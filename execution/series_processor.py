@@ -267,7 +267,7 @@ def parse_script_to_scenes(script_text, cast_list, environment_name, genre="Gene
     st.toast("⚡ Assembling Full 3-Scene Episode Script via Production Engine...")
     chars = cast_list if cast_list else ["Lead Character"]
     c1_name = chars[0]
-    c2_name = chars[1] if len(chars) > 1 else "Co-Star"
+    c2_name = chars[1] if len(chars) > 1 else c1_name
     
     clean_premise = script_text.strip() if script_text else "A dramatic encounter unfolds"
     
