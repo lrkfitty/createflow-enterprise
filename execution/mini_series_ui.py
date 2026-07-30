@@ -1013,20 +1013,9 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
                                     st.error("❌ Not enough credits! Video generation requires 3 credits.")
                                 else:
                                     with st.spinner("⚡ Animating shot with Seedance 2.0 / Wan 2.7 on Atlas Cloud..."):
-                                        # Assemble Multi-Reference Array (Up to 9 images)
-                                        ref_images = []
-                                        
-                                        # 1. Environment Master Stills (Pass ALL selected stills for full 360° scene coverage)
-                                        selected_env_stills = st.session_state.get("selected_env_stills", [])
-                                        if selected_env_stills:
-                                            for env_s_path in selected_env_stills:
-                                                if os.path.exists(env_s_path) and env_s_path not in ref_images:
-                                                    ref_images.append(env_s_path)
-                                        elif "primary_env_img" in st.session_state and os.path.exists(st.session_state["primary_env_img"]):
-                                            ref_images.append(st.session_state["primary_env_img"])
-                                            
-                                        # 2. Selected Cast Character References (Permanent Cache - Never Times Out)
+                                        # 1. Resolve Active Cast Character References (FIRST PRIORITY at index 0!)
                                         user_out_dir = get_user_out_dir_func("Series")
+                                        char_ref_paths = []
                                         for c_ref_name in sel_anim_cast:
                                             c_path = st.session_state.cast_lookup_map.get(c_ref_name)
                                             if not c_path:
@@ -1035,10 +1024,11 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
                                                 c_path = st.session_state.cast_lookup_map.get(c_clean) or st.session_state.cast_lookup_map.get(first_w)
                                             if c_path and os.path.exists(c_path):
                                                 cached_c_path = cache_asset_locally(c_path, user_out_dir, prefix=f"cast_{c_ref_name}")
-                                                if cached_c_path and cached_c_path not in ref_images:
-                                                    ref_images.append(cached_c_path)
+                                                if cached_c_path and cached_c_path not in char_ref_paths:
+                                                    char_ref_paths.append(cached_c_path)
                                                 
-                                        # 3. Wardrobe References (Permanent Cache - Never Times Out)
+                                        # 2. Resolve Active Wardrobe References (SECOND PRIORITY!)
+                                        wardrobe_ref_paths = []
                                         w_snapshot = st.session_state.get('cast_wardrobe_map_snapshot', {})
                                         for c_ref_name in sel_anim_cast:
                                             o_key = shot_wardrobe_map.get(c_ref_name) or w_snapshot.get(c_ref_name) or w_snapshot.get(c_ref_name.replace('_', ' ').split(' ')[0])
@@ -1047,23 +1037,33 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
                                                 if isinstance(o_path, dict): o_path = o_path.get('default_img')
                                                 if o_path:
                                                     cached_o_path = cache_asset_locally(o_path, user_out_dir, prefix=f"wardrobe_{o_key}")
-                                                    if cached_o_path and cached_o_path not in ref_images:
-                                                        ref_images.append(cached_o_path)
+                                                    if cached_o_path and cached_o_path not in wardrobe_ref_paths:
+                                                        wardrobe_ref_paths.append(cached_o_path)
 
-                                        # 4. Cascading Prior Shot Image Reference
-                                        prior_img_key = f"img_s{scene_idx}_sh{shot_idx - 1}" if shot_idx > 0 else (f"img_s{scene_idx - 1}_sh0" if scene_idx > 0 else None)
-                                        if prior_img_key and prior_img_key in st.session_state and os.path.exists(st.session_state[prior_img_key]):
-                                            ref_images.append(st.session_state[prior_img_key])
+                                        # 3. Environment Master Stills (THIRD PRIORITY!)
+                                        env_ref_paths = []
+                                        selected_env_stills = st.session_state.get("selected_env_stills", [])
+                                        if selected_env_stills:
+                                            for env_s_path in selected_env_stills:
+                                                if os.path.exists(env_s_path) and env_s_path not in env_ref_paths:
+                                                    env_ref_paths.append(env_s_path)
+                                        elif "primary_env_img" in st.session_state and os.path.exists(st.session_state["primary_env_img"]):
+                                            env_ref_paths.append(st.session_state["primary_env_img"])
 
-                                        # Primary image: keyframe still if generated; fallback to environment master image or character reference
+                                        # Assemble Multi-Reference Array (Character -> Wardrobe -> Environment)
+                                        ref_images = []
+                                        for p in char_ref_paths + wardrobe_ref_paths + env_ref_paths:
+                                            if p not in ref_images:
+                                                ref_images.append(p)
+
+                                        # Primary image: keyframe still if generated for THIS shot; fallback to active character reference, then environment
                                         primary_img_path = img_p
                                         if not primary_img_path or not os.path.exists(primary_img_path):
-                                            if "primary_env_img" in st.session_state and os.path.exists(st.session_state["primary_env_img"]):
-                                                primary_img_path = st.session_state["primary_env_img"]
-                                            elif ref_images:
-                                                primary_img_path = ref_images[0]
+                                            if char_ref_paths:
+                                                primary_img_path = char_ref_paths[0]
+                                            elif env_ref_paths:
+                                                primary_img_path = env_ref_paths[0]
                                             else:
-                                                # Asset Fallback
                                                 t_env = sec_env if is_broll and sec_env != "None" else series_env
                                                 fallback_path = vibes_data.get(t_env) or assets.get('locations', {}).get(t_env)
                                                 if isinstance(fallback_path, dict): fallback_path = fallback_path.get('default_img')
@@ -1074,7 +1074,7 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
                                             st.error("❌ Cannot animate: Please generate a Keyframe Still or Environment Master Still in Step 2 first!")
                                             st.stop()
 
-                                        # Save Uploaded Video Reference if provided, or use Cascading Video Continuity
+                                        # Save Uploaded Video Reference if provided, or use Cascading Video Continuity (SAME CHARACTER ONLY!)
                                         temp_v_path = None
                                         if up_vref:
                                             temp_v_dir = get_user_out_dir_func("Series/TempUploads")
@@ -1082,16 +1082,31 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
                                             with open(temp_v_path, "wb") as f_v:
                                                 f_v.write(up_vref.getbuffer())
                                         elif use_cascade_vid:
-                                            # Find prior shot video
-                                            prior_vid_key = f"vid_s{scene_idx}_sh{shot_idx - 1}" if shot_idx > 0 else None
-                                            if not prior_vid_key and scene_idx > 0:
+                                            # Retrieve prior shot details
+                                            prior_shot_obj = None
+                                            prev_shots = []
+                                            if shot_idx > 0:
+                                                prior_shot_obj = sb.get('scenes', [])[scene_idx].get('shots', [])[shot_idx - 1]
+                                            elif scene_idx > 0:
                                                 prev_shots = sb.get('scenes', [])[scene_idx - 1].get('shots', [])
                                                 if prev_shots:
-                                                    prior_vid_key = f"vid_s{scene_idx - 1}_sh{len(prev_shots) - 1}"
+                                                    prior_shot_obj = prev_shots[-1]
                                                     
-                                            if prior_vid_key and prior_vid_key in st.session_state and os.path.exists(st.session_state[prior_vid_key]):
-                                                temp_v_path = st.session_state[prior_vid_key]
-                                                st.toast(f"🔗 Cascading Video Continuity: Attached Shot Video '{os.path.basename(temp_v_path)}' as Motion Reference!")
+                                            prior_chars = prior_shot_obj.get('characters', []) if prior_shot_obj else []
+                                            current_chars = shot.get('characters', [])
+                                            
+                                            clean_prior = [c.replace('(My)', '').replace('(User)', '').replace('[My]', '').strip().lower() for c in prior_chars]
+                                            clean_curr = [c.replace('(My)', '').replace('(User)', '').replace('[My]', '').strip().lower() for c in current_chars]
+                                            
+                                            same_character = any(c1 in clean_curr or any(c1 in c2 for c2 in clean_curr) for c1 in clean_prior)
+                                            
+                                            if same_character:
+                                                prior_vid_key = f"vid_s{scene_idx}_sh{shot_idx - 1}" if shot_idx > 0 else (f"vid_s{scene_idx - 1}_sh{len(prev_shots) - 1}" if scene_idx > 0 and prev_shots else None)
+                                                if prior_vid_key and prior_vid_key in st.session_state and os.path.exists(st.session_state[prior_vid_key]):
+                                                    temp_v_path = st.session_state[prior_vid_key]
+                                                    st.toast(f"🔗 Cascading Video Continuity: Attached Shot Video '{os.path.basename(temp_v_path)}' as Motion Reference!")
+                                            else:
+                                                st.toast(f"🎭 Scene Character Transition: Suppressed prior video cascade to prevent character identity bleeding.")
 
                                         # Save Uploaded Audio / Voiceover Reference if provided
                                         temp_a_path = None

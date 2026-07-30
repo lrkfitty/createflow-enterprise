@@ -358,11 +358,9 @@ def generate_wan_video(prompt, image_path, resolution="1080P", duration=5, ref_v
                       except Exception as s3_e:
                           logs.append(f"⚠️ Video S3 Upload warning: {s3_e}")
                           
-                      # Fallback: Extract last frame of local MP4 video as image reference
-                      frame_b64 = extract_last_frame_as_base64(vid_path)
-                      if frame_b64 and len(images_payload) < 9:
-                          images_payload.append(frame_b64)
-                          logs.append("🎥 Extracted Shot N-1 last frame as Base64 image reference for visual continuity!")
+                      # Local video path fallback for video reference
+                      logs.append(f"📹 Passing local reference video: {os.path.basename(vid_path)}")
+                      return vid_path
                   return None
 
              if ref_video_path:
