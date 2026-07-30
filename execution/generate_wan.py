@@ -65,8 +65,8 @@ def extract_last_frame_as_base64(video_path):
 def image_to_base64_data_uri(img_path_or_url):
     """
     Converts a local file path or HTTP URL to an optimized lightweight base64 data URI.
-    Resizes images to max 960px at JPEG quality 75 to keep total request payload lightweight (<2MB)
-    and prevent Cloudflare HTTP 502 payload size limit errors.
+    Resizes images to max 800px at JPEG quality 70 to keep total request payload lightweight (<500KB)
+    and prevent network connection socket timeouts or HTTP 502 payload size limit errors.
     """
     if not img_path_or_url:
         return None
@@ -79,13 +79,13 @@ def image_to_base64_data_uri(img_path_or_url):
                 from PIL import Image
                 from io import BytesIO
                 img = Image.open(BytesIO(resp.content))
-                max_dim = 960
+                max_dim = 800
                 if max(img.width, img.height) > max_dim:
                     img.thumbnail((max_dim, max_dim), Image.Resampling.LANCZOS)
                 if img.mode != 'RGB':
                     img = img.convert('RGB')
                 buffer = BytesIO()
-                img.save(buffer, format="JPEG", quality=75)
+                img.save(buffer, format="JPEG", quality=70)
                 encoded = base64.b64encode(buffer.getvalue()).decode('utf-8')
                 return f"data:image/jpeg;base64,{encoded}"
         except Exception:
@@ -98,7 +98,7 @@ def image_to_base64_data_uri(img_path_or_url):
             from io import BytesIO
             
             img = Image.open(img_path_or_url)
-            max_dim = 960
+            max_dim = 800
             if max(img.width, img.height) > max_dim:
                 img.thumbnail((max_dim, max_dim), Image.Resampling.LANCZOS)
                 
@@ -106,7 +106,7 @@ def image_to_base64_data_uri(img_path_or_url):
                 img = img.convert('RGB')
                 
             buffer = BytesIO()
-            img.save(buffer, format="JPEG", quality=75)
+            img.save(buffer, format="JPEG", quality=70)
             encoded = base64.b64encode(buffer.getvalue()).decode('utf-8')
             return f"data:image/jpeg;base64,{encoded}"
         except Exception as e:
@@ -467,26 +467,26 @@ def generate_wan_video(prompt, image_path, resolution="1080P", duration=5, ref_v
         
         response = None
         last_net_err = None
-        for attempt in range(1, 4):
+        for attempt in range(1, 6):
             try:
-                logs.append(f"Sending request to Atlas Cloud (Attempt {attempt}/3)...")
-                response = requests.post(generate_url, headers=headers, json=payload, timeout=(15, 120))
+                logs.append(f"Sending request to Atlas Cloud (Attempt {attempt}/5)...")
+                response = requests.post(generate_url, headers=headers, json=payload, timeout=(30, 120))
                 if response.status_code == 200:
                     break
                 elif response.status_code in [500, 502, 503, 504, 429]:
-                    logs.append(f"⚠️ Atlas Cloud returned transient HTTP {response.status_code}. Retrying in 3 seconds...")
-                    time.sleep(3)
+                    logs.append(f"⚠️ Atlas Cloud returned transient HTTP {response.status_code}. Retrying in {attempt * 2} seconds...")
+                    time.sleep(attempt * 2)
                 else:
                     break
             except Exception as req_err:
                 last_net_err = str(req_err)
-                logs.append(f"⚠️ Connection attempt {attempt} failed: {req_err}")
-                time.sleep(3)
+                logs.append(f"⚠️ Connection attempt {attempt}/5 failed: {req_err}. Retrying socket in {attempt * 2}s...")
+                time.sleep(attempt * 2)
                 
         if not response or response.status_code != 200:
             raw_err = response.text if response else (last_net_err or "No response from server")
             if "<html" in raw_err.lower() or (response and response.status_code in [502, 503, 504]):
-                clean_err = "Atlas Cloud API temporary Gateway Timeout (HTTP 502). The backend server experienced a brief spike. Please click 'Animate Shot with Seedance' again to retry."
+                clean_err = "Atlas Cloud API temporary Gateway Timeout (HTTP 502). The backend server experienced a brief connection spike. Please click 'Animate Shot with Seedance' again to retry."
             else:
                 clean_err = f"API Request Failed: HTTP {response.status_code if response else 'ERR'} - {raw_err[:250]}"
             return {"status": "failed", "error": clean_err, "logs": logs}
