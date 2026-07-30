@@ -121,28 +121,22 @@ def parse_script_to_scenes(script_text, cast_list, environment_name, genre="Gene
     """
 
     system_instruction = f"""
-    You are a World-Class HOLLYWOOD SHOWRUNNER, MASTER DIRECTOR, and SCRIPTWRITER specializing in HIGGSFIELD SEEDANCE V2 WORKFLOW.
-    Your job is to transform a premise/synopsis into a complete, masterfully written episode script with FULL CHARACTER DIALOGUE, physical performance cues, and precise 35mm visual prompts.
+    You are an Oscar-Winning HOLLYWOOD SHOWRUNNER, STUDIO HEAD, and MASTER DIRECTOR specializing in BLAKE SNYDER'S 'SAVE THE CAT!' SCREENWRITING PROTOCOL and HIGGSFIELD SEEDANCE V2 PRODUCTION WORKFLOW.
+    Your mandate is to transform a premise into a full-fledged cinematic masterpiece. Every shot MUST read like a high-level studio head screenplay prompt with absolute visual, emotional, and technical depth.
     
-    CRITICAL MANDATE - CHARACTER DIALOGUE FOR EVERY SHOT:
-    1. WRITE REAL DRAMATIC DIALOGUE:
-       - Every shot featuring characters MUST have explicit, high-level dramatic dialogue lines (e.g. "JAZI: 'We shouldn't be here... look at those windows.'").
-       - Include direct speech, subtext, vocal delivery tone, and micro-expression acting cues.
-       - NEVER leave dialogue empty for character shots!
-    2. VISUAL PROMPT COMPOSITION:
-       - Structure 'visual_prompt' to include the Scene Action + Character Dialogue + Cinematography Specs.
-    3. FOV DEGREES ANCHOR TABLE (Use exact degree steps in visual_prompt):
-       - 180° = Fisheye / POV
-       - 107° = Architectural Ultra-Wide (Establishing Environment)
-       - 84°  = Wide Shot (Group Blocking)
-       - 63°  = Observational Wide
-       - 47°  = Neutral Human Perspective (Medium Shot)
-       - 29°  = Portrait Compression (Medium Close-Up)
-       - 18°  = Natural Portrait (Close-Up, Identity Preserved)
-       - 12°  = Tele-Detail (Hands, Props, Key Objects)
-       - 8°   = Super-Tele Extreme Compression
-    4. ACTING & PERFORMANCE THROUGH MUSCLE MOVEMENT:
-       - Describe physical muscle movements: "jaw tightens, eyes drop to the table, breath shortens, knuckles whiten on glass".
+    STRICT NON-NEGOTIABLE MANDATE - MINIMUM 600 CHARACTERS PER SHOT:
+    1. BLAKE SNYDER 'SAVE THE CAT!' HOLLYWOOD SCREENWRITING ARCHITECTURE:
+       - Structure the episode across true Hollywood beat sheets: Opening Set-Up & Atmosphere ➔ Catalyst & Inciting Friction ➔ Debate & Escalating Conflict ➔ Climax & High-Stakes Resolution Beat.
+       - Every shot MUST have high-stakes dramatic dialogue loaded with subtext, emotional tension, and actor performance cues.
+
+    2. ABSOLUTE LENGTH MANDATE - 600 TO 1000 CHARACTERS PER SHOT:
+       - Each shot's 'visual_prompt', 'action_description', and 'director_notes' MUST be expansive, evocative, and hyper-detailed (MINIMUM 600 CHARACTERS PER SHOT).
+       - NEVER output short 1-sentence summaries or brief descriptions! You are painting a complete multi-layered cinematic picture like a Hollywood Studio Head and Master Director of Photography.
+
+    3. COMPREHENSIVE 35mm CINEMATOGRAPHY & OPTICAL SPECS:
+       - PHYSICAL ATMOSPHERE & TEXTURES: Weathered wood grain, matte concrete, raw fabrics, moisture droplets, dust motes floating in 3200K tungsten key light or 5600K daylight spill, 3-layer architectural depth (foreground props, midground actors, background set).
+       - ACTING PERFORMANCE & MUSCLE MOVEMENTS: Describe physical performance cues: "jaw tightens on the word 'standing', pupils dilate, breath shortens, knuckles whiten on glass counter".
+       - OPTICS & FOV DEGREES: ARRI Alexa 35, Cooke Anamorphic/i Full Frame 65mm T2.3 lens, exact FOV degrees (FOV 107° establishing, FOV 84° wide, FOV 47° medium, FOV 29° portrait compression, FOV 18° close-up detail), ISO 400 35mm film grain, 3:1 key-to-fill lighting ratio, unretouched physical skin texture, zero CGI, zero 3D render.
 
     SERIES BIBLE:
     - GENRE: {genre}
@@ -176,11 +170,11 @@ def parse_script_to_scenes(script_text, cast_list, environment_name, genre="Gene
                "lighting_type": "3200K Tungsten Warmth",
                "time_of_day": "Night / Interior",
                "subject_position": "Center-left framed",
-               "action_description": "Jazi turns slowly, her jaw tightening as she looks across the room.",
-               "dialogue": "JAZI: \"You thought I wouldn't find out? Take a look around.\"",
-               "director_notes": "Deliver line cold with zero vocal fluctuation. Keep gaze locked on Lima's eyes.",
-               "characters": ["Jazi"],
-               "visual_prompt": "ACTION: Jazi turns slowly, her jaw tightening as she looks across the room.\nDIALOGUE:\nJAZI: \"You thought I wouldn't find out? Take a look around.\"\nDIRECTOR NOTES: Deliver line cold with zero vocal fluctuation.\nCINEMATOGRAPHY:\nCinematic 35mm film still. Jazi in medium close-up. CAMERA: FOV 29°, eye-level, operator anchored 2 meters. ISO 400 35mm film grain, 3200K tungsten key light, shallow depth of field. Unretouched physical skin texture, zero CGI.",
+               "action_description": "Anisa enters the rain-soaked Coffee Shop, her yellow structured leather jacket catching the warm 3200K tungsten pendant spill. Rain streams down the 10-foot floor-to-ceiling glass panes behind her, casting rhythmic water shadows across the polished concrete floor. She pauses at the mahogany counter, her posture rigid, her breath catching as her gaze locks onto Jason standing across the room.",
+               "dialogue": "ANISA: \"I didn't expect to see you standing here today, Jason. We said everything we needed to say last night.\"",
+               "director_notes": "Deliver line with cold, unyielding precision. Zero vocal fluctuation, eyes locked onto Jason's eyes without blinking. Micro-expression acting: jaw tightens on the word 'standing', fingers gripping the leather strap of her handbag with whitening knuckles.",
+               "characters": ["Anisa"],
+               "visual_prompt": "HOLLYWOOD STUDIO HEAD DIRECTING & SAVE THE CAT NARRATIVE BEAT: Anisa enters the rain-soaked Coffee Shop, her yellow structured leather jacket catching the warm 3200K tungsten pendant spill. Rain streams down the 10-foot floor-to-ceiling glass panes behind her, casting rhythmic water shadows across the polished concrete floor. She pauses at the mahogany counter, her posture rigid, her breath catching as her gaze locks onto Jason standing across the room.\nDIALOGUE:\nANISA: \"I didn't expect to see you standing here today, Jason. We said everything we needed to say last night.\"\nDIRECTOR NOTES: Deliver line with cold, unyielding precision. Zero vocal fluctuation, eyes locked onto Jason's eyes without blinking. Micro-expression acting: jaw tightens on the word 'standing', fingers gripping the leather strap of her handbag with whitening knuckles.\nCINEMATOGRAPHY & OPTICS:\nCinematic 35mm motion picture film still. Anisa framed in medium close-up (Rule of Thirds, left third). CAMERA: FOV 29° portrait compression, ARRI Alexa 35, Cooke Anamorphic/i Full Frame 65mm T2.3 lens, eye-level operator position at 2.5 meters. LIGHTING: 3:1 key-to-fill lighting ratio, 3200K warm tungsten key light from camera right, cool 5600K blue daylight fill from background window. REAL OPTICS & FILM: Natural ISO 400 optical 35mm film grain, organic shallow depth of field with buttery anamorphic background bokeh, unretouched tactile skin texture, zero CGI, zero 3D render.",
                "is_broll": false
             }}
           ]
@@ -257,7 +251,7 @@ def parse_script_to_scenes(script_text, cast_list, environment_name, genre="Gene
                 print(f"⚠️ Gemini model {m_name} error: {e}")
                 continue
 
-    # 3. DIRECT PRODUCTION NARRATIVE ENGINE (Guarantees Full 3-Scene, 6-Shot Narrative Arc)
+    # 3. DIRECT PRODUCTION NARRATIVE ENGINE (Guarantees Full 3-Scene, 6-Shot Narrative Arc with 600+ Chars per Shot)
     st.toast("⚡ Assembling Full 3-Scene Episode Script via Production Engine...")
     chars = cast_list if cast_list else ["Lead Character"]
     c1_name = chars[0]
@@ -274,11 +268,11 @@ def parse_script_to_scenes(script_text, cast_list, environment_name, genre="Gene
             "lighting_type": "5600K Daylight",
             "time_of_day": "Day",
             "subject_position": "Wide environmental frame",
-            "action_description": f"{c1_name} enters {valid_env}, noticing {c2_name} across the room as tension fills the air.",
-            "dialogue": f'{c1_name}: "I didn\'t expect to see you here today."',
-            "director_notes": f"Deliver line with guarded curiosity. Keep physical posture tall.",
+            "action_description": f"{c1_name} enters {valid_env}, taking in the atmosphere as rain streams down the tall glass windows, casting long water streaks across the floor. She pauses near the entrance, her posture rigid and her breath catching as her eyes lock onto {c2_name} across the room.",
+            "dialogue": f'{c1_name}: "I didn\'t expect to see you standing here today, {c2_name}. We said everything we needed to say last night."',
+            "director_notes": f"HOLLYWOOD STUDIO HEAD DIRECTION: Deliver line with cold, unyielding precision. Zero vocal fluctuation, gaze locked onto {c2_name} without blinking. Micro-expression acting: jaw tightens on the word \'standing\', fingers gripping the strap of her bag with whitening knuckles.",
             "characters": [c1_name],
-            "visual_prompt": f"ACTION: {c1_name} enters {valid_env}.\nDIALOGUE:\n{c1_name}: \"I didn't expect to see you here today.\"\nDIRECTOR NOTES: Deliver line with guarded curiosity.\nCINEMATOGRAPHY:\nCinematic 35mm film still of {c1_name} at {valid_env}. CAMERA: FOV 84°, Wide Shot, eye-level. ISO 400 35mm film grain, 5600K daylight key, deep focus. Unretouched physical skin texture, zero CGI.",
+            "visual_prompt": f"HOLLYWOOD STUDIO HEAD DIRECTING & SAVE THE CAT OPENING SET-UP: {c1_name} enters {valid_env}, taking in the atmosphere as rain streams down the tall glass windows, casting long water streaks across the floor. She pauses near the entrance, her posture rigid and her breath catching as her eyes lock onto {c2_name} across the room.\nDIALOGUE:\n{c1_name}: \"I didn't expect to see you standing here today, {c2_name}. We said everything we needed to say last night.\"\nDIRECTOR NOTES:\nHOLLYWOOD STUDIO HEAD DIRECTION: Deliver line with cold, unyielding precision. Zero vocal fluctuation, gaze locked onto {c2_name} without blinking. Micro-expression acting: jaw tightens on the word 'standing', fingers gripping the strap of her bag with whitening knuckles.\nCINEMATOGRAPHY & OPTICS:\nCinematic 35mm motion picture film still. {c1_name} framed in wide establishing shot (Rule of Thirds, left third). CAMERA: FOV 84° wide perspective, ARRI Alexa 35, Cooke Anamorphic/i Full Frame 40mm T2.3 lens, eye-level operator position at 4 meters. LIGHTING: 3:1 key-to-fill lighting ratio, 5600K daylight key light from background windows, warm 3200K tungsten ambient fill. REAL OPTICS & FILM: Natural ISO 400 optical 35mm film grain, organic deep focus with subtle lens falloff, unretouched tactile skin texture, zero CGI, zero 3D render.",
             "is_broll": False
         },
         {
@@ -289,11 +283,11 @@ def parse_script_to_scenes(script_text, cast_list, environment_name, genre="Gene
             "lighting_type": "3200K Tungsten Warmth",
             "time_of_day": "Day",
             "subject_position": "Center framed",
-            "action_description": f"{c2_name} turns around slowly, eyes locking onto {c1_name} with an unflinching gaze.",
-            "dialogue": f'{c2_name}: "Well, plans change. We have unresolved business."',
-            "director_notes": f"Deliver cold and direct. No smiling.",
+            "action_description": f"{c2_name} turns around slowly, resting one hand on the edge of the surface as their eyes lock onto {c1_name} with an unflinching gaze. A heavy silence settles over {valid_env} before {c2_name} speaks.",
+            "dialogue": f'{c2_name}: "Well, plans change, {c1_name}. We have unresolved business, and you knew I wasn\'t going to walk away."',
+            "director_notes": f"HOLLYWOOD STUDIO HEAD DIRECTION: Deliver cold and direct. No hesitation, voice low and resonant. Actor performance notes: chin tilted slightly upward, eyes narrowing as breath shortens, maintaining intense eye contact.",
             "characters": [c2_name],
-            "visual_prompt": f"ACTION: {c2_name} turns around slowly.\nDIALOGUE:\n{c2_name}: \"Well, plans change. We have unresolved business.\"\nDIRECTOR NOTES: Deliver cold and direct.\nCINEMATOGRAPHY:\nCinematic 35mm film still of {c2_name} at {valid_env}. CAMERA: FOV 29°, Medium Close-Up, eye-level. ISO 400 35mm film grain, 3200K tungsten key, shallow depth of field. Unretouched physical skin texture, zero CGI.",
+            "visual_prompt": f"HOLLYWOOD STUDIO HEAD DIRECTING & SAVE THE CAT CATALYST BEAT: {c2_name} turns around slowly, resting one hand on the edge of the surface as their eyes lock onto {c1_name} with an unflinching gaze. A heavy silence settles over {valid_env} before {c2_name} speaks.\nDIALOGUE:\n{c2_name}: \"Well, plans change, {c1_name}. We have unresolved business, and you knew I wasn't going to walk away.\"\nDIRECTOR NOTES:\nHOLLYWOOD STUDIO HEAD DIRECTION: Deliver cold and direct. No hesitation, voice low and resonant. Actor performance notes: chin tilted slightly upward, eyes narrowing as breath shortens, maintaining intense eye contact.\nCINEMATOGRAPHY & OPTICS:\nCinematic 35mm motion picture film still. {c2_name} framed in medium close-up (Center framed, 1:1 key-to-shadow). CAMERA: FOV 29° portrait compression, ARRI Alexa 35, Cooke Anamorphic/i Full Frame 65mm T2.3 lens, slight low angle operator position at 2 meters. LIGHTING: 3200K warm tungsten key light from camera right, dramatic shadow falloff. REAL OPTICS & FILM: Natural ISO 400 optical 35mm film grain, buttery anamorphic background bokeh, unretouched tactile skin texture, zero CGI, zero 3D render.",
             "is_broll": False
         }
     ]
@@ -307,11 +301,11 @@ def parse_script_to_scenes(script_text, cast_list, environment_name, genre="Gene
             "lighting_type": "Dramatic Chiaroscuro",
             "time_of_day": "Day",
             "subject_position": "Two shot interaction",
-            "action_description": f"{c1_name} takes a step closer to {c2_name}, resting a hand on the surface as friction escalates.",
-            "dialogue": f'{c1_name}: "{clean_premise} — and you know exactly how this ends!"',
-            "director_notes": f"Vocal volume rises slightly. Physical distance decreases to 1 meter.",
+            "action_description": f"{c1_name} takes a decisive step closer to {c2_name}, closing the physical distance to 1 meter in {valid_sec_env}. The air between them vibrates with unresolved history as {c1_name} leans forward, fingers clenching into a fist.",
+            "dialogue": f'{c1_name}: "{clean_premise} — and you know exactly how this story ends if we don\'t stop now!"',
+            "director_notes": f"HOLLYWOOD STUDIO HEAD DIRECTION: Vocal volume rises with controlled intensity. Subtext: desperation masked as anger. Actor posture: shoulders squared, leaning into {c2_name}\'s personal space.",
             "characters": [c1_name, c2_name],
-            "visual_prompt": f"ACTION: {c1_name} steps closer to {c2_name}.\nDIALOGUE:\n{c1_name}: \"{clean_premise} — and you know exactly how this ends!\"\nDIRECTOR NOTES: Vocal volume rises slightly.\nCINEMATOGRAPHY:\nCinematic 35mm film still of {c1_name} and {c2_name} at {valid_sec_env}. CAMERA: FOV 47°, Medium Two-Shot, eye-level. ISO 400 35mm film grain, chiaroscuro lighting. Unretouched physical skin texture, zero CGI.",
+            "visual_prompt": f"HOLLYWOOD STUDIO HEAD DIRECTING & SAVE THE CAT DEBATE & FRICTION BEAT: {c1_name} takes a decisive step closer to {c2_name}, closing the physical distance to 1 meter in {valid_sec_env}. The air between them vibrates with unresolved history as {c1_name} leans forward, fingers clenching into a fist.\nDIALOGUE:\n{c1_name}: \"{clean_premise} — and you know exactly how this story ends if we don't stop now!\"\nDIRECTOR NOTES:\nHOLLYWOOD STUDIO HEAD DIRECTION: Vocal volume rises with controlled intensity. Subtext: desperation masked as anger. Actor posture: shoulders squared, leaning into {c2_name}'s personal space.\nCINEMATOGRAPHY & OPTICS:\nCinematic 35mm motion picture film still. Two shot over-the-shoulder perspective framing {c1_name} and {c2_name}. CAMERA: FOV 47° neutral perspective, ARRI Alexa 35, Panavision C-Series 50mm T2.0 lens, eye-level operator position at 2.5 meters. LIGHTING: High-contrast chiaroscuro lighting, deep shadow falloff across midground. REAL OPTICS & FILM: Natural ISO 400 optical 35mm film grain, razor-sharp focal plane on leading subject, unretouched physical skin texture, zero CGI, zero 3D render.",
             "is_broll": False
         },
         {
@@ -322,11 +316,11 @@ def parse_script_to_scenes(script_text, cast_list, environment_name, genre="Gene
             "lighting_type": "Edge Light Highlight",
             "time_of_day": "Day",
             "subject_position": "Extreme tight focus",
-            "action_description": f"Close-up of {c2_name}'s expression as jaw tightens and breathing quickens.",
-            "dialogue": f'{c2_name}: "Then don\'t push me any further."',
-            "director_notes": f"Micro-expression acting: eyes narrow, breathing heavy.",
+            "action_description": f"Extreme close-up of {c2_name}'s face as the truth hits. Their pupils contract slightly, a subtle muscle twitch running along their jawline while shadow cuts across one side of their face.",
+            "dialogue": f'{c2_name}: "Then don\'t push me any further, {c1_name}. Because once this line is crossed, there\'s no turning back."',
+            "director_notes": f"HOLLYWOOD STUDIO HEAD DIRECTION: Micro-expression masterclass: breath shortens, lips part slightly before speaking. Deliver with dangerous calm.",
             "characters": [c2_name],
-            "visual_prompt": f"ACTION: Tight close-up of {c2_name}'s expression.\nDIALOGUE:\n{c2_name}: \"Then don't push me any further.\"\nDIRECTOR NOTES: Micro-expression acting.\nCINEMATOGRAPHY:\nCinematic 35mm film still of {c2_name}. CAMERA: FOV 18°, Tight Close-Up. ISO 400 35mm film grain, razor shallow depth of field. Unretouched physical skin texture, zero CGI.",
+            "visual_prompt": f"HOLLYWOOD STUDIO HEAD DIRECTING & SAVE THE CAT TENSION ESCALATION BEAT: Extreme close-up of {c2_name}'s face as the truth hits. Their pupils contract slightly, a subtle muscle twitch running along their jawline while shadow cuts across one side of their face.\nDIALOGUE:\n{c2_name}: \"Then don't push me any further, {c1_name}. Because once this line is crossed, there's no turning back.\"\nDIRECTOR NOTES:\nHOLLYWOOD STUDIO HEAD DIRECTION: Micro-expression masterclass: breath shortens, lips part slightly before speaking. Deliver with dangerous calm.\nCINEMATOGRAPHY & OPTICS:\nCinematic 35mm motion picture film still. Tight close-up of {c2_name}'s eyes and facial performance. CAMERA: FOV 18° portrait compression, ARRI Alexa 35, Leica Summilux-C 85mm T1.4 lens, tight operator position at 1.5 meters. LIGHTING: Razor edge lighting highlighting jawline and cheekbone, dramatic key-to-fill contrast. REAL OPTICS & FILM: ISO 400 35mm film grain, razor-thin depth of field where only the eyes are in sharp focus, unretouched skin detail, zero CGI.",
             "is_broll": False
         }
     ]
@@ -340,11 +334,11 @@ def parse_script_to_scenes(script_text, cast_list, environment_name, genre="Gene
             "lighting_type": "High Contrast Key",
             "time_of_day": "Dusk / Sunset",
             "subject_position": "Center hero frame",
-            "action_description": f"{c1_name} holds position, refusing to back down as the revelation lands.",
-            "dialogue": f'{c1_name}: "This is our last chance to get this right."',
-            "director_notes": f"Deliver line with emotional weight and certainty.",
+            "action_description": f"{c1_name} stands firm against the fading dusk light, holding her ground as the final revelation settles between them in {valid_env}. Her face is partially illuminated by the warm golden hour sun bleeding through the window.",
+            "dialogue": f'{c1_name}: "This is our last chance to get this right, {c2_name}. Neither of us gets a second take."',
+            "director_notes": f"HOLLYWOOD STUDIO HEAD DIRECTION: Deliver with undeniable emotional weight and gravitas. Actor posture: chin high, unblinking gaze.",
             "characters": [c1_name],
-            "visual_prompt": f"ACTION: {c1_name} holds position.\nDIALOGUE:\n{c1_name}: \"This is our last chance to get this right.\"\nDIRECTOR NOTES: Deliver with emotional weight.\nCINEMATOGRAPHY:\nCinematic 35mm film still of {c1_name} at {valid_env}. CAMERA: FOV 29°, Low Angle Hero Close-Up. ISO 400 35mm film grain, high contrast key, shallow depth of field. Unretouched physical skin texture, zero CGI.",
+            "visual_prompt": f"HOLLYWOOD STUDIO HEAD DIRECTING & SAVE THE CAT CLIMAX BEAT: {c1_name} stands firm against the fading dusk light, holding her ground as the final revelation settles between them in {valid_env}. Her face is partially illuminated by the warm golden hour sun bleeding through the window.\nDIALOGUE:\n{c1_name}: \"This is our last chance to get this right, {c2_name}. Neither of us gets a second take.\"\nDIRECTOR NOTES:\nHOLLYWOOD STUDIO HEAD DIRECTION: Deliver with undeniable emotional weight and gravitas. Actor posture: chin high, unblinking gaze.\nCINEMATOGRAPHY & OPTICS:\nCinematic 35mm motion picture film still. Low angle hero close-up framing {c1_name}. CAMERA: FOV 29° portrait compression, ARRI Alexa 35, Cooke Anamorphic 65mm T2.3 lens, low angle operator position looking up at 1.8 meters. LIGHTING: Warm 2800K golden hour sunlight key, cool ambient shadow fill. REAL OPTICS & FILM: Natural ISO 400 35mm film grain, buttery anamorphic flare, unretouched tactile skin texture, zero CGI.",
             "is_broll": False
         },
         {
@@ -355,11 +349,11 @@ def parse_script_to_scenes(script_text, cast_list, environment_name, genre="Gene
             "lighting_type": "Golden Hour Ambient",
             "time_of_day": "Sunset",
             "subject_position": "Wide silhouette framing",
-            "action_description": f"Both {c1_name} and {c2_name} stand locked in a tense standoff as the scene fades out.",
+            "action_description": f"Both {c1_name} and {c2_name} remain motionless in {valid_env}, framed against the sweeping architectural backdrop as sunset shadows stretch across the space, freezing the final moment of the episode in high dramatic tension.",
             "dialogue": f'{c2_name}: "We\'ll see about that."',
-            "director_notes": f"Hold final frame for 3 seconds after line delivery.",
+            "director_notes": f"HOLLYWOOD STUDIO HEAD DIRECTION: Hold final master frame for 3 full seconds after line delivery before slow fade to black.",
             "characters": [c1_name, c2_name],
-            "visual_prompt": f"ACTION: Both {c1_name} and {c2_name} stand locked in a tense standoff.\nDIALOGUE:\n{c2_name}: \"We'll see about that.\"\nDIRECTOR NOTES: Hold final frame for 3 seconds.\nCINEMATOGRAPHY:\nCinematic 35mm film master establishing shot of {c1_name} and {c2_name} at {valid_env}. CAMERA: FOV 107°, Ultra-Wide Establishing, golden hour lighting.",
+            "visual_prompt": f"HOLLYWOOD STUDIO HEAD DIRECTING & SAVE THE CAT FINAL RESOLUTION BEAT: Both {c1_name} and {c2_name} remain motionless in {valid_env}, framed against the sweeping architectural backdrop as sunset shadows stretch across the space, freezing the final moment of the episode in high dramatic tension.\nDIALOGUE:\n{c2_name}: \"We'll see about that.\"\nDIRECTOR NOTES:\nHOLLYWOOD STUDIO HEAD DIRECTION: Hold final master frame for 3 full seconds after line delivery before slow fade to black.\nCINEMATOGRAPHY & OPTICS:\nCinematic 35mm motion picture film master establishing shot of {c1_name} and {c2_name} at {valid_env}. CAMERA: FOV 107° ultra-wide perspective, ARRI Alexa 35, ARRI Master Anamorphic 28mm T1.9 lens, wide operator tracking position at 8 meters. LIGHTING: Golden hour ambient sunset spill, long shadow silhouettes. REAL OPTICS & FILM: Natural ISO 400 optical 35mm film grain, organic deep architectural focus, zero CGI, zero 3D render.",
             "is_broll": False
         }
     ]
