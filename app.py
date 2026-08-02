@@ -526,12 +526,33 @@ def _scan_local_gallery(user_root):
     local_imgs.sort(key=lambda x: x["time"], reverse=True)
     return local_imgs[:300]
 
+# --- Cached Presigned S3 Video Stream URL ---
+@st.cache_data(ttl=3500, show_spinner=False)
+def _sign_stream_video_url(bucket_name, key, region):
+    """Generates an S3 presigned URL with explicit video/mp4 MIME headers for instant HTML5 streaming."""
+    import boto3
+    try:
+        s3 = boto3.client('s3', region_name=region)
+        return s3.generate_presigned_url(
+            'get_object',
+            Params={
+                'Bucket': bucket_name,
+                'Key': key,
+                'ResponseContentType': 'video/mp4'
+            },
+            ExpiresIn=3600
+        )
+    except Exception as e:
+        import urllib.parse
+        encoded_parts = [urllib.parse.quote(part) for part in key.split('/')]
+        encoded_key = '/'.join(encoded_parts)
+        return f"https://{bucket_name}.s3.{region}.amazonaws.com/{encoded_key}"
+
 # --- Cached S3 Video Vault Scanner ---
 @st.cache_data(ttl=120, show_spinner="☁️ Scanning Cloud Video Vault...")
 def _scan_s3_video_vault(bucket_name, prefix, region):
     """Scans S3 bucket recursively for all user generated videos."""
     import boto3
-    import urllib.parse
     s3 = boto3.client('s3', region_name=region)
     all_vids_meta = []
     paginator = s3.get_paginator('list_objects_v2')
@@ -541,9 +562,7 @@ def _scan_s3_video_vault(bucket_name, prefix, region):
             for obj in page.get('Contents', []):
                 key = obj['Key']
                 if key.lower().endswith(('.mp4', '.mov', '.webm', '.m4v')) and '/Assets/' not in key and '/Temp' not in key:
-                    encoded_parts = [urllib.parse.quote(part) for part in key.split('/')]
-                    encoded_key = '/'.join(encoded_parts)
-                    url = f"https://{bucket_name}.s3.{region}.amazonaws.com/{encoded_key}"
+                    url = _sign_stream_video_url(bucket_name, key, region)
                     
                     filename = os.path.basename(key)
                     size_mb = obj.get('Size', 0) / (1024 * 1024)
@@ -680,7 +699,15 @@ if selection == "Video Vault":
                                 st.caption(f"🏷️ {vid['folder']} | 💾 {vid['size_mb']} MB")
                                 
                                 vid_src = vid["src"] if vid.get("is_local") else vid["url"]
-                                st.video(vid_src)
+                                if vid.get("is_local"):
+                                    st.video(vid_src)
+                                else:
+                                    st.markdown(f"""
+                                    <video width="100%" controls preload="metadata" playsinline style="border-radius: 8px; max-height: 320px; background-color: #000; outline: none;">
+                                        <source src="{vid_src}" type="video/mp4">
+                                        Your browser does not support HTML5 video streaming.
+                                    </video>
+                                    """, unsafe_allow_html=True)
                                 
                                 c_act1, c_act2 = st.columns(2)
                                 with c_act1:
