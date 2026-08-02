@@ -414,6 +414,7 @@ st.markdown("""
 nav_options = [
     "Workflow Wizard", 
     "My Gallery",
+    "Video Vault",
     "Asset Library",
     "Mini Series",
     "World Builder",
@@ -464,17 +465,18 @@ def _scan_s3_gallery(bucket_name, prefix, region):
     
     for obj in all_objects:
         key = obj['Key']
-        if key.lower().endswith(('.png', '.jpg', '.jpeg', '.webp')) and '/Assets/' not in key and not key.endswith('_thumb.jpg'):
+        if key.lower().endswith(('.png', '.jpg', '.jpeg', '.webp', '.mp4', '.mov', '.webm', '.m4v')) and '/Assets/' not in key and not key.endswith('_thumb.jpg'):
             thumb_key_pred = key.rsplit('.', 1)[0] + "_thumb.jpg"
             has_thumb = thumb_key_pred in thumb_keys_set
             all_images_meta.append({
                 "key": key,
                 "thumb_key": thumb_key_pred if has_thumb else key,
                 "name": os.path.basename(key),
-                "time": obj.get('LastModified').timestamp()
+                "time": obj.get('LastModified').timestamp(),
+                "is_video": key.lower().endswith(('.mp4', '.mov', '.webm', '.m4v'))
             })
     all_images_meta.sort(key=lambda x: x["time"], reverse=True)
-    return all_images_meta[:200]
+    return all_images_meta[:300]
 
 # --- Cached Presigned URL batch (avoids re-signing on rerun) ---
 @st.cache_data(ttl=3500, show_spinner=False)
@@ -504,7 +506,7 @@ def _scan_local_gallery(user_root):
     thumb_paths = set([os.path.join(root, file) for root, file in all_files if file.endswith('_thumb.jpg')])
     
     for root, file in all_files:
-        if file.lower().endswith(('.png', '.jpg', '.jpeg', '.webp')) and "Assets" not in root and not file.endswith('_thumb.jpg'):
+        if file.lower().endswith(('.png', '.jpg', '.jpeg', '.webp', '.mp4', '.mov', '.webm', '.m4v')) and "Assets" not in root and not file.endswith('_thumb.jpg'):
             full_path = os.path.join(root, file)
             thumb_path_pred = full_path.rsplit('.', 1)[0] + "_thumb.jpg"
             has_thumb = thumb_path_pred in thumb_paths
@@ -518,10 +520,84 @@ def _scan_local_gallery(user_root):
                 "thumb_src": thumb_path_pred if has_thumb else full_path,
                 "name": file,
                 "time": mtime,
-                "is_local": True
+                "is_local": True,
+                "is_video": file.lower().endswith(('.mp4', '.mov', '.webm', '.m4v'))
             })
     local_imgs.sort(key=lambda x: x["time"], reverse=True)
-    return local_imgs[:200]
+    return local_imgs[:300]
+
+# --- Cached S3 Video Vault Scanner ---
+@st.cache_data(ttl=120, show_spinner="☁️ Scanning Cloud Video Vault...")
+def _scan_s3_video_vault(bucket_name, prefix, region):
+    """Scans S3 bucket recursively for all user generated videos."""
+    import boto3
+    import urllib.parse
+    s3 = boto3.client('s3', region_name=region)
+    all_vids_meta = []
+    paginator = s3.get_paginator('list_objects_v2')
+    
+    try:
+        for page in paginator.paginate(Bucket=bucket_name, Prefix=prefix):
+            for obj in page.get('Contents', []):
+                key = obj['Key']
+                if key.lower().endswith(('.mp4', '.mov', '.webm', '.m4v')) and '/Assets/' not in key and '/Temp' not in key:
+                    encoded_parts = [urllib.parse.quote(part) for part in key.split('/')]
+                    encoded_key = '/'.join(encoded_parts)
+                    url = f"https://{bucket_name}.s3.{region}.amazonaws.com/{encoded_key}"
+                    
+                    filename = os.path.basename(key)
+                    size_mb = obj.get('Size', 0) / (1024 * 1024)
+                    mtime = obj.get('LastModified').timestamp() if obj.get('LastModified') else 0
+                    
+                    folder_tag = "🎬 Mini-Series" if "Series" in key else ("📹 Studio" if "Videos" in key else "🎥 Render")
+                    
+                    all_vids_meta.append({
+                        "key": key,
+                        "url": url,
+                        "name": filename,
+                        "size_mb": round(size_mb, 2),
+                        "time": mtime,
+                        "folder": folder_tag,
+                        "is_local": False
+                    })
+    except Exception as e:
+        print(f"S3 Video Vault scan warning: {e}")
+        
+    all_vids_meta.sort(key=lambda x: x["time"], reverse=True)
+    return all_vids_meta[:300]
+
+# --- Cached Local Video Vault Scanner ---
+@st.cache_data(ttl=60, show_spinner="📂 Scanning Local Video Vault...")
+def _scan_local_video_vault(user_root):
+    """Scans local user directory recursively for all generated videos."""
+    local_vids = []
+    if not os.path.exists(user_root):
+        return local_vids
+        
+    for root, dirs, files in os.walk(user_root):
+        for file in files:
+            if file.lower().endswith(('.mp4', '.mov', '.webm', '.m4v')) and "Assets" not in root and "Temp" not in root:
+                full_path = os.path.join(root, file)
+                try:
+                    mtime = os.path.getmtime(full_path)
+                    size_mb = os.path.getsize(full_path) / (1024 * 1024)
+                except OSError:
+                    mtime = 0
+                    size_mb = 0
+                    
+                folder_tag = "🎬 Mini-Series" if "Series" in root else ("📹 Studio" if "Videos" in root else "🎥 Render")
+                
+                local_vids.append({
+                    "src": full_path,
+                    "name": file,
+                    "size_mb": round(size_mb, 2),
+                    "time": mtime,
+                    "folder": folder_tag,
+                    "is_local": True
+                })
+                
+    local_vids.sort(key=lambda x: x["time"], reverse=True)
+    return local_vids[:300]
 
 # --- Zoom Dialog ---
 @st.dialog("🔍 Image Viewer", width="large")
@@ -549,6 +625,82 @@ def _gallery_zoom_dialog(src, name, is_local=False):
             ''',
             unsafe_allow_html=True
         )
+
+if selection == "Video Vault":
+    with st.container():
+        st.markdown("### 🎬 Enterprise Video Vault & History")
+        
+        if not st.session_state.get("authenticated"):
+            st.warning("Please login to access your Video Vault.")
+        else:
+            username = st.session_state.current_user.get("username")
+            user_root = os.path.join("output", "users", username)
+            
+            # Header stats & controls
+            c_vhead, c_vsearch, c_vref = st.columns([2, 2, 1])
+            with c_vhead:
+                if os.getenv("S3_BUCKET_NAME"):
+                    st.caption(f"☁️ Cloud Vault: `s3://{os.getenv('S3_BUCKET_NAME')}/users/{username}`")
+                else:
+                    st.caption(f"📂 Local Vault: `{os.path.abspath(user_root)}`")
+            with c_vsearch:
+                search_query = st.text_input("🔍 Search Videos", placeholder="Filter by name, shot, or series...", key="vv_search", label_visibility="collapsed")
+            with c_vref:
+                if st.button("🔄 Sync Vault", use_container_width=True, key="vv_sync_btn"):
+                    _scan_s3_video_vault.clear()
+                    _scan_local_video_vault.clear()
+                    st.rerun()
+
+            # Gather Cloud + Local Videos
+            vids = []
+            if os.getenv("S3_BUCKET_NAME"):
+                bucket = os.getenv("S3_BUCKET_NAME")
+                region = os.getenv("AWS_REGION", "ap-southeast-2")
+                prefix = f"users/{username}/"
+                vids = _scan_s3_video_vault(bucket, prefix, region)
+            else:
+                vids = _scan_local_video_vault(user_root)
+                
+            # Filter search query
+            if search_query:
+                vids = [v for v in vids if search_query.lower() in v["name"].lower()]
+                
+            if not vids:
+                st.info("ℹ️ No videos found in your Video Vault history yet. Generate a video in **Mini Series** or **Wan & Seedance Studio** to automatically save it here!")
+            else:
+                st.success(f"🎥 Found **{len(vids)} generated videos** in your Video Vault.")
+                
+                # Grid of video cards (2 columns per row)
+                for i in range(0, len(vids), 2):
+                    v_cols = st.columns(2)
+                    for c_idx, vid in enumerate(vids[i:i+2]):
+                        with v_cols[c_idx]:
+                            with st.container(border=True):
+                                st.markdown(f"**{vid['name']}**")
+                                st.caption(f"🏷️ {vid['folder']} | 💾 {vid['size_mb']} MB")
+                                
+                                vid_src = vid["src"] if vid.get("is_local") else vid["url"]
+                                st.video(vid_src)
+                                
+                                c_act1, c_act2 = st.columns(2)
+                                with c_act1:
+                                    if vid.get("is_local") and os.path.exists(vid["src"]):
+                                        with open(vid["src"], "rb") as f_v:
+                                            st.download_button(
+                                                "⬇️ Download MP4",
+                                                data=f_v,
+                                                file_name=vid["name"],
+                                                mime="video/mp4",
+                                                use_container_width=True,
+                                                key=f"vv_dl_{vid['name']}_{i}_{c_idx}"
+                                            )
+                                    else:
+                                        st.markdown(f"[⬇️ Download MP4]({vid_src})")
+                                with c_act2:
+                                    if st.button("🎬 Edit in Studio", key=f"vv_edit_{vid['name']}_{i}_{c_idx}", use_container_width=True):
+                                        st.session_state.wan_edit_image = vid_src
+                                        st.session_state.active_tab = "Wan & Seedance Studio"
+                                        st.rerun()
 
 if selection == "My Gallery":
     with st.container():
