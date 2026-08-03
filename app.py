@@ -465,15 +465,14 @@ def _scan_s3_gallery(bucket_name, prefix, region):
     
     for obj in all_objects:
         key = obj['Key']
-        if key.lower().endswith(('.png', '.jpg', '.jpeg', '.webp', '.mp4', '.mov', '.webm', '.m4v')) and '/Assets/' not in key and not key.endswith('_thumb.jpg'):
+        if key.lower().endswith(('.png', '.jpg', '.jpeg', '.webp')) and '/Assets/' not in key and not key.endswith('_thumb.jpg'):
             thumb_key_pred = key.rsplit('.', 1)[0] + "_thumb.jpg"
             has_thumb = thumb_key_pred in thumb_keys_set
             all_images_meta.append({
                 "key": key,
                 "thumb_key": thumb_key_pred if has_thumb else key,
                 "name": os.path.basename(key),
-                "time": obj.get('LastModified').timestamp(),
-                "is_video": key.lower().endswith(('.mp4', '.mov', '.webm', '.m4v'))
+                "time": obj.get('LastModified').timestamp()
             })
     all_images_meta.sort(key=lambda x: x["time"], reverse=True)
     return all_images_meta[:300]
@@ -506,7 +505,7 @@ def _scan_local_gallery(user_root):
     thumb_paths = set([os.path.join(root, file) for root, file in all_files if file.endswith('_thumb.jpg')])
     
     for root, file in all_files:
-        if file.lower().endswith(('.png', '.jpg', '.jpeg', '.webp', '.mp4', '.mov', '.webm', '.m4v')) and "Assets" not in root and not file.endswith('_thumb.jpg'):
+        if file.lower().endswith(('.png', '.jpg', '.jpeg', '.webp')) and "Assets" not in root and not file.endswith('_thumb.jpg'):
             full_path = os.path.join(root, file)
             thumb_path_pred = full_path.rsplit('.', 1)[0] + "_thumb.jpg"
             has_thumb = thumb_path_pred in thumb_paths
@@ -520,8 +519,7 @@ def _scan_local_gallery(user_root):
                 "thumb_src": thumb_path_pred if has_thumb else full_path,
                 "name": file,
                 "time": mtime,
-                "is_local": True,
-                "is_video": file.lower().endswith(('.mp4', '.mov', '.webm', '.m4v'))
+                "is_local": True
             })
     local_imgs.sort(key=lambda x: x["time"], reverse=True)
     return local_imgs[:300]
