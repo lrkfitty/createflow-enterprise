@@ -305,7 +305,7 @@ def generate_wan_video(prompt, image_path, resolution="1080P", duration=5, ref_v
             "Authorization": f"Bearer {api_key}"
         }
         
-        norm_res = "720P" if str(resolution).upper().strip() in ["720", "720P"] else "1080P"
+        norm_res = "720P" if "720" in str(resolution).upper() else "1080P"
         clean_prompt = sanitize_prompt_for_provider(prompt)
         payload = {
             "model": model,
