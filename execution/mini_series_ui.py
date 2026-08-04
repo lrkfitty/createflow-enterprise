@@ -957,7 +957,7 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
                                 ],
                                 key=f"v_eng_{key_base}"
                             )
-                            v_res = st.selectbox("Resolution", ["720P (Half Cost / Fast)", "1080P"], index=0, key=f"v_res_{key_base}")
+                            v_res = st.selectbox("Resolution", ["1080P (Full HD Quality - Recommended)", "720P (Economy / Draft)"], index=0, key=f"v_res_{key_base}")
                             v_dur = st.slider("Duration (Sec)", 2, 15, 5, key=f"v_dur_{key_base}")
                             
                             all_cast_keys = list(st.session_state.cast_lookup_map.keys())

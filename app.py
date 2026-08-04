@@ -4074,7 +4074,7 @@ if selection == "Wan & Seedance Studio":
         
         col_res, col_dur = st.columns(2)
         with col_res:
-            anim_res = st.selectbox("Resolution", ["1080P", "720P"], index=0, key="wan_anim_res")
+            anim_res = st.selectbox("Resolution", ["1080P (Full HD Quality - Recommended)", "720P (Economy / Draft)"], index=0, key="wan_anim_res")
         with col_dur:
             anim_dur = st.slider("Duration (seconds)", 2, 15, 5, key="wan_anim_dur")
             
