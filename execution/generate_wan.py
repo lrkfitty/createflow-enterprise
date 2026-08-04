@@ -306,7 +306,14 @@ def generate_wan_video(prompt, image_path, resolution="1080P", duration=5, aspec
         }
         
         norm_res = "720P" if "720" in str(resolution).upper() else "1080P"
-        norm_ar = str(aspect_ratio).strip() if aspect_ratio else "16:9"
+        raw_ar = str(aspect_ratio).strip() if aspect_ratio else "16:9"
+        if "9:16" in raw_ar:
+            norm_ar = "9:16"
+        elif "1:1" in raw_ar:
+            norm_ar = "1:1"
+        else:
+            norm_ar = "16:9"
+            
         clean_prompt = sanitize_prompt_for_provider(prompt)
         payload = {
             "model": model,
@@ -316,6 +323,7 @@ def generate_wan_video(prompt, image_path, resolution="1080P", duration=5, aspec
             "duration": duration,
             "seed": -1
         }
+        logs.append(f"Payload Config -> Model: {model} | Resolution: {norm_res} | Aspect Ratio: {norm_ar} | Duration: {duration}s")
         
         if "seedance" in model.lower() and "reference-to-video" in model.lower():
              # Seedance 2.0 Reference-to-Video (Up to 6 Images + Videos + Audios)
