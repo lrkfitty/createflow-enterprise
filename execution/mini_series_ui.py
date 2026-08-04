@@ -1148,11 +1148,11 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
                                             with open(temp_a_path, "wb") as f_a:
                                                 f_a.write(up_aref.getbuffer())
 
-                                        if "Seedance 2.0 (Reference" in v_engine:
-                                            target_model = "bytedance/seedance-2.0/reference-to-video"
-                                        elif "Seedance 2.0 Mini" in v_engine:
+                                        if "Mini" in v_engine:
                                             target_model = "bytedance/seedance-2.0-mini/reference-to-video"
-                                        elif "Seedance 2.0 (Image" in v_engine:
+                                        elif "Seedance" in v_engine and "Reference" in v_engine:
+                                            target_model = "bytedance/seedance-2.0/reference-to-video"
+                                        elif "Seedance" in v_engine and "Image" in v_engine:
                                             target_model = "bytedance/seedance-2.0/image-to-video"
                                         elif "Wan" in v_engine:
                                             target_model = "alibaba/wan-2.7/image-to-video"

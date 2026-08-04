@@ -3645,13 +3645,13 @@ if selection == "Video Studio":
                               
                     elif "Wan" in video_model or "Seedance" in video_model:
                         target_engine = "alibaba/wan-2.7/image-to-video"
-                        if "Seedance 2.0 (Reference-to-Video)" in video_model:
-                            target_engine = "bytedance/seedance-2.0/reference-to-video"
-                        elif "Seedance 2.0 Mini (Reference-to-Video)" in video_model:
+                        if "Mini" in video_model:
                             target_engine = "bytedance/seedance-2.0-mini/reference-to-video"
-                        elif "Seedance 2.0 (Image-to-Video)" in video_model:
+                        elif "Seedance" in video_model and "Reference" in video_model:
+                            target_engine = "bytedance/seedance-2.0/reference-to-video"
+                        elif "Seedance" in video_model and "Image" in video_model:
                             target_engine = "bytedance/seedance-2.0/image-to-video"
-                        elif "Seedance 2.0 (Text-to-Video)" in video_model:
+                        elif "Seedance" in video_model and "Text" in video_model:
                             target_engine = "bytedance/seedance-2.0/text-to-video"
                         elif "Reference-to-Video" in video_model:
                             target_engine = "alibaba/wan-2.7/reference-to-video"
@@ -4153,13 +4153,13 @@ if selection == "Wan & Seedance Studio":
                 else:
                     with st.status("⚡ Submitting motion job to Atlas Cloud API...", expanded=True) as status:
                         target_engine = "alibaba/wan-2.7/image-to-video"
-                        if "Seedance 2.0 (Reference-to-Video)" in wan_model_flavor:
-                            target_engine = "bytedance/seedance-2.0/reference-to-video"
-                        elif "Seedance 2.0 Mini (Reference-to-Video)" in wan_model_flavor:
+                        if "Mini" in wan_model_flavor:
                             target_engine = "bytedance/seedance-2.0-mini/reference-to-video"
-                        elif "Seedance 2.0 (Image-to-Video)" in wan_model_flavor:
+                        elif "Seedance" in wan_model_flavor and "Reference" in wan_model_flavor:
+                            target_engine = "bytedance/seedance-2.0/reference-to-video"
+                        elif "Seedance" in wan_model_flavor and "Image" in wan_model_flavor:
                             target_engine = "bytedance/seedance-2.0/image-to-video"
-                        elif "Seedance 2.0 (Text-to-Video)" in wan_model_flavor:
+                        elif "Seedance" in wan_model_flavor and "Text" in wan_model_flavor:
                             target_engine = "bytedance/seedance-2.0/text-to-video"
                         elif "Reference-to-Video" in wan_model_flavor:
                             target_engine = "alibaba/wan-2.7/reference-to-video"
