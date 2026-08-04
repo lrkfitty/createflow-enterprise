@@ -4081,17 +4081,72 @@ if selection == "Wan & Seedance Studio":
         run_anim_btn = st.button("Generate Video Motion", type="primary", key="wan_run_anim")
         
         if run_anim_btn:
+            # 1. Gather all reference images and videos upfront FIRST!
+            extra_imgs = []
+            extra_vids = []
+            
+            if "Reference-to-Video" in wan_model_flavor or "Seedance" in wan_model_flavor:
+                bulk_uploads_st = st.session_state.get("studio_wan_extra_imgs_bulk", [])
+                if bulk_uploads_st:
+                    for idx, b_file in enumerate(bulk_uploads_st[:8]):
+                        b_path = os.path.join("output", f"temp_wan_studio_bulk_ex_img_{idx+2}.png")
+                        with open(b_path, "wb") as f:
+                            f.write(b_file.getbuffer())
+                        if b_path not in extra_imgs and len(extra_imgs) < 8:
+                            extra_imgs.append(b_path)
+
+                for slot_idx in range(2, 10):
+                    w_slot_file = st.session_state.get(f"studio_wan_extra_img{slot_idx}")
+                    if w_slot_file:
+                        slot_path = os.path.join("output", f"temp_wan_studio_ex_img{slot_idx}.png")
+                        with open(slot_path, "wb") as f:
+                            f.write(w_slot_file.getbuffer())
+                        if slot_path not in extra_imgs and len(extra_imgs) < 8:
+                            extra_imgs.append(slot_path)
+                            
+                for slot_v_idx in range(2, 5):
+                    w_vid_file = st.session_state.get(f"studio_wan_extra_vid{slot_v_idx}")
+                    if w_vid_file:
+                        v_slot_path = os.path.join("output", f"temp_wan_studio_ex_vid{slot_v_idx}.mp4")
+                        with open(v_slot_path, "wb") as f:
+                            f.write(w_vid_file.getbuffer())
+                        if v_slot_path not in extra_vids and len(extra_vids) < 3:
+                            extra_vids.append(v_slot_path)
+
+            # If anim_image_path is missing but extra_imgs has images, use extra_imgs[0] as primary image!
+            if not anim_image_path and extra_imgs:
+                anim_image_path = extra_imgs[0]
+
+            # 2. JSON Prompt Auto-Extraction if raw JSON was pasted
+            clean_anim_prompt = anim_prompt.strip() if anim_prompt else ""
+            if clean_anim_prompt.startswith("{") and ("visual_prompt" in clean_anim_prompt or "shots" in clean_anim_prompt or "title" in clean_anim_prompt):
+                try:
+                    import json
+                    parsed_j = json.loads(clean_anim_prompt)
+                    if isinstance(parsed_j, dict):
+                        if "visual_prompt" in parsed_j:
+                            clean_anim_prompt = parsed_j["visual_prompt"]
+                        elif "shots" in parsed_j and isinstance(parsed_j["shots"], list) and len(parsed_j["shots"]) > 0:
+                            vp_list = [sh.get("visual_prompt", "") for sh in parsed_j["shots"] if sh.get("visual_prompt")]
+                            if vp_list:
+                                clean_anim_prompt = "\n\n".join(vp_list)
+                            else:
+                                clean_anim_prompt = parsed_j["shots"][0].get("action_description", clean_anim_prompt)
+                except Exception:
+                    pass
+
             is_text_to_video_selected = "Text-to-Video" in wan_model_flavor
-            if not is_text_to_video_selected and not anim_image_path:
-                st.error("Please provide a source image.")
-            elif not anim_prompt:
-                st.error("Please describe the motion you want.")
+            
+            if not is_text_to_video_selected and not anim_image_path and not extra_imgs:
+                st.error("⚠️ **Source image missing!** For Reference-to-Video or Image-to-Video, please upload a source image or reference image above. Or select **`Seedance 2.0 (Text-to-Video)`** from Model Variant if generating purely from text!")
+            elif not clean_anim_prompt:
+                st.error("Please describe the motion you want in the Motion Prompt area.")
             else:
                 user = st.session_state.current_user.get("username")
                 if not auth_mgr.deduct_credits(user, 5):
                     st.error("❌ Need 5 Credits for Video!")
                 else:
-                    with st.status("Submitting motion job to Atlas API...", expanded=True) as status:
+                    with st.status("⚡ Submitting motion job to Atlas Cloud API...", expanded=True) as status:
                         target_engine = "alibaba/wan-2.7/image-to-video"
                         if "Seedance 2.0 (Reference-to-Video)" in wan_model_flavor:
                             target_engine = "bytedance/seedance-2.0/reference-to-video"
@@ -4104,53 +4159,19 @@ if selection == "Wan & Seedance Studio":
                         elif "Reference-to-Video" in wan_model_flavor:
                             target_engine = "alibaba/wan-2.7/reference-to-video"
                             
-                        if "Spicy" in wan_model_flavor:
-                            st.write(f"Uploading and running {target_engine} (Spicy / No Guardrails)...")
-                        else:
-                            st.write(f"Uploading and running {target_engine}...")
-                            
-                        extra_imgs = []
-                        extra_vids = []
-                        
-                        if "Reference-to-Video" in wan_model_flavor or "Seedance" in wan_model_flavor:
-                             # 1. Process Quick Bulk Uploaded Reference Images
-                             bulk_uploads_st = st.session_state.get("studio_wan_extra_imgs_bulk", [])
-                             if bulk_uploads_st:
-                                 for idx, b_file in enumerate(bulk_uploads_st[:8]):
-                                     b_path = os.path.join("output", f"temp_wan_studio_bulk_ex_img_{idx+2}.png")
-                                     with open(b_path, "wb") as f:
-                                         f.write(b_file.getbuffer())
-                                     if b_path not in extra_imgs and len(extra_imgs) < 8:
-                                         extra_imgs.append(b_path)
+                        st.write(f"🚀 Running **{target_engine}** model...")
+                        if extra_imgs:
+                            st.write(f"📸 Loaded **{len(extra_imgs)} reference images**.")
+                        if extra_vids:
+                            st.write(f"📹 Loaded **{len(extra_vids)} reference videos**.")
 
-                             # 2. Process Slot-by-Slot Reference Images (Image 2 through Image 9)
-                             for slot_idx in range(2, 10):
-                                 w_slot_file = st.session_state.get(f"studio_wan_extra_img{slot_idx}")
-                                 if w_slot_file:
-                                     slot_path = os.path.join("output", f"temp_wan_studio_ex_img{slot_idx}.png")
-                                     with open(slot_path, "wb") as f:
-                                         f.write(w_slot_file.getbuffer())
-                                     if slot_path not in extra_imgs and len(extra_imgs) < 8:
-                                         extra_imgs.append(slot_path)
-                                         
-                             # 3. Process Reference Videos (Video 2 through Video 4)
-                             for slot_v_idx in range(2, 5):
-                                 w_vid_file = st.session_state.get(f"studio_wan_extra_vid{slot_v_idx}")
-                                 if w_vid_file:
-                                     v_slot_path = os.path.join("output", f"temp_wan_studio_ex_vid{slot_v_idx}.mp4")
-                                     with open(v_slot_path, "wb") as f:
-                                         f.write(w_vid_file.getbuffer())
-                                     if v_slot_path not in extra_vids and len(extra_vids) < 3:
-                                         extra_vids.append(v_slot_path)
-                        
-                        final_wan_prompt = anim_prompt
+                        final_wan_prompt = clean_anim_prompt
                         if wan_char_swap:
-                             # Append instructions to enforce motion transfer swap and identity locking
                              final_wan_prompt = (
                                   "Strict Character Swap: Lock character identity to Image1. "
                                   "Transfer all environment details, lighting, physics, frame timing, and motion strictly from Video1. "
                                   "Keep the actions identical to Video1, but swap the character with Image1. "
-                                  f"Context: {anim_prompt}"
+                                  f"Context: {clean_anim_prompt}"
                              )
                         
                         out_dir = get_user_out_dir("Videos")
@@ -4166,25 +4187,26 @@ if selection == "Wan & Seedance Studio":
                             output_folder=out_dir
                         )
                         
-                        if res and res["status"] == "success":
+                        if res and res.get("status") == "success":
                             status.update(label="Complete!", state="complete")
                             st.success("✅ Video generated successfully!")
-                            st.write(f"💾 Saved to: {res['video_path']}")
-                            st.video(res["video_url"])
-                            
-                            if os.path.exists(res["video_path"]):
+                            st.write(f"💾 Saved to: {res.get('video_path', 'N/A')}")
+                            if res.get("video_url"):
+                                st.video(res["video_url"])
+                            if res.get("video_path") and os.path.exists(res["video_path"]):
                                 with open(res["video_path"], "rb") as vf:
                                     st.download_button(
-                                        "Download MP4",
+                                        "⬇️ Download MP4",
                                         data=vf,
                                         file_name=os.path.basename(res["video_path"]),
                                         mime="video/mp4"
                                     )
                         else:
                             status.update(label="Failed", state="error")
-                            st.error(f"Error: {res.get('error', 'Unknown error')}")
-                            with st.expander("Logs", expanded=True):
-                                st.write(res.get("logs", []))
+                            st.error(f"Error: {res.get('error', 'Unknown error') if res else 'Generation failed'}")
+                            if res and res.get("logs"):
+                                with st.expander("Logs", expanded=True):
+                                    st.write(res.get("logs", []))
 
 # ==========================================
 # TAB 8: CHARACTER STUDIO
