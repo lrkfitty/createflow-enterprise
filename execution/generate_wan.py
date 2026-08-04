@@ -533,24 +533,6 @@ def generate_wan_video(prompt, image_path, resolution="1080P", duration=5, aspec
                 break
             elif task_status == "failed":
                 err_msg = poll_data.get("data", {}).get("error") or "Unknown error"
-                # Check for Provider Safety / Copyright False Positive Rejections
-                if any(w in err_msg.lower() for w in ["copyright", "policy", "blocked", "restrictions"]) and model == "bytedance/seedance-2.0/reference-to-video":
-                    logs.append(f"⚠️ Seedance 2.0 safety filter false-positive triggered ({err_msg}). Retrying automatically with Seedance 2.0-Mini (permissive safety policy)...")
-                    fallback_res = generate_wan_video(
-                        prompt=clean_prompt,
-                        image_path=image_path,
-                        resolution=resolution,
-                        duration=duration,
-                        ref_video_path=ref_video_path,
-                        ref_audio_path=ref_audio_path,
-                        extra_images=extra_images,
-                        extra_videos=extra_videos,
-                        model="bytedance/seedance-2.0-mini/reference-to-video",
-                        output_folder=output_folder
-                    )
-                    if fallback_res.get("status") == "success":
-                        fallback_res["logs"] = logs + fallback_res.get("logs", [])
-                        return fallback_res
                 return {"status": "failed", "error": f"Generation failed: {err_msg}", "logs": logs}
         else:
             return {"status": "failed", "error": "Polling timed out after 15 minutes.", "logs": logs}
