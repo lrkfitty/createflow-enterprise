@@ -3265,8 +3265,9 @@ if selection == "Video Studio":
                 [
                     "Kling AI 2.6 (Professional)", 
                     "HuMo AI (Human Motion Premium)",
-                    "Seedance 2.0 (Image-to-Video)",
+                    "Seedance 2.0 (Reference-to-Video)",
                     "Seedance 2.0 Mini (Reference-to-Video)",
+                    "Seedance 2.0 (Image-to-Video)",
                     "Seedance 2.0 (Text-to-Video)",
                     "Wan 2.7 (Image-to-Video)",
                     "Wan 2.7 Spicy (Image-to-Video)",
@@ -3642,10 +3643,12 @@ if selection == "Video Studio":
                               
                     elif "Wan" in video_model or "Seedance" in video_model:
                         target_engine = "alibaba/wan-2.7/image-to-video"
-                        if "Seedance 2.0 (Image-to-Video)" in video_model:
-                            target_engine = "bytedance/seedance-2.0/image-to-video"
+                        if "Seedance 2.0 (Reference-to-Video)" in video_model:
+                            target_engine = "bytedance/seedance-2.0/reference-to-video"
                         elif "Seedance 2.0 Mini (Reference-to-Video)" in video_model:
                             target_engine = "bytedance/seedance-2.0-mini/reference-to-video"
+                        elif "Seedance 2.0 (Image-to-Video)" in video_model:
+                            target_engine = "bytedance/seedance-2.0/image-to-video"
                         elif "Seedance 2.0 (Text-to-Video)" in video_model:
                             target_engine = "bytedance/seedance-2.0/text-to-video"
                         elif "Reference-to-Video" in video_model:
@@ -3986,8 +3989,9 @@ if selection == "Wan & Seedance Studio":
                 "Wan 2.7 Spicy (Image-to-Video)",
                 "Wan 2.7 Standard (Reference-to-Video)",
                 "Wan 2.7 Spicy (Reference-to-Video)",
-                "Seedance 2.0 (Image-to-Video)",
+                "Seedance 2.0 (Reference-to-Video)",
                 "Seedance 2.0 Mini (Reference-to-Video)",
+                "Seedance 2.0 (Image-to-Video)",
                 "Seedance 2.0 (Text-to-Video)"
             ],
             index=0,
@@ -4033,16 +4037,38 @@ if selection == "Wan & Seedance Studio":
                                     ref_video_url = st.session_state['last_uploaded_vid_url']
                                     st.caption(f"Using: `{ref_video_url}`")
                                     
-            with st.expander("👥 Additional References (Multi-Subject Control)", expanded=False):
-                 st.write("Reference these subjects in your prompt as `Image2`, `Video2`, etc. (`Image1` is the main input image, `Video1` is the main reference video).")
+            with st.expander("📸 Seedance 2.0 Multi-Subject Reference Lock (Up to 9 Reference Images & 4 Videos)", expanded=True):
+                 st.markdown("Reference these subjects in your prompt as `Image1`, `Image2`, `Image3` ... `Image9`, and `Video1`, `Video2`, `Video3`, `Video4`.")
                  
-                 ex_col1, ex_col2 = st.columns(2)
-                 with ex_col1:
-                      st.file_uploader("Upload Image 2 (Image2)", type=["png", "jpg", "jpeg"], key="studio_wan_extra_img2")
-                      st.file_uploader("Upload Image 3 (Image3)", type=["png", "jpg", "jpeg"], key="studio_wan_extra_img3")
-                 with ex_col2:
-                      st.file_uploader("Upload Video 2 (Video2)", type=["mp4", "mov"], key="studio_wan_extra_vid2")
-                      st.file_uploader("Upload Video 3 (Video3)", type=["mp4", "mov"], key="studio_wan_extra_vid3")
+                 # Option A: Quick Bulk Upload
+                 st.file_uploader(
+                     "📁 Quick Bulk Upload (Select up to 8 additional reference images at once)",
+                     type=["png", "jpg", "jpeg", "webp"],
+                     accept_multiple_files=True,
+                     key="studio_wan_extra_imgs_bulk",
+                     help="Select multiple images from your computer at once."
+                 )
+                 
+                 st.markdown("--- **or Upload / Assign Slots Individually (Image 2 through Image 9)** ---")
+                 c_img_a, c_img_b = st.columns(2)
+                 with c_img_a:
+                     st.file_uploader("Upload Image 2 (Image2)", type=["png", "jpg", "jpeg", "webp"], key="studio_wan_extra_img2")
+                     st.file_uploader("Upload Image 3 (Image3)", type=["png", "jpg", "jpeg", "webp"], key="studio_wan_extra_img3")
+                     st.file_uploader("Upload Image 4 (Image4)", type=["png", "jpg", "jpeg", "webp"], key="studio_wan_extra_img4")
+                     st.file_uploader("Upload Image 5 (Image5)", type=["png", "jpg", "jpeg", "webp"], key="studio_wan_extra_img5")
+                 with c_img_b:
+                     st.file_uploader("Upload Image 6 (Image6)", type=["png", "jpg", "jpeg", "webp"], key="studio_wan_extra_img6")
+                     st.file_uploader("Upload Image 7 (Image7)", type=["png", "jpg", "jpeg", "webp"], key="studio_wan_extra_img7")
+                     st.file_uploader("Upload Image 8 (Image8)", type=["png", "jpg", "jpeg", "webp"], key="studio_wan_extra_img8")
+                     st.file_uploader("Upload Image 9 (Image9)", type=["png", "jpg", "jpeg", "webp"], key="studio_wan_extra_img9")
+                     
+                 st.markdown("--- **Video Motion / Camera Choreography References (Video 2 through Video 4)** ---")
+                 c_vid_a, c_vid_b = st.columns(2)
+                 with c_vid_a:
+                     st.file_uploader("Upload Video 2 (Video2)", type=["mp4", "mov"], key="studio_wan_extra_vid2")
+                     st.file_uploader("Upload Video 3 (Video3)", type=["mp4", "mov"], key="studio_wan_extra_vid3")
+                 with c_vid_b:
+                     st.file_uploader("Upload Video 4 (Video4)", type=["mp4", "mov"], key="studio_wan_extra_vid4")
         
         anim_prompt = st.text_area("Motion Prompt", placeholder="e.g. The character turns her head to look at the camera and smiles, wind blowing hair, realistic physics and textures, 35mm lens.", key="wan_anim_prompt")
         
@@ -4067,16 +4093,16 @@ if selection == "Wan & Seedance Studio":
                 else:
                     with st.status("Submitting motion job to Atlas API...", expanded=True) as status:
                         target_engine = "alibaba/wan-2.7/image-to-video"
-                        if "Reference-to-Video" in wan_model_flavor:
-                            target_engine = "alibaba/wan-2.7/reference-to-video"
-                            
-                        # Seedance 2.0 model routing
-                        if "Seedance 2.0 (Image-to-Video)" in wan_model_flavor:
-                            target_engine = "bytedance/seedance-2.0/image-to-video"
+                        if "Seedance 2.0 (Reference-to-Video)" in wan_model_flavor:
+                            target_engine = "bytedance/seedance-2.0/reference-to-video"
                         elif "Seedance 2.0 Mini (Reference-to-Video)" in wan_model_flavor:
                             target_engine = "bytedance/seedance-2.0-mini/reference-to-video"
+                        elif "Seedance 2.0 (Image-to-Video)" in wan_model_flavor:
+                            target_engine = "bytedance/seedance-2.0/image-to-video"
                         elif "Seedance 2.0 (Text-to-Video)" in wan_model_flavor:
                             target_engine = "bytedance/seedance-2.0/text-to-video"
+                        elif "Reference-to-Video" in wan_model_flavor:
+                            target_engine = "alibaba/wan-2.7/reference-to-video"
                             
                         if "Spicy" in wan_model_flavor:
                             st.write(f"Uploading and running {target_engine} (Spicy / No Guardrails)...")
@@ -4086,34 +4112,36 @@ if selection == "Wan & Seedance Studio":
                         extra_imgs = []
                         extra_vids = []
                         
-                        if "Reference-to-Video" in wan_model_flavor:
-                             w_img2 = st.session_state.get("studio_wan_extra_img2")
-                             if w_img2:
-                                  path2 = os.path.join("output", "temp_wan_studio_ex_img2.png")
-                                  with open(path2, "wb") as f:
-                                       f.write(w_img2.getbuffer())
-                                  extra_imgs.append(path2)
-                                  
-                             w_img3 = st.session_state.get("studio_wan_extra_img3")
-                             if w_img3:
-                                  path3 = os.path.join("output", "temp_wan_studio_ex_img3.png")
-                                  with open(path3, "wb") as f:
-                                       f.write(w_img3.getbuffer())
-                                  extra_imgs.append(path3)
-                                  
-                             w_vid2 = st.session_state.get("studio_wan_extra_vid2")
-                             if w_vid2:
-                                  path_v2 = os.path.join("output", "temp_wan_studio_ex_vid2.mp4")
-                                  with open(path_v2, "wb") as f:
-                                       f.write(w_vid2.getbuffer())
-                                  extra_vids.append(path_v2)
-                                  
-                             w_vid3 = st.session_state.get("studio_wan_extra_vid3")
-                             if w_vid3:
-                                  path_v3 = os.path.join("output", "temp_wan_studio_ex_vid3.mp4")
-                                  with open(path_v3, "wb") as f:
-                                       f.write(w_vid3.getbuffer())
-                                  extra_vids.append(path_v3)
+                        if "Reference-to-Video" in wan_model_flavor or "Seedance" in wan_model_flavor:
+                             # 1. Process Quick Bulk Uploaded Reference Images
+                             bulk_uploads_st = st.session_state.get("studio_wan_extra_imgs_bulk", [])
+                             if bulk_uploads_st:
+                                 for idx, b_file in enumerate(bulk_uploads_st[:8]):
+                                     b_path = os.path.join("output", f"temp_wan_studio_bulk_ex_img_{idx+2}.png")
+                                     with open(b_path, "wb") as f:
+                                         f.write(b_file.getbuffer())
+                                     if b_path not in extra_imgs and len(extra_imgs) < 8:
+                                         extra_imgs.append(b_path)
+
+                             # 2. Process Slot-by-Slot Reference Images (Image 2 through Image 9)
+                             for slot_idx in range(2, 10):
+                                 w_slot_file = st.session_state.get(f"studio_wan_extra_img{slot_idx}")
+                                 if w_slot_file:
+                                     slot_path = os.path.join("output", f"temp_wan_studio_ex_img{slot_idx}.png")
+                                     with open(slot_path, "wb") as f:
+                                         f.write(w_slot_file.getbuffer())
+                                     if slot_path not in extra_imgs and len(extra_imgs) < 8:
+                                         extra_imgs.append(slot_path)
+                                         
+                             # 3. Process Reference Videos (Video 2 through Video 4)
+                             for slot_v_idx in range(2, 5):
+                                 w_vid_file = st.session_state.get(f"studio_wan_extra_vid{slot_v_idx}")
+                                 if w_vid_file:
+                                     v_slot_path = os.path.join("output", f"temp_wan_studio_ex_vid{slot_v_idx}.mp4")
+                                     with open(v_slot_path, "wb") as f:
+                                         f.write(w_vid_file.getbuffer())
+                                     if v_slot_path not in extra_vids and len(extra_vids) < 3:
+                                         extra_vids.append(v_slot_path)
                         
                         final_wan_prompt = anim_prompt
                         if wan_char_swap:
