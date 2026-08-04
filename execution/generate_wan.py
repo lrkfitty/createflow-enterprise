@@ -277,7 +277,7 @@ def generate_wan_image(prompt, image_path, size="2K", output_folder="output", ex
     except Exception as e:
         return {"status": "failed", "error": str(e), "logs": logs}
 
-def generate_wan_video(prompt, image_path, resolution="1080P", duration=5, ref_video_path=None, ref_audio_path=None, extra_images=None, extra_videos=None, model="alibaba/wan-2.7/image-to-video", output_folder="output"):
+def generate_wan_video(prompt, image_path, resolution="1080P", duration=5, aspect_ratio="16:9", ref_video_path=None, ref_audio_path=None, extra_images=None, extra_videos=None, model="alibaba/wan-2.7/image-to-video", output_folder="output"):
     """
     Animates an image using Seedance 2.0 or Wan 2.7 models via Atlas Cloud API.
     Supports multi-subject image references (up to 9), video references, and audio/voiceover references for Seedance 2.0 Reference-to-Video.
@@ -306,11 +306,13 @@ def generate_wan_video(prompt, image_path, resolution="1080P", duration=5, ref_v
         }
         
         norm_res = "720P" if "720" in str(resolution).upper() else "1080P"
+        norm_ar = str(aspect_ratio).strip() if aspect_ratio else "16:9"
         clean_prompt = sanitize_prompt_for_provider(prompt)
         payload = {
             "model": model,
             "prompt": clean_prompt,
             "resolution": norm_res,
+            "aspect_ratio": norm_ar,
             "duration": duration,
             "seed": -1
         }

@@ -3436,9 +3436,11 @@ if selection == "Video Studio":
                          else:
                               st.warning("🔥 spicy mode enabled: Model alibaba/wan-2.7/image-to-video will be called with no guardrails.")
                     
-                    col_wan_res, col_wan_dur = st.columns(2)
+                    col_wan_res, col_wan_ar, col_wan_dur = st.columns(3)
                     with col_wan_res:
                         wan_studio_res = st.selectbox("Resolution", ["1080P", "720P"], index=0, key="studio_wan_res")
+                    with col_wan_ar:
+                        wan_studio_ar = st.selectbox("Aspect Ratio", ["16:9 (Widescreen)", "9:16 (Vertical / Reels)", "1:1 (Square)"], index=0, key="studio_wan_ar")
                     with col_wan_dur:
                         wan_studio_dur = st.slider("Duration (seconds)", 2, 15, 5, key="studio_wan_dur")
                         
@@ -3711,6 +3713,7 @@ if selection == "Video Studio":
                             image_path=temp_path,
                             resolution=w_res,
                             duration=w_dur,
+                            aspect_ratio=st.session_state.get("studio_wan_ar", "16:9").split(" ")[0],
                             ref_video_path=ref_video_url,
                             extra_images=extra_imgs if extra_imgs else None,
                             extra_videos=extra_vids if extra_vids else None,
@@ -4072,10 +4075,12 @@ if selection == "Wan & Seedance Studio":
         
         anim_prompt = st.text_area("Motion Prompt", placeholder="e.g. The character turns her head to look at the camera and smiles, wind blowing hair, realistic physics and textures, 35mm lens.", key="wan_anim_prompt")
         
-        col_res, col_dur = st.columns(2)
-        with col_res:
-            anim_res = st.selectbox("Resolution", ["1080P (Full HD Quality - Recommended)", "720P (Economy / Draft)"], index=0, key="wan_anim_res")
-        with col_dur:
+        c_res, c_ar, c_dur = st.columns(3)
+        with c_res:
+            anim_res = st.selectbox("Resolution", ["1080P", "720P"], index=0, key="wan_anim_res")
+        with c_ar:
+            anim_ar = st.selectbox("Aspect Ratio", ["16:9 (Widescreen)", "9:16 (Vertical / Reels)", "1:1 (Square)"], index=0, key="wan_anim_ar")
+        with c_dur:
             anim_dur = st.slider("Duration (seconds)", 2, 15, 5, key="wan_anim_dur")
             
         run_anim_btn = st.button("Generate Video Motion", type="primary", key="wan_run_anim")
@@ -4180,6 +4185,7 @@ if selection == "Wan & Seedance Studio":
                             image_path=anim_image_path,
                             resolution=anim_res,
                             duration=anim_dur,
+                            aspect_ratio=anim_ar.split(" ")[0],
                             ref_video_path=ref_video_url,
                             extra_images=extra_imgs if extra_imgs else None,
                             extra_videos=extra_vids if extra_vids else None,

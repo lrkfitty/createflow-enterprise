@@ -957,8 +957,13 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
                                 ],
                                 key=f"v_eng_{key_base}"
                             )
-                            v_res = st.selectbox("Resolution", ["1080P (Full HD Quality - Recommended)", "720P (Economy / Draft)"], index=0, key=f"v_res_{key_base}")
-                            v_dur = st.slider("Duration (Sec)", 2, 15, 5, key=f"v_dur_{key_base}")
+                            c_vres, c_var, c_vdur = st.columns(3)
+                            with c_vres:
+                                v_res = st.selectbox("Resolution", ["1080P (Full HD)", "720P (Draft)"], index=0, key=f"v_res_{key_base}")
+                            with c_var:
+                                v_ar = st.selectbox("Aspect Ratio", ["16:9 (Widescreen)", "9:16 (Vertical / Reels)", "1:1 (Square)"], index=0, key=f"v_ar_{key_base}")
+                            with c_vdur:
+                                v_dur = st.slider("Duration (Sec)", 2, 15, 5, key=f"v_dur_{key_base}")
                             
                             all_cast_keys = list(st.session_state.cast_lookup_map.keys())
                             
@@ -1160,6 +1165,7 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
                                             image_path=primary_img_path,
                                             resolution=v_res,
                                             duration=v_dur,
+                                            aspect_ratio=v_ar.split(" ")[0],
                                             ref_video_path=temp_v_path,
                                             ref_audio_path=temp_a_path,
                                             extra_images=ref_images if ref_images else None,
