@@ -718,11 +718,12 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
         if rig_imgs:
             st.markdown("---")
             st.markdown("##### 📌 Active Rig Mapping Slots")
-            cols = st.columns(min(len(rig_imgs), 6))
+            cols = st.columns(len(rig_imgs))
             for i, (slot_tag, img_p, item_n) in enumerate(rig_imgs):
                 with cols[i]:
                     st.caption(f"**{slot_tag}**")
-                    if img_p and os.path.exists(str(img_p)):
+                    is_u = isinstance(img_p, str) and (img_p.startswith("http://") or img_p.startswith("https://"))
+                    if img_p and (is_u or os.path.exists(str(img_p))):
                         st.image(img_p, use_container_width=True)
                     st.caption(f"`{item_n}`")
                     
