@@ -757,10 +757,14 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
                         f_tag = c.get("fit_tag", "")
                         f_n = c.get("fit_name", "")
                         
-                        if c_tag and f_tag:
-                            char_pair_sentences.append(f"character {c_n} ({c_tag}) wearing outfit ({f_tag})")
+                        clean_c_n = c_n.replace('{My}', '').strip()
+                        if c_tag and f_tag and f_n:
+                            clean_fit_name = f_n.replace('{My}', '').strip()
+                            char_pair_sentences.append(f"character {clean_c_n} ({c_tag}) wearing the mapped {f_tag} outfit ({clean_fit_name})")
+                        elif c_tag and f_tag:
+                            char_pair_sentences.append(f"character {clean_c_n} ({c_tag}) wearing mapped outfit ({f_tag})")
                         elif c_tag:
-                            char_pair_sentences.append(f"character {c_n} ({c_tag})")
+                            char_pair_sentences.append(f"character {clean_c_n} ({c_tag})")
                             
                     combined_char_str = ", ".join(char_pair_sentences) if char_pair_sentences else "characters"
                     
