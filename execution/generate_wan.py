@@ -286,15 +286,25 @@ def generate_wan_image(prompt, image_path, size="2K", output_folder="output", ex
     except Exception as e:
         return {"status": "failed", "error": str(e), "logs": logs}
 
-def generate_wan_video(prompt, image_path, resolution="1080P", duration=5, aspect_ratio="16:9", ref_video_path=None, ref_audio_path=None, extra_images=None, extra_videos=None, model="alibaba/wan-2.7/image-to-video", output_folder="output"):
+def generate_wan_video(prompt, image_path, resolution="1080P", duration=5, aspect_ratio="16:9", ref_video_path=None, ref_audio_path=None, extra_images=None, extra_videos=None, model="alibaba/wan-2.7/image-to-video", output_folder="output", status_callback=None):
     """
-    Animates an image using Seedance 2.0 or Wan 2.7 models via Atlas Cloud API.
-    Supports multi-subject image references (up to 9), video references, and audio/voiceover references for Seedance 2.0 Reference-to-Video.
+    Animates an image using Seedance 2.5 / 2.0 or Wan 2.7 models via Atlas Cloud API.
+    Supports multi-subject image references (up to 50), video references, and audio/voiceover references.
     """
-    brand_name = "Seedance 2.0" if "seedance" in model.lower() else "Wan 2.7"
-    file_prefix = "seedance20_video" if "seedance" in model.lower() else "wan27_video"
+    brand_name = "Seedance" if "seedance" in model.lower() else "Wan 2.7"
+    file_prefix = "seedance_video" if "seedance" in model.lower() else "wan27_video"
     
     logs = [f"--- Starting {brand_name} Video ({model}) ---"]
+    
+    def log_msg(msg):
+        logs.append(msg)
+        if status_callback:
+            try:
+                status_callback(msg)
+            except Exception:
+                pass
+                
+    log_msg(f"Initializing {brand_name} Video Generation Engine ({model})...")
     api_key = os.getenv("ATLASCLOUD_API_KEY")
     
     if not api_key:
@@ -304,7 +314,7 @@ def generate_wan_video(prompt, image_path, resolution="1080P", duration=5, aspec
         os.makedirs(output_folder)
         
     try:
-        logs.append("Processing input image...")
+        log_msg("Processing input image & reference slots...")
         img_uri = image_to_base64_data_uri(image_path) if image_path else None
         logs.append(f"Source image processed (length: {len(img_uri) if img_uri else 0})")
         
@@ -517,36 +527,43 @@ def generate_wan_video(prompt, image_path, resolution="1080P", duration=5, aspec
             return {"status": "failed", "error": f"Invalid API response structure: {result_json}", "logs": logs}
             
         prediction_id = result_json["data"]["id"]
-        logs.append(f"Prediction task created. Task ID: {prediction_id}")
+        log_msg(f"✅ Atlas Task created! Task ID: `{prediction_id}`")
         
         # Poll for result
         poll_url = f"https://api.atlascloud.ai/api/v1/model/prediction/{prediction_id}"
-        logs.append("Polling for completion...")
+        log_msg("⏳ Polling Atlas Cloud GPU cluster for video completion...")
         
         max_retries = 450  # 15 minutes
         for i in range(max_retries):
             time.sleep(2)
-            poll_resp = requests.get(poll_url, headers={"Authorization": f"Bearer {api_key}"})
-            if poll_resp.status_code != 200:
-                logs.append(f"⚠️ Polling warning: HTTP {poll_resp.status_code}")
-                continue
+            try:
+                poll_resp = requests.get(poll_url, headers={"Authorization": f"Bearer {api_key}"}, timeout=10)
+                if poll_resp.status_code != 200:
+                    log_msg(f"⚠️ Polling connection warning: HTTP {poll_resp.status_code}")
+                    continue
+                    
+                poll_data = poll_resp.json()
+                task_data = poll_data.get("data", {})
+                task_status = task_data.get("status", "processing")
+                progress_pct = task_data.get("progress", 0)
                 
-            poll_data = poll_resp.json()
-            task_status = poll_data.get("data", {}).get("status")
-            
-            if i % 10 == 0:
-                logs.append(f"   ... [{i+1}/{max_retries}] Status: {task_status}")
-                
-            if task_status in ["completed", "succeeded"]:
-                outputs = poll_data.get("data", {}).get("outputs", [])
-                if not outputs:
-                    return {"status": "failed", "error": "API returned success but no outputs found.", "logs": logs}
-                output_url = outputs[0]
-                logs.append(f"Task completed successfully! Output URL: {output_url}")
-                break
-            elif task_status == "failed":
-                err_msg = poll_data.get("data", {}).get("error") or "Unknown error"
-                return {"status": "failed", "error": f"Generation failed: {err_msg}", "logs": logs}
+                if i % 3 == 0:
+                    progress_str = f" ({progress_pct}%)" if progress_pct else ""
+                    log_msg(f"   🎬 GPU Rendering... [{i*2}s elapsed] Status: `{task_status}`{progress_str}")
+                    
+                if task_status in ["completed", "succeeded"]:
+                    outputs = task_data.get("outputs", [])
+                    if not outputs:
+                        return {"status": "failed", "error": "API returned success but no outputs found.", "logs": logs}
+                    output_url = outputs[0]
+                    log_msg(f"🎉 Task completed! Video Output URL: {output_url}")
+                    break
+                elif task_status == "failed":
+                    err_msg = task_data.get("error") or "Unknown error"
+                    return {"status": "failed", "error": f"Generation failed: {err_msg}", "logs": logs}
+            except Exception as poll_e:
+                if i % 5 == 0:
+                    log_msg(f"⚠️ Polling retry: {poll_e}")
         else:
             return {"status": "failed", "error": "Polling timed out after 15 minutes.", "logs": logs}
             

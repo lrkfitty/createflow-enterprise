@@ -4718,7 +4718,8 @@ if selection == "Wan & Seedance Studio":
                             extra_images=extra_imgs if extra_imgs else None,
                             extra_videos=extra_vids if extra_vids else None,
                             model=target_engine,
-                            output_folder=out_dir
+                            output_folder=out_dir,
+                            status_callback=status.write
                         )
                         
                         if res and res.get("status") == "success":
