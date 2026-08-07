@@ -593,36 +593,51 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
                 
                 for c_idx, member_key in enumerate(cast_selection):
                     p_val = characters_data.get(member_key)
-                    c_name = None
+                    if not p_val:
+                        # Fallback case-insensitive key search
+                        m_clean = str(member_key).replace('{My}', '').strip().lower()
+                        for k, v in characters_data.items():
+                            if m_clean in str(k).replace('{My}', '').strip().lower():
+                                p_val = v
+                                break
+                                
+                    c_name = str(member_key).replace('{My}', '').strip()
                     c_path = None
+                    
                     if isinstance(p_val, dict):
-                        c_name = p_val.get('name', member_key)
-                        c_path = p_val.get('default_img')
-                    elif p_val:
-                        filename = str(member_key).split('/')[-1]
-                        if "default" in filename.lower():
-                            c_name = str(member_key).split('/')[-2]
-                        else:
-                            c_name = os.path.splitext(filename)[0]
+                        c_name = p_val.get('name', c_name)
+                        c_path = p_val.get('default_img') or p_val.get('path')
+                    elif isinstance(p_val, str):
                         c_path = p_val
+                    elif not p_val and isinstance(member_key, str) and os.path.exists(member_key):
+                        c_path = member_key
+                        
+                    # Extract clean name if filename
+                    if c_path and (not c_name or '/' in c_name or '\\' in c_name):
+                        base_n = os.path.basename(str(c_path))
+                        c_name = os.path.splitext(base_n)[0].replace('_', ' ').title()
                         
                     st.markdown(f"###### 👤 Cast Member #{c_idx+1}: `{c_name}`")
                     c_col1, c_col2 = st.columns([1.3, 3])
                     
                     with c_col1:
-                        # Character Photo Thumbnail Popup
+                        # Character Photo Thumbnail Popup under Character Name
                         if c_path and os.path.exists(str(c_path)):
                             st.image(c_path, caption=f"Character: {c_name}", use_container_width=True)
                             char_dir = os.path.dirname(str(c_path))
                             valid_exts = ('.png', '.jpg', '.jpeg', '.webp')
-                            siblings = [f for f in os.listdir(char_dir) if f.lower().endswith(valid_exts) and not f.startswith('.')]
-                            if siblings and len(siblings) > 1:
-                                current_file = os.path.basename(str(c_path))
-                                def_idx = siblings.index(current_file) if current_file in siblings else 0
-                                selected_var = st.selectbox(f"Look Variant for {c_name}", siblings, index=def_idx, key=f"{prefix_key}_char_var_{member_key}_{c_idx}")
-                                c_path = os.path.join(char_dir, selected_var)
+                            if os.path.exists(char_dir):
+                                siblings = [f for f in os.listdir(char_dir) if f.lower().endswith(valid_exts) and not f.startswith('.')]
+                                if siblings and len(siblings) > 1:
+                                    current_file = os.path.basename(str(c_path))
+                                    def_idx = siblings.index(current_file) if current_file in siblings else 0
+                                    selected_var = st.selectbox(f"Look Variant for {c_name}", siblings, index=def_idx, key=f"{prefix_key}_char_var_{member_key}_{c_idx}")
+                                    c_path = os.path.join(char_dir, selected_var)
                         else:
-                            st.info(f"👤 {c_name}")
+                            # Try checking if default.png exists in global assets directory
+                            st.warning(f"📸 Image file loading for '{c_name}'...")
+                            if c_path:
+                                st.caption(f"`{c_path}`")
                                 
                     with c_col2:
                         st.markdown(f"**Attach Outfit to {c_name}**")
