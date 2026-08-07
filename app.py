@@ -4505,6 +4505,9 @@ if selection == "Wan & Seedance Studio":
                 "Wan 2.7 Spicy (Image-to-Video)",
                 "Wan 2.7 Standard (Reference-to-Video)",
                 "Wan 2.7 Spicy (Reference-to-Video)",
+                "Seedance 2.5 (Reference-to-Video - Up to 50 Refs)",
+                "Seedance 2.5 (Image-to-Video)",
+                "Seedance 2.5 (Text-to-Video)",
                 "Seedance 2.0 (Reference-to-Video)",
                 "Seedance 2.0 Mini (Reference-to-Video)",
                 "Seedance 2.0 (Image-to-Video)",
@@ -4513,6 +4516,9 @@ if selection == "Wan & Seedance Studio":
             index=0,
             key="wan_studio_flavor_select"
         )
+        
+        if "2.5" in wan_model_flavor:
+            st.info("⚡ **Seedance 2.5 Active**: Supports up to **50 Multimodal References** (`Image1`..`Image50`), native 30s clips & 4K resolution. Atlas Cloud API rate: **$0.134/sec** (Cost Forecast: ~$0.67 for 5s | ~$1.34 for 10s | ~$4.02 for 30s). Uses **10 Credits**.")
         
         ref_video_url = None
         wan_char_swap = False
@@ -4553,12 +4559,13 @@ if selection == "Wan & Seedance Studio":
                                     ref_video_url = st.session_state['last_uploaded_vid_url']
                                     st.caption(f"Using: `{ref_video_url}`")
                                     
-            with st.expander("📸 Seedance 2.0 Multi-Subject Reference Lock (Up to 9 Reference Images & 4 Videos)", expanded=True):
-                 st.markdown("Reference these subjects in your prompt as `Image1`, `Image2`, `Image3` ... `Image9`, and `Video1`, `Video2`, `Video3`, `Video4`.")
+            ref_limit_label = "50 Reference Images & 10 Videos" if "2.5" in wan_model_flavor else "9 Reference Images & 4 Videos"
+            with st.expander(f"📸 Seedance Multi-Subject Reference Lock (Up to {ref_limit_label})", expanded=True):
+                 st.markdown("Reference these subjects in your prompt as `Image1`, `Image2`, `Image3` ... `Image50`, and `Video1`, `Video2`, `Video3` ... `Video10`.")
                  
                  # Option A: Quick Bulk Upload
                  st.file_uploader(
-                     "📁 Quick Bulk Upload (Select up to 8 additional reference images at once)",
+                     "📁 Quick Bulk Upload (Select multiple reference images at once)",
                      type=["png", "jpg", "jpeg", "webp"],
                      accept_multiple_files=True,
                      key="studio_wan_extra_imgs_bulk",
@@ -4590,11 +4597,11 @@ if selection == "Wan & Seedance Studio":
         
         c_res, c_ar, c_dur = st.columns(3)
         with c_res:
-            anim_res = st.selectbox("Resolution", ["1080P", "720P"], index=0, key="wan_anim_res")
+            anim_res = st.selectbox("Resolution", ["1080P", "720P", "4K Ultra HD"], index=0, key="wan_anim_res")
         with c_ar:
             anim_ar = st.selectbox("Aspect Ratio", ["16:9 (Widescreen)", "9:16 (Vertical / Reels)", "1:1 (Square)"], index=0, key="wan_anim_ar")
         with c_dur:
-            anim_dur = st.slider("Duration (seconds)", 2, 15, 5, key="wan_anim_dur")
+            anim_dur = st.slider("Duration (seconds)", 2, 30, 5, key="wan_anim_dur")
             
         run_anim_btn = st.button("Generate Video Motion", type="primary", key="wan_run_anim")
         
@@ -4603,14 +4610,15 @@ if selection == "Wan & Seedance Studio":
             extra_imgs = list(rig_anim_res["extra_ref_paths"])
             extra_vids = []
             
+            max_extra_allowed = 49 if "2.5" in wan_model_flavor else 8
             if "Reference-to-Video" in wan_model_flavor or "Seedance" in wan_model_flavor:
                 bulk_uploads_st = st.session_state.get("studio_wan_extra_imgs_bulk", [])
                 if bulk_uploads_st:
-                    for idx, b_file in enumerate(bulk_uploads_st[:8]):
+                    for idx, b_file in enumerate(bulk_uploads_st[:max_extra_allowed]):
                         b_path = os.path.join("output", f"temp_wan_studio_bulk_ex_img_{idx+2}.png")
                         with open(b_path, "wb") as f:
                             f.write(b_file.getbuffer())
-                        if b_path not in extra_imgs and len(extra_imgs) < 8:
+                        if b_path not in extra_imgs and len(extra_imgs) < max_extra_allowed:
                             extra_imgs.append(b_path)
 
                 for slot_idx in range(2, 10):
@@ -4619,7 +4627,7 @@ if selection == "Wan & Seedance Studio":
                         slot_path = os.path.join("output", f"temp_wan_studio_ex_img{slot_idx}.png")
                         with open(slot_path, "wb") as f:
                             f.write(w_slot_file.getbuffer())
-                        if slot_path not in extra_imgs and len(extra_imgs) < 8:
+                        if slot_path not in extra_imgs and len(extra_imgs) < max_extra_allowed:
                             extra_imgs.append(slot_path)
                             
                 for slot_v_idx in range(2, 5):
@@ -4656,17 +4664,24 @@ if selection == "Wan & Seedance Studio":
             is_text_to_video_selected = "Text-to-Video" in wan_model_flavor
             
             if not is_text_to_video_selected and not anim_image_path and not extra_imgs:
-                st.error("⚠️ **Source image missing!** For Reference-to-Video or Image-to-Video, please upload a source image or reference image above. Or select **`Seedance 2.0 (Text-to-Video)`** from Model Variant if generating purely from text!")
+                st.error("⚠️ **Source image missing!** For Reference-to-Video or Image-to-Video, please upload a source image or reference image above. Or select **`Seedance 2.5 (Text-to-Video)`** from Model Variant if generating purely from text!")
             elif not clean_anim_prompt:
                 st.error("Please describe the motion you want in the Motion Prompt area.")
             else:
                 user = st.session_state.current_user.get("username")
-                if not auth_mgr.deduct_credits(user, 5):
-                    st.error("❌ Need 5 Credits for Video!")
+                req_credits = 10 if "2.5" in wan_model_flavor else 5
+                if not auth_mgr.deduct_credits(user, req_credits):
+                    st.error(f"❌ Need {req_credits} Credits for {wan_model_flavor}!")
                 else:
                     with st.status("⚡ Submitting motion job to Atlas Cloud API...", expanded=True) as status:
                         target_engine = "alibaba/wan-2.7/image-to-video"
-                        if "Mini" in wan_model_flavor:
+                        if "Seedance 2.5" in wan_model_flavor and "Reference" in wan_model_flavor:
+                            target_engine = "bytedance/seedance-2.5/reference-to-video"
+                        elif "Seedance 2.5" in wan_model_flavor and "Image" in wan_model_flavor:
+                            target_engine = "bytedance/seedance-2.5/image-to-video"
+                        elif "Seedance 2.5" in wan_model_flavor and "Text" in wan_model_flavor:
+                            target_engine = "bytedance/seedance-2.5/text-to-video"
+                        elif "Mini" in wan_model_flavor:
                             target_engine = "bytedance/seedance-2.0-mini/reference-to-video"
                         elif "Seedance" in wan_model_flavor and "Reference" in wan_model_flavor:
                             target_engine = "bytedance/seedance-2.0/reference-to-video"

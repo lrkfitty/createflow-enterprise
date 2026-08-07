@@ -351,8 +351,8 @@ def generate_wan_video(prompt, image_path, resolution="1080P", duration=5, aspec
                      if not img_p or img_p in seen_paths:
                          continue
                      seen_paths.add(img_p)
-                     if len(images_payload) >= 9:
-                         logs.append("⚠️ Reached max of 9 reference images for Seedance 2.0.")
+                     if len(images_payload) >= 50:
+                         logs.append("⚠️ Reached max of 50 reference images for Seedance 2.5.")
                          break
                      try:
                          extra_res = image_to_base64_data_uri(img_p) or img_p
