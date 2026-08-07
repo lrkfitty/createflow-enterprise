@@ -702,7 +702,7 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
         
         # 1. Environment Stills First (Image1, Image2, etc.)
         for e_idx, e_p in enumerate(selected_env_paths[:3]):
-            rig_imgs.append((f"Image{len(rig_imgs)+1} (Location Still #{e_idx+1})", e_p, selected_env_name or "Location Master"))
+            rig_imgs.append((f"Image{len(rig_imgs)+1}", e_p, f"Location: {selected_env_name or 'Location Master'} Still #{e_idx+1}"))
             
         # 2. Characters and their mapped Outfits Next
         for c_entry in selected_characters:
@@ -711,9 +711,14 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
             f_n = c_entry["fit_name"]
             f_p = c_entry["fit_path"]
             
-            rig_imgs.append((f"Image{len(rig_imgs)+1} (Character: {c_n})", c_p, c_n))
+            c_tag_name = f"Image{len(rig_imgs)+1}"
+            c_entry["char_tag"] = c_tag_name
+            rig_imgs.append((c_tag_name, c_p, f"Character: {c_n}"))
+            
             if f_p:
-                rig_imgs.append((f"Image{len(rig_imgs)+1} (Outfit for {c_n})", f_p, f_n))
+                f_tag_name = f"Image{len(rig_imgs)+1}"
+                c_entry["fit_tag"] = f_tag_name
+                rig_imgs.append((f_tag_name, f_p, f"Outfit for {c_n}: {f_n}"))
             
         if rig_imgs:
             st.markdown("---")
@@ -737,23 +742,30 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
                 rig_results["outfit_name"] = ", ".join([c["fit_name"] for c in selected_characters if c["fit_name"]])
             rig_results["env_name"] = selected_env_name
             
-            for tag, _, _ in rig_imgs:
-                rig_results["mapping_tags"].append(tag)
+            for tag, _, item_n in rig_imgs:
+                rig_results["mapping_tags"].append(f"{tag}: {item_n}")
                 
             # INJECTION BUTTON
             if prompt_target_key:
                 if st.button("⚡ Auto-Inject Mapping Rig to Prompt", key=f"{prefix_key}_inject_btn", use_container_width=True):
-                    tag_str = "\n".join([f"{t}: {n}" for t, _, n in rig_imgs])
-                    char_descr_list = []
+                    tag_header = "\n".join([f"{t}: {item_n}" for t, _, item_n in rig_imgs])
+                    
+                    char_pair_sentences = []
                     for c in selected_characters:
-                        part = f"character {c['name']}"
-                        if c["fit_name"]:
-                            part += f" wearing {c['fit_name']} outfit"
-                        char_descr_list.append(part)
+                        c_n = c["name"]
+                        c_tag = c.get("char_tag", "")
+                        f_tag = c.get("fit_tag", "")
+                        f_n = c.get("fit_name", "")
                         
-                    combined_char_str = " and ".join(char_descr_list) if char_descr_list else "characters"
-                    env_str = f"in {selected_env_name} environment" if selected_env_name else "in scene"
-                    injected_text = f"{tag_str}\n\nCinematic film shot of {combined_char_str}, {env_str}, 35mm lens, highly detailed, realistic lighting."
+                        if c_tag and f_tag:
+                            char_pair_sentences.append(f"character {c_n} ({c_tag}) wearing outfit ({f_tag})")
+                        elif c_tag:
+                            char_pair_sentences.append(f"character {c_n} ({c_tag})")
+                            
+                    combined_char_str = ", ".join(char_pair_sentences) if char_pair_sentences else "characters"
+                    env_str = f"in environment Image1 ({selected_env_name})" if selected_env_name else "in scene Image1"
+                    
+                    injected_text = f"{tag_header}\n\nCinematic 35mm film shot of {combined_char_str}, {env_str}, 16:9 widescreen, highly detailed, realistic lighting, zero CGI."
                     st.session_state[prompt_target_key] = injected_text
                     st.toast("✅ Mapping Rig tags injected into Prompt!")
                     st.rerun()
