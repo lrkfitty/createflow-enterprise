@@ -562,7 +562,7 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
                 st.caption(f"✅ **Environment Ready ({len(selected_env_paths)} still(s) attached)**")
 
         # -------------------------------------------------------------
-        # TAB 2: CHARACTER & PRE-MAPPED OUTFIT
+        # TAB 2: MULTI-CHARACTER & OUTFIT MAPPING
         # -------------------------------------------------------------
         with c_tab_char:
             from execution.world_manager import load_world_db
@@ -570,107 +570,117 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
             characters_data = session_assets.get('characters', {}).copy()
             characters_data.update(db.get('characters', {}))
             characters_data.update(session_assets.get('relations', {}))
-            
-            # Fast Instant Search for Characters
-            char_search = st.text_input("🔍 Search Character by name...", key=f"{prefix_key}_char_search_q", placeholder="e.g. Shay, Anisa, Jason")
-            if char_search.strip():
-                q_char = char_search.strip().lower()
-                filtered_chars_data = {
-                    k: v for k, v in characters_data.items()
-                    if q_char in k.lower() or (isinstance(v, dict) and q_char in v.get('name', '').lower())
-                }
-                if filtered_chars_data:
-                    characters_data = filtered_chars_data
-                    st.caption(f"Found {len(characters_data)} matching character(s).")
-                else:
-                    st.warning(f"No character assets matching '{char_search}'. Showing all options below.")
-            
-            char_key = thumbnail_carousel(
-                "Select Main Character",
-                {"None": None, **characters_data},
-                state_key=f"{prefix_key}_rig_char_main",
-                thumb_cols=4,
-                show_label=True
-            )
-            
-            if char_key and char_key != "None":
-                p_val = characters_data.get(char_key)
-                if isinstance(p_val, dict):
-                    selected_char_name = p_val.get('name', char_key)
-                    selected_char_path = p_val.get('default_img')
-                elif p_val:
-                    filename = str(char_key).split('/')[-1]
-                    if "default" in filename.lower():
-                        selected_char_name = str(char_key).split('/')[-2]
-                    else:
-                        selected_char_name = os.path.splitext(filename)[0]
-                    selected_char_path = p_val
-                
-                # Check for character look / angle variants
-                if selected_char_path and os.path.exists(str(selected_char_path)):
-                    char_dir = os.path.dirname(str(selected_char_path))
-                    valid_exts = ('.png', '.jpg', '.jpeg', '.webp')
-                    siblings = [f for f in os.listdir(char_dir) if f.lower().endswith(valid_exts) and not f.startswith('.')]
-                    if siblings and len(siblings) > 1:
-                        current_file = os.path.basename(str(selected_char_path))
-                        def_idx = siblings.index(current_file) if current_file in siblings else 0
-                        selected_var = st.selectbox("Select Character Look / Angle Variant", siblings, index=def_idx, key=f"{prefix_key}_char_var")
-                        selected_var_path = os.path.join(char_dir, selected_var)
-                        selected_char_path = selected_var_path
-
-            # PRE-MAPPED OUTFIT SELECTOR (Filtered by / linked to selected character)
-            st.markdown("---")
-            st.markdown("##### 👗 Character Outfit (Pre-Mapped Wardrobe)")
             all_outfits = session_assets.get('outfits', {})
             
-            mapped_outfits = {}
-            if selected_char_name:
-                # Filter outfits that belong to or match selected character name
-                char_clean = selected_char_name.lower().strip()
-                for o_k, o_v in all_outfits.items():
-                    o_k_low = str(o_k).lower()
-                    if char_clean in o_k_low or "shay" in char_clean and "shay" in o_k_low or "anisa" in char_clean and "anisa" in o_k_low:
-                        mapped_outfits[o_k] = o_v
-                        
-            # Fall back to full outfit catalog if no custom filter match
-            if not mapped_outfits:
-                mapped_outfits = all_outfits
-                
-            # Fast Instant Search for Outfits
-            fit_search = st.text_input("🔍 Search Outfit by name / style...", key=f"{prefix_key}_fit_search_q", placeholder="e.g. Red Dress, Bikini, Blazer, Tuxedo")
-            if fit_search.strip():
-                q_fit = fit_search.strip().lower()
-                filtered_mapped_outfits = {
-                    k: v for k, v in mapped_outfits.items()
-                    if q_fit in k.lower() or (isinstance(v, dict) and q_fit in v.get('name', '').lower())
-                }
-                if filtered_mapped_outfits:
-                    mapped_outfits = filtered_mapped_outfits
-                    st.caption(f"Found {len(mapped_outfits)} matching outfit(s).")
-                else:
-                    st.warning(f"No outfits matching '{fit_search}'. Showing pre-mapped options below.")
-                
-            fit_key = thumbnail_carousel(
-                f"Select Outfit for {selected_char_name if selected_char_name else 'Character'}",
-                {"None": None, **mapped_outfits},
-                state_key=f"{prefix_key}_rig_fit_main",
-                thumb_cols=4,
-                show_label=True
-            )
+            st.markdown("##### 👥 Multi-Character Cast Selection")
             
-            if fit_key and fit_key != "None":
-                f_val = mapped_outfits.get(fit_key)
-                if isinstance(f_val, dict):
-                    selected_fit_name = f_val.get('name', fit_key)
-                    selected_fit_path = f_val.get('default_img')
-                elif f_val:
-                    selected_fit_name = str(fit_key).split('/')[-1]
-                    if os.path.sep in selected_fit_name:
-                        selected_fit_name = os.path.splitext(selected_fit_name)[0]
-                    selected_fit_path = f_val
-
-            if selected_char_path:
-                st.caption(f"✅ **Character**: `{selected_char_name}`" + (f" wearing `{selected_fit_name}`" if selected_fit_path else ""))
+            # Select how many cast members are in this scene (1 to 3)
+            num_chars = st.radio("Number of Characters in Scene", [1, 2, 3], horizontal=True, key=f"{prefix_key}_num_chars_radio")
+            
+            selected_characters = [] # list of dicts: {"name": str, "char_path": str, "fit_name": str, "fit_path": str}
+            
+            for c_idx in range(num_chars):
+                char_label = f"Main Character #{c_idx+1}" if c_idx == 0 else f"Secondary Character #{c_idx+1}"
+                st.markdown(f"###### 👤 {char_label}")
+                
+                # Fast Instant Search for this Character
+                c_search = st.text_input(f"🔍 Search {char_label} by name...", key=f"{prefix_key}_c_search_{c_idx}", placeholder="e.g. Ty, Angeil, Danni, Shay")
+                curr_chars_data = dict(characters_data)
+                if c_search.strip():
+                    q_c = c_search.strip().lower()
+                    filtered_c = {
+                        k: v for k, v in curr_chars_data.items()
+                        if q_c in k.lower() or (isinstance(v, dict) and q_c in v.get('name', '').lower())
+                    }
+                    if filtered_c:
+                        curr_chars_data = filtered_c
+                        
+                c_key = thumbnail_carousel(
+                    f"Select {char_label}",
+                    {"None": None, **curr_chars_data},
+                    state_key=f"{prefix_key}_rig_char_{c_idx}",
+                    thumb_cols=4,
+                    show_label=True
+                )
+                
+                c_name = None
+                c_path = None
+                if c_key and c_key != "None":
+                    p_val = curr_chars_data.get(c_key)
+                    if isinstance(p_val, dict):
+                        c_name = p_val.get('name', c_key)
+                        c_path = p_val.get('default_img')
+                    elif p_val:
+                        filename = str(c_key).split('/')[-1]
+                        if "default" in filename.lower():
+                            c_name = str(c_key).split('/')[-2]
+                        else:
+                            c_name = os.path.splitext(filename)[0]
+                        c_path = p_val
+                    
+                    # Look / angle variant
+                    if c_path and os.path.exists(str(c_path)):
+                        char_dir = os.path.dirname(str(c_path))
+                        valid_exts = ('.png', '.jpg', '.jpeg', '.webp')
+                        siblings = [f for f in os.listdir(char_dir) if f.lower().endswith(valid_exts) and not f.startswith('.')]
+                        if siblings and len(siblings) > 1:
+                            current_file = os.path.basename(str(c_path))
+                            def_idx = siblings.index(current_file) if current_file in siblings else 0
+                            selected_var = st.selectbox(f"Select Look / Angle Variant for {c_name}", siblings, index=def_idx, key=f"{prefix_key}_char_var_{c_idx}")
+                            c_path = os.path.join(char_dir, selected_var)
+                            
+                # Outfit selector specifically for this character
+                f_name = None
+                f_path = None
+                if c_name:
+                    st.markdown(f"###### 👗 Outfit for {c_name}")
+                    c_clean = c_name.lower().strip()
+                    mapped_outfits = {}
+                    for o_k, o_v in all_outfits.items():
+                        o_k_low = str(o_k).lower()
+                        if c_clean in o_k_low or "shay" in c_clean and "shay" in o_k_low or "anisa" in c_clean and "anisa" in o_k_low or "ty" in c_clean and "ty" in o_k_low:
+                            mapped_outfits[o_k] = o_v
+                    if not mapped_outfits:
+                        mapped_outfits = all_outfits
+                        
+                    f_search = st.text_input(f"🔍 Search Outfit for {c_name}...", key=f"{prefix_key}_fit_search_{c_idx}", placeholder="e.g. Suit, Bikini, Dress, Casual")
+                    if f_search.strip():
+                        q_f = f_search.strip().lower()
+                        filtered_f = {
+                            k: v for k, v in mapped_outfits.items()
+                            if q_f in k.lower() or (isinstance(v, dict) and q_f in v.get('name', '').lower())
+                        }
+                        if filtered_f:
+                            mapped_outfits = filtered_f
+                            
+                    fit_key = thumbnail_carousel(
+                        f"Select Outfit for {c_name}",
+                        {"None": None, **mapped_outfits},
+                        state_key=f"{prefix_key}_rig_fit_{c_idx}",
+                        thumb_cols=4,
+                        show_label=True
+                    )
+                    
+                    if fit_key and fit_key != "None":
+                        f_val = mapped_outfits.get(fit_key)
+                        if isinstance(f_val, dict):
+                            f_name = f_val.get('name', fit_key)
+                            f_path = f_val.get('default_img')
+                        elif f_val:
+                            f_name = str(fit_key).split('/')[-1]
+                            if os.path.sep in f_name:
+                                f_name = os.path.splitext(f_name)[0]
+                            f_path = f_val
+                            
+                if c_name and c_path:
+                    selected_characters.append({
+                        "name": c_name,
+                        "char_path": c_path,
+                        "fit_name": f_name,
+                        "fit_path": f_path
+                    })
+                    st.caption(f"✅ Assigned: `{c_name}`" + (f" wearing `{f_name}`" if f_name else ""))
+                st.markdown("---")
 
         # -------------------------------------------------------------
         # THUMBNAIL PREVIEW STRIP & RIG SUMMARY
@@ -681,18 +691,21 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
         for e_idx, e_p in enumerate(selected_env_paths[:3]):
             rig_imgs.append((f"Image{len(rig_imgs)+1} (Location Still #{e_idx+1})", e_p, selected_env_name or "Location Master"))
             
-        # 2. Character Image Next
-        if selected_char_path:
-            rig_imgs.append((f"Image{len(rig_imgs)+1} (Character: {selected_char_name})", selected_char_path, selected_char_name))
+        # 2. Characters and their mapped Outfits Next
+        for c_entry in selected_characters:
+            c_n = c_entry["name"]
+            c_p = c_entry["char_path"]
+            f_n = c_entry["fit_name"]
+            f_p = c_entry["fit_path"]
             
-        # 3. Outfit Reference Image Next
-        if selected_fit_path:
-            rig_imgs.append((f"Image{len(rig_imgs)+1} (Outfit for {selected_char_name or 'Character'})", selected_fit_path, selected_fit_name))
+            rig_imgs.append((f"Image{len(rig_imgs)+1} (Character: {c_n})", c_p, c_n))
+            if f_p:
+                rig_imgs.append((f"Image{len(rig_imgs)+1} (Outfit for {c_n})", f_p, f_n))
             
         if rig_imgs:
             st.markdown("---")
             st.markdown("##### 📌 Active Rig Mapping Slots")
-            cols = st.columns(min(len(rig_imgs), 5))
+            cols = st.columns(min(len(rig_imgs), 6))
             for i, (slot_tag, img_p, item_n) in enumerate(rig_imgs):
                 with cols[i]:
                     st.caption(f"**{slot_tag}**")
@@ -705,8 +718,9 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
             for _, img_p, _ in rig_imgs[1:]:
                 rig_results["extra_ref_paths"].append(img_p)
                 
-            rig_results["char_name"] = selected_char_name
-            rig_results["outfit_name"] = selected_fit_name
+            if selected_characters:
+                rig_results["char_name"] = ", ".join([c["name"] for c in selected_characters])
+                rig_results["outfit_name"] = ", ".join([c["fit_name"] for c in selected_characters if c["fit_name"]])
             rig_results["env_name"] = selected_env_name
             
             for tag, _, _ in rig_imgs:
@@ -716,13 +730,16 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
             if prompt_target_key:
                 if st.button("⚡ Auto-Inject Mapping Rig to Prompt", key=f"{prefix_key}_inject_btn", use_container_width=True):
                     tag_str = "\n".join([f"{t}: {n}" for t, _, n in rig_imgs])
-                    descr_parts = []
-                    if selected_char_name: descr_parts.append(f"character {selected_char_name}")
-                    if selected_fit_name: descr_parts.append(f"wearing {selected_fit_name} outfit")
-                    if selected_env_name: descr_parts.append(f"in {selected_env_name} environment")
-                    
-                    combined_descr = ", ".join(descr_parts) if descr_parts else "character in scene"
-                    injected_text = f"{tag_str}\n\nCinematic film shot of {combined_descr}, 35mm lens, highly detailed, realistic lighting."
+                    char_descr_list = []
+                    for c in selected_characters:
+                        part = f"character {c['name']}"
+                        if c["fit_name"]:
+                            part += f" wearing {c['fit_name']} outfit"
+                        char_descr_list.append(part)
+                        
+                    combined_char_str = " and ".join(char_descr_list) if char_descr_list else "characters"
+                    env_str = f"in {selected_env_name} environment" if selected_env_name else "in scene"
+                    injected_text = f"{tag_str}\n\nCinematic film shot of {combined_char_str}, {env_str}, 35mm lens, highly detailed, realistic lighting."
                     st.session_state[prompt_target_key] = injected_text
                     st.toast("✅ Mapping Rig tags injected into Prompt!")
                     st.rerun()
