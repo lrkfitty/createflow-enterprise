@@ -355,7 +355,7 @@ def get_user_out_dir(category="General"):
 # --- HELPER: WAN & SEEDANCE ASSET MAPPING RIG ---
 def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
     """
-    Renders the visual Character, Outfit & Environment Mapping Rig for Wan & Seedance Studio.
+    Renders the visual Environment, Character & Outfit Mapping Rig for Wan & Seedance Studio.
     Returns dict:
       {
         "primary_image_path": str or None,
@@ -375,22 +375,155 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
         "mapping_tags": []
     }
     
-    with st.expander("🎭 Character, Outfit & Environment Mapping Rig (Asset Library Shortcuts)", expanded=True):
-        st.markdown("Select your characters, outfits, and environments directly from your loaded Asset Library. The rig automatically maps thumbnails and injects reference tags (`Image1`, `Image2`, `Image3`) into Wan 2.7 & Seedance 2.0.")
+    with st.expander("🎭 Environment, Character & Outfit Mapping Rig", expanded=True):
+        st.markdown("Build your scene environment first (or choose from existing locations), then select your character and their pre-mapped outfit. The rig automatically maps thumbnails and injects reference tags (`Image1`, `Image2`, `Image3`, `Image4`) into Wan 2.7 & Seedance 2.0.")
         
-        c_tab_char, c_tab_fit, c_tab_env = st.tabs(["👤 Characters", "👗 Outfits", "🏞️ Environments & Locations"])
+        c_tab_env, c_tab_char = st.tabs(["🏞️ 1. Environment & Location", "👤 2. Character & Outfit"])
         
+        selected_env_paths = []
+        selected_env_name = None
         selected_char_path = None
         selected_char_name = None
         selected_fit_path = None
         selected_fit_name = None
-        selected_env_path = None
-        selected_env_name = None
         
-        # Access session assets safely
         session_assets = st.session_state.get("global_assets", {})
         
-        # 1. CHARACTER PICKER
+        # -------------------------------------------------------------
+        # TAB 1: ENVIRONMENT & LOCATION (LIBRARY OR 35MM GENERATOR)
+        # -------------------------------------------------------------
+        with c_tab_env:
+            env_mode = st.radio(
+                "Environment Source", 
+                ["Select from Library / Existing Master Stills", "✨ Generate New Cascading 35mm Environment Stills"], 
+                horizontal=True, 
+                key=f"{prefix_key}_env_mode_radio"
+            )
+            
+            if env_mode == "Select from Library / Existing Master Stills":
+                loc_opts = get_assets_by_category("locations")
+                
+                # Check for existing generated master stills in session
+                existing_stills = st.session_state.get("selected_env_stills", []) or (
+                    [st.session_state["primary_env_img"]] if "primary_env_img" in st.session_state and os.path.exists(st.session_state["primary_env_img"]) else []
+                )
+                
+                loc_key = thumbnail_carousel(
+                    "Select Location Asset",
+                    {"None": None, **loc_opts},
+                    state_key=f"{prefix_key}_rig_loc_main",
+                    thumb_cols=4,
+                    show_label=True
+                )
+                
+                if loc_key and loc_key != "None":
+                    l_val = loc_opts.get(loc_key)
+                    if isinstance(l_val, dict):
+                        selected_env_name = l_val.get('name', loc_key)
+                        l_path = l_val.get('default_img')
+                    elif l_val:
+                        selected_env_name = str(loc_key).split('/')[-1]
+                        if os.path.sep in selected_env_name:
+                            selected_env_name = os.path.splitext(selected_env_name)[0]
+                        l_path = l_val
+                    if l_path:
+                        selected_env_paths.append(l_path)
+                elif existing_stills:
+                    st.info(f"📸 Using {len(existing_stills)} generated Environment Master Still(s) from session.")
+                    selected_env_paths.extend(existing_stills)
+                    selected_env_name = "Generated Environment Master Stills"
+                    
+            else:
+                # ENVIRONMENT GENERATOR RIG (Cascading 1-4 Stills)
+                st.markdown("##### 🎨 35mm Cinematic Environment Generator")
+                st.caption("Generate up to 4 cascading stills to build complete 360° architectural coverage for your location.")
+                
+                env_name_input = st.text_input(
+                    "Location / Environment Name",
+                    placeholder="e.g. Modern Penthouse Lounge, Rainy Tokyo Alleyway, Tropical Resort Poolside",
+                    key=f"{prefix_key}_gen_env_name"
+                )
+                
+                g_col1, g_col2 = st.columns(2)
+                with g_col1:
+                    env_still_count = st.slider("Stills to Generate (1 to 4)", 1, 4, 3, key=f"{prefix_key}_gen_env_count")
+                with g_col2:
+                    env_notes = st.text_input(
+                        "Textures & Lighting Cues",
+                        placeholder="Volumetric fog, 5600K daylight, marble floors",
+                        key=f"{prefix_key}_gen_env_notes"
+                    )
+                    
+                if st.button("✨ Generate Cascading Environment Stills", type="primary", key=f"{prefix_key}_run_gen_env", use_container_width=True):
+                    if not env_name_input.strip():
+                        st.error("Please enter a location name.")
+                    else:
+                        with st.spinner(f"⚡ Generating {env_still_count} cascading environment stills for '{env_name_input}'..."):
+                            from execution.series_processor import generate_environment_master_prompt
+                            
+                            angles = [
+                                "Master Establishing Wide View (107° FOV)",
+                                "Reverse Angle Depth View (84° FOV)",
+                                "Medium Focal Action Space (63° FOV)",
+                                "Macro Architectural Texture Detail (29° FOV)"
+                            ]
+                            
+                            gen_stills = []
+                            for idx in range(env_still_count):
+                                angle_lbl = angles[idx] if idx < len(angles) else "Alternate Angle"
+                                env_prompt_data = generate_environment_master_prompt(
+                                    location_name=f"{env_name_input}. {env_notes}" if env_notes else env_name_input,
+                                    genre="Cinematic",
+                                    tone="35mm Film Still",
+                                    shot_angle_type=angle_lbl
+                                )
+                                env_p = env_prompt_data.get("environment_prompt")
+                                
+                                payload_assets = []
+                                if gen_stills and os.path.exists(gen_stills[-1]):
+                                    payload_assets.append({
+                                        "path": gen_stills[-1],
+                                        "label": f"Prior Environment Reference Still #{len(gen_stills)}"
+                                    })
+                                    
+                                p_data = {
+                                    "positive_prompt": env_p,
+                                    "model_type": "Google Nano Banana 2 (Recommended / Multi-Ref)",
+                                    "is_environment_still": True,
+                                    "assets": payload_assets,
+                                    "aspect_ratio": "16:9",
+                                    "image_size": "2K"
+                                }
+                                res_env = generate_image_from_prompt(p_data, get_user_out_dir("World/Environments"))
+                                if res_env.get("status") == "success":
+                                    gen_stills.append(res_env["image_path"])
+                                else:
+                                    break
+                                    
+                            if gen_stills:
+                                st.session_state["selected_env_stills"] = list(gen_stills)
+                                st.session_state["primary_env_img"] = gen_stills[0]
+                                st.toast(f"✅ Generated {len(gen_stills)} Environment Stills!")
+                                st.rerun()
+                                
+                # Show generated stills if present
+                active_gen_stills = st.session_state.get("selected_env_stills", [])
+                if active_gen_stills:
+                    st.markdown("##### 🖼️ Active Environment Stills")
+                    e_cols = st.columns(len(active_gen_stills))
+                    for i, s_p in enumerate(active_gen_stills):
+                        with e_cols[i]:
+                            if os.path.exists(s_p):
+                                st.image(s_p, caption=f"Still #{i+1}", use_container_width=True)
+                    selected_env_paths.extend(active_gen_stills)
+                    selected_env_name = env_name_input if env_name_input else "Generated Environment Stills"
+                    
+            if selected_env_paths:
+                st.caption(f"✅ **Environment Ready ({len(selected_env_paths)} still(s) attached)**")
+
+        # -------------------------------------------------------------
+        # TAB 2: CHARACTER & PRE-MAPPED OUTFIT
+        # -------------------------------------------------------------
         with c_tab_char:
             from execution.world_manager import load_world_db
             db = load_world_db()
@@ -399,7 +532,7 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
             characters_data.update(session_assets.get('relations', {}))
             
             char_key = thumbnail_carousel(
-                "Select Main Character (Image1)",
+                "Select Main Character",
                 {"None": None, **characters_data},
                 state_key=f"{prefix_key}_rig_char_main",
                 thumb_cols=4,
@@ -419,7 +552,7 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
                         selected_char_name = os.path.splitext(filename)[0]
                     selected_char_path = p_val
                 
-                # Check for specific look/variant
+                # Check for character look / angle variants
                 if selected_char_path and os.path.exists(str(selected_char_path)):
                     char_dir = os.path.dirname(str(selected_char_path))
                     valid_exts = ('.png', '.jpg', '.jpeg', '.webp')
@@ -427,25 +560,37 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
                     if siblings and len(siblings) > 1:
                         current_file = os.path.basename(str(selected_char_path))
                         def_idx = siblings.index(current_file) if current_file in siblings else 0
-                        selected_var = st.selectbox("Select Character Look/Angle Variant", siblings, index=def_idx, key=f"{prefix_key}_char_var")
+                        selected_var = st.selectbox("Select Character Look / Angle Variant", siblings, index=def_idx, key=f"{prefix_key}_char_var")
                         selected_char_path = os.path.join(char_dir, selected_var)
+
+            # PRE-MAPPED OUTFIT SELECTOR (Filtered by / linked to selected character)
+            st.markdown("---")
+            st.markdown("##### 👗 Character Outfit (Pre-Mapped Wardrobe)")
+            all_outfits = session_assets.get('outfits', {})
             
-            if selected_char_path:
-                st.caption(f"✅ **Main Character Assigned (Image1)**: `{selected_char_name}`")
+            mapped_outfits = {}
+            if selected_char_name:
+                # Filter outfits that belong to or match selected character name
+                char_clean = selected_char_name.lower().strip()
+                for o_k, o_v in all_outfits.items():
+                    o_k_low = str(o_k).lower()
+                    if char_clean in o_k_low or "shay" in char_clean and "shay" in o_k_low or "anisa" in char_clean and "anisa" in o_k_low:
+                        mapped_outfits[o_k] = o_v
+                        
+            # Fall back to full outfit catalog if no custom filter match
+            if not mapped_outfits:
+                mapped_outfits = all_outfits
                 
-        # 2. OUTFIT PICKER
-        with c_tab_fit:
-            fit_opts = session_assets.get('outfits', {})
             fit_key = thumbnail_carousel(
-                "Select Outfit (Image2)",
-                {"None": None, **fit_opts},
+                f"Select Outfit for {selected_char_name if selected_char_name else 'Character'}",
+                {"None": None, **mapped_outfits},
                 state_key=f"{prefix_key}_rig_fit_main",
                 thumb_cols=4,
                 show_label=True
             )
             
             if fit_key and fit_key != "None":
-                f_val = fit_opts.get(fit_key)
+                f_val = mapped_outfits.get(fit_key)
                 if isinstance(f_val, dict):
                     selected_fit_name = f_val.get('name', fit_key)
                     selected_fit_path = f_val.get('default_img')
@@ -454,53 +599,31 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
                     if os.path.sep in selected_fit_name:
                         selected_fit_name = os.path.splitext(selected_fit_name)[0]
                     selected_fit_path = f_val
-                    
-            if selected_fit_path:
-                st.caption(f"✅ **Outfit Assigned (Image2)**: `{selected_fit_name}`")
-                
-        # 3. ENVIRONMENT PICKER
-        with c_tab_env:
-            loc_opts = get_assets_by_category("locations")
-            loc_key = thumbnail_carousel(
-                "Select Location (Image3)",
-                {"None": None, **loc_opts},
-                state_key=f"{prefix_key}_rig_loc_main",
-                thumb_cols=4,
-                show_label=True
-            )
-            
-            if loc_key and loc_key != "None":
-                l_val = loc_opts.get(loc_key)
-                if isinstance(l_val, dict):
-                    selected_env_name = l_val.get('name', loc_key)
-                    selected_env_path = l_val.get('default_img')
-                elif l_val:
-                    selected_env_name = str(loc_key).split('/')[-1]
-                    if os.path.sep in selected_env_name:
-                        selected_env_name = os.path.splitext(selected_env_name)[0]
-                    selected_env_path = l_val
-            elif "primary_env_img" in st.session_state and os.path.exists(st.session_state["primary_env_img"]):
-                selected_env_path = st.session_state["primary_env_img"]
-                selected_env_name = "Primary Environment Master Still"
-                
-            if selected_env_path:
-                st.caption(f"✅ **Environment Assigned (Image3)**: `{selected_env_name}`")
-                
+
+            if selected_char_path:
+                st.caption(f"✅ **Character**: `{selected_char_name}`" + (f" wearing `{selected_fit_name}`" if selected_fit_path else ""))
+
+        # -------------------------------------------------------------
         # THUMBNAIL PREVIEW STRIP & RIG SUMMARY
+        # -------------------------------------------------------------
         rig_imgs = []
+        
+        # 1. Environment Stills First (Image1, Image2, etc.)
+        for e_idx, e_p in enumerate(selected_env_paths[:3]):
+            rig_imgs.append((f"Image{len(rig_imgs)+1} (Location Still #{e_idx+1})", e_p, selected_env_name or "Location Master"))
+            
+        # 2. Character Image Next
         if selected_char_path:
-            rig_imgs.append(("Image1 (Character)", selected_char_path, selected_char_name))
+            rig_imgs.append((f"Image{len(rig_imgs)+1} (Character: {selected_char_name})", selected_char_path, selected_char_name))
+            
+        # 3. Outfit Reference Image Next
         if selected_fit_path:
-            idx_label = f"Image{len(rig_imgs)+1} (Outfit)"
-            rig_imgs.append((idx_label, selected_fit_path, selected_fit_name))
-        if selected_env_path:
-            idx_label = f"Image{len(rig_imgs)+1} (Location)"
-            rig_imgs.append((idx_label, selected_env_path, selected_env_name))
+            rig_imgs.append((f"Image{len(rig_imgs)+1} (Outfit for {selected_char_name or 'Character'})", selected_fit_path, selected_fit_name))
             
         if rig_imgs:
             st.markdown("---")
             st.markdown("##### 📌 Active Rig Mapping Slots")
-            cols = st.columns(min(len(rig_imgs), 4))
+            cols = st.columns(min(len(rig_imgs), 5))
             for i, (slot_tag, img_p, item_n) in enumerate(rig_imgs):
                 with cols[i]:
                     st.caption(f"**{slot_tag}**")
@@ -508,35 +631,22 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
                         st.image(img_p, use_container_width=True)
                     st.caption(f"`{item_n}`")
                     
-            # Set Rig outputs
-            if selected_char_path:
-                rig_results["primary_image_path"] = selected_char_path
-                rig_results["char_name"] = selected_char_name
-                rig_results["mapping_tags"].append(f"Image1: Character ({selected_char_name})")
-            
-            curr_ref_idx = 2 if selected_char_path else 1
-            if selected_fit_path:
-                if not rig_results["primary_image_path"]:
-                    rig_results["primary_image_path"] = selected_fit_path
-                else:
-                    rig_results["extra_ref_paths"].append(selected_fit_path)
-                rig_results["outfit_name"] = selected_fit_name
-                rig_results["mapping_tags"].append(f"Image{curr_ref_idx}: Outfit ({selected_fit_name})")
-                curr_ref_idx += 1
+            # Build API Outputs
+            rig_results["primary_image_path"] = rig_imgs[0][1]
+            for _, img_p, _ in rig_imgs[1:]:
+                rig_results["extra_ref_paths"].append(img_p)
                 
-            if selected_env_path:
-                if not rig_results["primary_image_path"]:
-                    rig_results["primary_image_path"] = selected_env_path
-                else:
-                    rig_results["extra_ref_paths"].append(selected_env_path)
-                rig_results["env_name"] = selected_env_name
-                rig_results["mapping_tags"].append(f"Image{curr_ref_idx}: Location ({selected_env_name})")
-                curr_ref_idx += 1
+            rig_results["char_name"] = selected_char_name
+            rig_results["outfit_name"] = selected_fit_name
+            rig_results["env_name"] = selected_env_name
+            
+            for tag, _, _ in rig_imgs:
+                rig_results["mapping_tags"].append(tag)
                 
             # INJECTION BUTTON
             if prompt_target_key:
                 if st.button("⚡ Auto-Inject Mapping Rig to Prompt", key=f"{prefix_key}_inject_btn", use_container_width=True):
-                    tag_str = "\n".join(rig_results["mapping_tags"])
+                    tag_str = "\n".join([f"{t}: {n}" for t, _, n in rig_imgs])
                     descr_parts = []
                     if selected_char_name: descr_parts.append(f"character {selected_char_name}")
                     if selected_fit_name: descr_parts.append(f"wearing {selected_fit_name} outfit")
