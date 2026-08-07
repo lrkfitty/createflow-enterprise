@@ -763,11 +763,24 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
                             char_pair_sentences.append(f"character {c_n} ({c_tag})")
                             
                     combined_char_str = ", ".join(char_pair_sentences) if char_pair_sentences else "characters"
-                    env_str = f"in environment Image1 ({selected_env_name})" if selected_env_name else "in scene Image1"
                     
-                    injected_text = f"{tag_header}\n\nCinematic 35mm film shot of {combined_char_str}, {env_str}, 16:9 widescreen, highly detailed, realistic lighting, zero CGI."
+                    # 3D Spatial Environment Placement & Multi-Angle Camera Directive
+                    if selected_env_name:
+                        env_directive = (
+                            f"placed INSIDE the 3D environment space of Image1 ({selected_env_name}). "
+                            f"Use Image1 as the master 3D spatial and architectural set anchor for time, place, and location design. "
+                            f"The camera moves dynamically through different angles, reverse perspectives, spatial depth, "
+                            f"and room angles inside this environment (do NOT restrict camera to static angle of Image1)."
+                        )
+                    else:
+                        env_directive = (
+                            "placed INSIDE the 3D scene location of Image1. "
+                            "Use Image1 as the 3D set anchor, exploring dynamic camera angles, depth, and spatial perspectives inside the space."
+                        )
+                    
+                    injected_text = f"{tag_header}\n\nCinematic 35mm film shot of {combined_char_str} {env_directive} 16:9 widescreen, organic camera movement, realistic 35mm film lighting, zero CGI."
                     st.session_state[prompt_target_key] = injected_text
-                    st.toast("✅ Mapping Rig tags injected into Prompt!")
+                    st.toast("✅ Dynamic 3D Spatial Rig tags injected into Prompt!")
                     st.rerun()
                     
     return rig_results

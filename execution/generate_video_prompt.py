@@ -104,10 +104,11 @@ def generate_motion_prompt(image_path, movement_type="Auto", physics_focus="stan
     
     STRUCTURE YOUR PROMPT AS A SINGLE, FLOWING NARRATIVE INCORPORATING:
     1. **The Core Action**: What is happening? (e.g., "She turns her head slowly...")
-    2. **Micromovements (CRITICAL)**: Describe the twitch of a muscle, the flutter of an eyelash, the shift of weight, the breathing pattern. 
-    3. **Physics & Atmosphere**: How does the hair react to wind? How does the fabric fold? How does the light caustic shift?
-    4. **Cinematography**: {movement_type}. Lens flares, depth of field rack focus, film grain, exposure.
-    5. **Humanity**: If a person is present, describe their thought process through micro-expressions.
+    2. **3D Spatial Environment Placement**: Treat the environment reference image as the master 3D spatial & architectural anchor for time, place, and location design. Place characters INSIDE this 3D environment, exploring dynamic camera angles, reverse perspectives, over-the-shoulder views, and spatial depth within the room (do NOT lock to a static image angle).
+    3. **Micromovements (CRITICAL)**: Describe the twitch of a muscle, the flutter of an eyelash, the shift of weight, the breathing pattern. 
+    4. **Physics & Atmosphere**: How does the hair react to wind? How does the fabric fold? How does the light caustic shift?
+    5. **Cinematography**: {movement_type}. Lens flares, depth of field rack focus, film grain, exposure.
+    6. **Humanity**: If a person is present, describe their thought process through micro-expressions.
     
     ## THE REALISM BIBLE (STRICT ADHERENCE REQUIRED):
     Prioritize human realism above all else. This is observational realism, not animation.
