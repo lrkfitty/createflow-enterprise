@@ -341,8 +341,10 @@ def generate_wan_video(prompt, image_path, resolution="1080P", duration=5, aspec
              
              if image_path:
                  seen_paths.add(image_path)
-                 if img_uri:
-                     images_payload.append(img_uri)
+                 primary_res = img_uri or image_to_base64_data_uri(image_path) or image_path
+                 if primary_res:
+                     images_payload.append(primary_res)
+                     logs.append(f"Encoded primary reference image #1: {os.path.basename(str(image_path))}")
                      
              if extra_images:
                  for idx, img_p in enumerate(extra_images):
@@ -353,12 +355,14 @@ def generate_wan_video(prompt, image_path, resolution="1080P", duration=5, aspec
                          logs.append("⚠️ Reached max of 9 reference images for Seedance 2.0.")
                          break
                      try:
-                         extra_uri = image_to_base64_data_uri(img_p)
-                         if extra_uri:
-                             images_payload.append(extra_uri)
-                             logs.append(f"Encoded reference image #{len(images_payload)}: {os.path.basename(img_p)}")
+                         extra_res = image_to_base64_data_uri(img_p) or img_p
+                         if extra_res:
+                             images_payload.append(extra_res)
+                             logs.append(f"Encoded reference image #{len(images_payload)}: {os.path.basename(str(img_p))}")
                      except Exception as img_err:
-                         logs.append(f"⚠️ Image encoding warning {idx+1}: {img_err}")
+                         # Fallback to direct string path/URL if base64 fails
+                         images_payload.append(img_p)
+                         logs.append(f"⚠️ Image encoding fallback for image #{len(images_payload)}: {img_err}")
              
              # Reference Videos & Cascading Video Frame Extraction
              videos_payload = []
