@@ -11,8 +11,9 @@ import re
 def sanitize_prompt_for_provider(prompt):
     """
     Sanitizes prompt text before sending to third-party AI video providers (Seedance, Wan, Kling).
-    Strips bracketed user prefixes like (My), (User), [My], trademark symbols, and system formatting tags
-    to prevent false-positive provider copyright / safety policy blocks.
+    Strips bracketed user prefixes like (My), (User), [My], trademark symbols, and system formatting tags.
+    Replaces video-game/CGI over-sharpening triggers ("4K", "8K", "photorealistic", "hyperrealistic", "hyper-detailed")
+    with film-grade observational realism terms ("35mm film stock, organic film grain, natural skin pores").
     """
     if not prompt:
         return prompt
@@ -25,7 +26,15 @@ def sanitize_prompt_for_provider(prompt):
     # 2. Remove copyright/trademark symbols
     cleaned = cleaned.replace("™", "").replace("®", "").replace("©", "")
     
-    # 3. Clean duplicate spaces or awkward punctuation left behind
+    # 3. Strip video-game / CGI over-sharpening buzzwords that cause cartoonish rendering
+    cgi_triggers = [
+        r'\b4k\b', r'\b8k\b', r'\b16k\b', r'\bphotorealistic\b', r'\bhyperrealistic\b', 
+        r'\bhyper[- ]detailed\b', r'\bunreal engine\b', r'\boctane render\b', r'\bmasterpiece\b', r'\bultra detailed\b'
+    ]
+    for pattern in cgi_triggers:
+        cleaned = re.sub(pattern, '35mm film realism', cleaned, flags=re.IGNORECASE)
+        
+    # 4. Clean duplicate spaces or awkward punctuation left behind
     cleaned = re.sub(r'\s+', ' ', cleaned).strip()
     return cleaned
 

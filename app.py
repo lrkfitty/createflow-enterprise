@@ -2772,7 +2772,7 @@ ADDITIONAL DETAILS: {custom_data['custom_details'] or 'none'}
 
 CRITICAL REQUIREMENTS:
 1. Output as a SINGLE flowing paragraph (NO markdown, NO sections, NO code blocks, NO bullet points)
-2. Start with "Photorealistic, hyper-detailed, cinematic"
+2. Start with "Cinematic 35mm film shot, organic film grain, natural skin pores"
 3. Create a VIVID, IMMERSIVE scene - paint the picture with rich visual details
 4. Incorporate EVERY asset listed above naturally into the scene
 5. Pay special attention to the "ADDITIONAL DETAILS" - these are user-specified and must be included
