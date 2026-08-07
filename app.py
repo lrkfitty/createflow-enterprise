@@ -760,7 +760,7 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
                         clean_c_n = c_n.replace('{My}', '').strip()
                         if c_tag and f_tag and f_n:
                             clean_fit_name = f_n.replace('{My}', '').strip()
-                            char_pair_sentences.append(f"character {clean_c_n} ({c_tag}) wearing the mapped {f_tag} outfit ({clean_fit_name})")
+                            char_pair_sentences.append(f"character {clean_c_n} ({c_tag}) strictly wearing the complete wardrobe from outfit {f_tag} ({clean_fit_name})")
                         elif c_tag and f_tag:
                             char_pair_sentences.append(f"character {clean_c_n} ({c_tag}) wearing mapped outfit ({f_tag})")
                         elif c_tag:
@@ -782,9 +782,11 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
                             "Use Image1 as the 3D set anchor, exploring dynamic camera angles, depth, and spatial perspectives inside the space."
                         )
                     
-                    injected_text = f"{tag_header}\n\nCinematic 35mm film shot of {combined_char_str} {env_directive} 16:9 widescreen, organic camera movement, realistic 35mm film lighting, zero CGI."
+                    wardrobe_lock_str = "Strict Wardrobe Lock: Ensure every character wears the full complete clothing items shown in their mapped outfit reference image without altering or omitting jackets, tops, or pants."
+                    
+                    injected_text = f"{tag_header}\n\nCinematic 35mm film shot of {combined_char_str} {env_directive} {wardrobe_lock_str} 16:9 widescreen, organic camera movement, realistic 35mm film lighting, zero CGI."
                     st.session_state[prompt_target_key] = injected_text
-                    st.toast("✅ Dynamic 3D Spatial Rig tags injected into Prompt!")
+                    st.toast("✅ Dynamic 3D Spatial & Strict Wardrobe Rig tags injected into Prompt!")
                     st.rerun()
                     
     return rig_results
