@@ -565,7 +565,7 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
                 st.caption(f"✅ **Environment Ready ({len(selected_env_paths)} still(s) attached)**")
 
         # -------------------------------------------------------------
-        # TAB 2: VISUAL CHARACTER & WARDROBE RIG
+        # TAB 2: MULTI-CHARACTER CAST & WARDROBE RIG
         # -------------------------------------------------------------
         with c_tab_char:
             from execution.world_manager import load_world_db
@@ -575,51 +575,23 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
             characters_data.update(session_assets.get('relations', {}))
             all_outfits = session_assets.get('outfits', {})
             
-            st.markdown("##### 👤 1. Character Selection (Visual Catalog)")
+            st.markdown("##### 👥 Cast & Wardrobe Rig")
+            st.caption("Type or select cast members below. Once added, their character photo thumbnail pops up with their pre-mapped outfit carousel.")
             
-            # Fast Instant Search for Characters
-            c_search = st.text_input("🔍 Search Character by name...", key=f"{prefix_key}_main_char_search_q", placeholder="e.g. Ty, Angeil, Danni, Shay")
-            curr_chars_data = dict(characters_data)
-            if c_search.strip():
-                q_c = c_search.strip().lower()
-                filtered_c = {
-                    k: v for k, v in curr_chars_data.items()
-                    if q_c in k.lower() or (isinstance(v, dict) and q_c in v.get('name', '').lower())
-                }
-                if filtered_c:
-                    curr_chars_data = filtered_c
-                    st.caption(f"Found {len(curr_chars_data)} matching character(s).")
-                else:
-                    st.warning(f"No character assets matching '{c_search}'. Showing all options below.")
-                    
-            # Primary Character Visual Carousel
-            char_key_1 = thumbnail_carousel(
-                "Select Main Character",
-                {"None": None, **curr_chars_data},
-                state_key=f"{prefix_key}_rig_char_main",
-                thumb_cols=4,
-                show_label=True
+            # Type / Search Multiselect for Cast Members
+            cast_selection = st.multiselect(
+                "🔍 Search & Select Cast Members for Scene",
+                options=list(characters_data.keys()),
+                key=f"{prefix_key}_cast_multiselect"
             )
             
-            # Secondary Character Visual Carousel (Optional Second Cast Member)
-            st.markdown("---")
-            st.markdown("##### 👤 2. Secondary Character (Optional Co-Lead)")
-            char_key_2 = thumbnail_carousel(
-                "Select Secondary Character (Optional)",
-                {"None": None, **curr_chars_data},
-                state_key=f"{prefix_key}_rig_char_sec",
-                thumb_cols=4,
-                show_label=True
-            )
-            
-            cast_keys = [k for k in [char_key_1, char_key_2] if k and k != "None"]
             selected_characters = [] # list of dicts: {"name": str, "char_path": str, "fit_name": str, "fit_path": str}
             
-            if cast_keys:
+            if cast_selection:
                 st.markdown("---")
-                st.markdown("##### 👗 Active Cast & Wardrobe Mapping")
+                st.markdown("##### 🎭 Active Cast & Wardrobe Setup")
                 
-                for c_idx, member_key in enumerate(cast_keys):
+                for c_idx, member_key in enumerate(cast_selection):
                     p_val = characters_data.get(member_key)
                     c_name = None
                     c_path = None
@@ -634,10 +606,11 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
                             c_name = os.path.splitext(filename)[0]
                         c_path = p_val
                         
-                    st.markdown(f"###### 🎭 Cast Slot #{c_idx+1}: `{c_name}`")
+                    st.markdown(f"###### 👤 Cast Member #{c_idx+1}: `{c_name}`")
                     c_col1, c_col2 = st.columns([1.3, 3])
                     
                     with c_col1:
+                        # Character Photo Thumbnail Popup
                         if c_path and os.path.exists(str(c_path)):
                             st.image(c_path, caption=f"Character: {c_name}", use_container_width=True)
                             char_dir = os.path.dirname(str(c_path))
@@ -648,9 +621,11 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
                                 def_idx = siblings.index(current_file) if current_file in siblings else 0
                                 selected_var = st.selectbox(f"Look Variant for {c_name}", siblings, index=def_idx, key=f"{prefix_key}_char_var_{member_key}_{c_idx}")
                                 c_path = os.path.join(char_dir, selected_var)
+                        else:
+                            st.info(f"👤 {c_name}")
                                 
                     with c_col2:
-                        st.markdown(f"**Wardrobe Selection for {c_name}**")
+                        st.markdown(f"**Attach Outfit to {c_name}**")
                         c_clean = c_name.lower().strip() if c_name else ""
                         
                         # Priority sort: matching character outfits first, followed by all remaining outfits in catalog
@@ -665,7 +640,7 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
                                 
                         combined_outfits = {**priority_outfits, **other_outfits}
                         
-                        f_search = st.text_input(f"🔍 Search Wardrobe for {c_name}...", key=f"{prefix_key}_fit_search_{member_key}_{c_idx}", placeholder="e.g. Morning, Bikini, Dress, Suit, Robe")
+                        f_search = st.text_input(f"🔍 Search Outfit for {c_name}...", key=f"{prefix_key}_fit_search_{member_key}_{c_idx}", placeholder="e.g. Morning, Bikini, Dress, Suit, Robe")
                         if f_search.strip():
                             q_f = f_search.strip().lower()
                             filtered_f = {
