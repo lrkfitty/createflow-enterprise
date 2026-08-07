@@ -520,18 +520,44 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
                                 st.toast(f"✅ Generated {len(gen_stills)} Environment Stills!")
                                 st.rerun()
                                 
-                # Show generated stills if present
+                # Show generated stills if present with selection checkboxes and Save to Asset Library button
                 active_gen_stills = st.session_state.get("selected_env_stills", [])
                 if active_gen_stills:
-                    st.markdown("##### 🖼️ Active Environment Stills")
+                    st.markdown("##### 🖼️ Active Environment Stills (Select One or Multiple)")
+                    
                     e_cols = st.columns(len(active_gen_stills))
+                    chosen_stills = []
                     for i, s_p in enumerate(active_gen_stills):
                         with e_cols[i]:
                             if os.path.exists(s_p):
                                 st.image(s_p, caption=f"Still #{i+1}", use_container_width=True)
-                    selected_env_paths.extend(active_gen_stills)
+                                is_chk = st.checkbox(f"Use Still #{i+1}", value=True, key=f"{prefix_key}_chk_env_still_{i}")
+                                if is_chk:
+                                    chosen_stills.append(s_p)
+                                    
+                    selected_env_paths.extend(chosen_stills if chosen_stills else active_gen_stills)
                     selected_env_name = env_name_input if env_name_input else "Generated Environment Stills"
                     
+                    # 💾 SAVE TO LOCATIONS ASSET LIBRARY
+                    s_col1, s_col2 = st.columns([2, 1])
+                    with s_col1:
+                        save_loc_name = st.text_input("Asset Library Location Name", value=selected_env_name, key=f"{prefix_key}_save_loc_name")
+                    with s_col2:
+                        st.write("") # spacing
+                        st.write("") 
+                        if st.button("💾 Save to Locations Library", key=f"{prefix_key}_btn_save_loc", use_container_width=True):
+                            if selected_env_paths:
+                                username = st.session_state.current_user.get("username", "guest") if st.session_state.get("authenticated") else "guest"
+                                saved_count = 0
+                                for idx, img_p in enumerate(selected_env_paths):
+                                    if os.path.exists(img_p):
+                                        asset_n = f"{save_loc_name} Still {idx+1}" if len(selected_env_paths) > 1 else save_loc_name
+                                        promote_image_to_asset(img_p, username, "Locations", asset_n, f"Environment still for {save_loc_name}")
+                                        saved_count += 1
+                                st.cache_data.clear()
+                                st.toast(f"✅ Saved {saved_count} Location asset(s) to Library!")
+                                st.rerun()
+                                
             if selected_env_paths:
                 st.caption(f"✅ **Environment Ready ({len(selected_env_paths)} still(s) attached)**")
 
@@ -589,7 +615,8 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
                         current_file = os.path.basename(str(selected_char_path))
                         def_idx = siblings.index(current_file) if current_file in siblings else 0
                         selected_var = st.selectbox("Select Character Look / Angle Variant", siblings, index=def_idx, key=f"{prefix_key}_char_var")
-                        selected_char_path = os.path.join(char_dir, selected_var)
+                        selected_var_path = os.path.join(char_dir, selected_var)
+                        selected_char_path = selected_var_path
 
             # PRE-MAPPED OUTFIT SELECTOR (Filtered by / linked to selected character)
             st.markdown("---")
