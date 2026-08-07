@@ -352,6 +352,204 @@ def get_user_out_dir(category="General"):
     os.makedirs(path, exist_ok=True)
     return path
 
+# --- HELPER: WAN & SEEDANCE ASSET MAPPING RIG ---
+def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
+    """
+    Renders the visual Character, Outfit & Environment Mapping Rig for Wan & Seedance Studio.
+    Returns dict:
+      {
+        "primary_image_path": str or None,
+        "extra_ref_paths": list of str,
+        "char_name": str or None,
+        "outfit_name": str or None,
+        "env_name": str or None,
+        "mapping_tags": list of str
+      }
+    """
+    rig_results = {
+        "primary_image_path": None,
+        "extra_ref_paths": [],
+        "char_name": None,
+        "outfit_name": None,
+        "env_name": None,
+        "mapping_tags": []
+    }
+    
+    with st.expander("🎭 Character, Outfit & Environment Mapping Rig (Asset Library Shortcuts)", expanded=True):
+        st.markdown("Select your characters, outfits, and environments directly from your loaded Asset Library. The rig automatically maps thumbnails and injects reference tags (`Image1`, `Image2`, `Image3`) into Wan 2.7 & Seedance 2.0.")
+        
+        c_tab_char, c_tab_fit, c_tab_env = st.tabs(["👤 Characters", "👗 Outfits", "🏞️ Environments & Locations"])
+        
+        selected_char_path = None
+        selected_char_name = None
+        selected_fit_path = None
+        selected_fit_name = None
+        selected_env_path = None
+        selected_env_name = None
+        
+        # Access session assets safely
+        session_assets = st.session_state.get("global_assets", {})
+        
+        # 1. CHARACTER PICKER
+        with c_tab_char:
+            from execution.world_manager import load_world_db
+            db = load_world_db()
+            characters_data = session_assets.get('characters', {}).copy()
+            characters_data.update(db.get('characters', {}))
+            characters_data.update(session_assets.get('relations', {}))
+            
+            char_key = thumbnail_carousel(
+                "Select Main Character (Image1)",
+                {"None": None, **characters_data},
+                state_key=f"{prefix_key}_rig_char_main",
+                thumb_cols=4,
+                show_label=True
+            )
+            
+            if char_key and char_key != "None":
+                p_val = characters_data.get(char_key)
+                if isinstance(p_val, dict):
+                    selected_char_name = p_val.get('name', char_key)
+                    selected_char_path = p_val.get('default_img')
+                elif p_val:
+                    filename = str(char_key).split('/')[-1]
+                    if "default" in filename.lower():
+                        selected_char_name = str(char_key).split('/')[-2]
+                    else:
+                        selected_char_name = os.path.splitext(filename)[0]
+                    selected_char_path = p_val
+                
+                # Check for specific look/variant
+                if selected_char_path and os.path.exists(str(selected_char_path)):
+                    char_dir = os.path.dirname(str(selected_char_path))
+                    valid_exts = ('.png', '.jpg', '.jpeg', '.webp')
+                    siblings = [f for f in os.listdir(char_dir) if f.lower().endswith(valid_exts) and not f.startswith('.')]
+                    if siblings and len(siblings) > 1:
+                        current_file = os.path.basename(str(selected_char_path))
+                        def_idx = siblings.index(current_file) if current_file in siblings else 0
+                        selected_var = st.selectbox("Select Character Look/Angle Variant", siblings, index=def_idx, key=f"{prefix_key}_char_var")
+                        selected_char_path = os.path.join(char_dir, selected_var)
+            
+            if selected_char_path:
+                st.caption(f"✅ **Main Character Assigned (Image1)**: `{selected_char_name}`")
+                
+        # 2. OUTFIT PICKER
+        with c_tab_fit:
+            fit_opts = session_assets.get('outfits', {})
+            fit_key = thumbnail_carousel(
+                "Select Outfit (Image2)",
+                {"None": None, **fit_opts},
+                state_key=f"{prefix_key}_rig_fit_main",
+                thumb_cols=4,
+                show_label=True
+            )
+            
+            if fit_key and fit_key != "None":
+                f_val = fit_opts.get(fit_key)
+                if isinstance(f_val, dict):
+                    selected_fit_name = f_val.get('name', fit_key)
+                    selected_fit_path = f_val.get('default_img')
+                elif f_val:
+                    selected_fit_name = str(fit_key).split('/')[-1]
+                    if os.path.sep in selected_fit_name:
+                        selected_fit_name = os.path.splitext(selected_fit_name)[0]
+                    selected_fit_path = f_val
+                    
+            if selected_fit_path:
+                st.caption(f"✅ **Outfit Assigned (Image2)**: `{selected_fit_name}`")
+                
+        # 3. ENVIRONMENT PICKER
+        with c_tab_env:
+            loc_opts = get_assets_by_category("locations")
+            loc_key = thumbnail_carousel(
+                "Select Location (Image3)",
+                {"None": None, **loc_opts},
+                state_key=f"{prefix_key}_rig_loc_main",
+                thumb_cols=4,
+                show_label=True
+            )
+            
+            if loc_key and loc_key != "None":
+                l_val = loc_opts.get(loc_key)
+                if isinstance(l_val, dict):
+                    selected_env_name = l_val.get('name', loc_key)
+                    selected_env_path = l_val.get('default_img')
+                elif l_val:
+                    selected_env_name = str(loc_key).split('/')[-1]
+                    if os.path.sep in selected_env_name:
+                        selected_env_name = os.path.splitext(selected_env_name)[0]
+                    selected_env_path = l_val
+            elif "primary_env_img" in st.session_state and os.path.exists(st.session_state["primary_env_img"]):
+                selected_env_path = st.session_state["primary_env_img"]
+                selected_env_name = "Primary Environment Master Still"
+                
+            if selected_env_path:
+                st.caption(f"✅ **Environment Assigned (Image3)**: `{selected_env_name}`")
+                
+        # THUMBNAIL PREVIEW STRIP & RIG SUMMARY
+        rig_imgs = []
+        if selected_char_path:
+            rig_imgs.append(("Image1 (Character)", selected_char_path, selected_char_name))
+        if selected_fit_path:
+            idx_label = f"Image{len(rig_imgs)+1} (Outfit)"
+            rig_imgs.append((idx_label, selected_fit_path, selected_fit_name))
+        if selected_env_path:
+            idx_label = f"Image{len(rig_imgs)+1} (Location)"
+            rig_imgs.append((idx_label, selected_env_path, selected_env_name))
+            
+        if rig_imgs:
+            st.markdown("---")
+            st.markdown("##### 📌 Active Rig Mapping Slots")
+            cols = st.columns(min(len(rig_imgs), 4))
+            for i, (slot_tag, img_p, item_n) in enumerate(rig_imgs):
+                with cols[i]:
+                    st.caption(f"**{slot_tag}**")
+                    if img_p and os.path.exists(str(img_p)):
+                        st.image(img_p, use_container_width=True)
+                    st.caption(f"`{item_n}`")
+                    
+            # Set Rig outputs
+            if selected_char_path:
+                rig_results["primary_image_path"] = selected_char_path
+                rig_results["char_name"] = selected_char_name
+                rig_results["mapping_tags"].append(f"Image1: Character ({selected_char_name})")
+            
+            curr_ref_idx = 2 if selected_char_path else 1
+            if selected_fit_path:
+                if not rig_results["primary_image_path"]:
+                    rig_results["primary_image_path"] = selected_fit_path
+                else:
+                    rig_results["extra_ref_paths"].append(selected_fit_path)
+                rig_results["outfit_name"] = selected_fit_name
+                rig_results["mapping_tags"].append(f"Image{curr_ref_idx}: Outfit ({selected_fit_name})")
+                curr_ref_idx += 1
+                
+            if selected_env_path:
+                if not rig_results["primary_image_path"]:
+                    rig_results["primary_image_path"] = selected_env_path
+                else:
+                    rig_results["extra_ref_paths"].append(selected_env_path)
+                rig_results["env_name"] = selected_env_name
+                rig_results["mapping_tags"].append(f"Image{curr_ref_idx}: Location ({selected_env_name})")
+                curr_ref_idx += 1
+                
+            # INJECTION BUTTON
+            if prompt_target_key:
+                if st.button("⚡ Auto-Inject Mapping Rig to Prompt", key=f"{prefix_key}_inject_btn", use_container_width=True):
+                    tag_str = "\n".join(rig_results["mapping_tags"])
+                    descr_parts = []
+                    if selected_char_name: descr_parts.append(f"character {selected_char_name}")
+                    if selected_fit_name: descr_parts.append(f"wearing {selected_fit_name} outfit")
+                    if selected_env_name: descr_parts.append(f"in {selected_env_name} environment")
+                    
+                    combined_descr = ", ".join(descr_parts) if descr_parts else "character in scene"
+                    injected_text = f"{tag_str}\n\nCinematic film shot of {combined_descr}, 35mm lens, highly detailed, realistic lighting."
+                    st.session_state[prompt_target_key] = injected_text
+                    st.toast("✅ Mapping Rig tags injected into Prompt!")
+                    st.rerun()
+                    
+    return rig_results
+
 # --- TABS LAYOUT ---
 # --- TABS LAYOUT (Persistent) ---
 if "active_tab" not in st.session_state:
@@ -3788,11 +3986,23 @@ if selection == "Wan & Seedance Studio":
         st.markdown("#### Wan 2.7 Image-to-Image Editor")
         st.write("Modify the wardrobe, location, lighting, or style of your generated images.")
         
+        # 🎭 CHARACTER, OUTFIT & ENVIRONMENT MAPPING RIG
+        rig_edit_res = render_wan_asset_mapping_rig(prefix_key="wan_edit", prompt_target_key="wan_edit_prompt")
+        
         # Select image source
-        src_option = st.radio("Image Source", ["Shortcut (from Gallery)", "Upload custom image"], horizontal=True, key="wan_edit_source_option")
+        src_option = st.radio("Image Source", ["Shortcut (from Mapping Rig)", "Shortcut (from Gallery)", "Upload custom image"], horizontal=True, key="wan_edit_source_option")
         
         edit_image_path = None
-        if src_option == "Shortcut (from Gallery)":
+        if src_option == "Shortcut (from Mapping Rig)":
+            if rig_edit_res["primary_image_path"]:
+                target_rig_img = rig_edit_res["primary_image_path"]
+                st.info(f"Using primary image from Mapping Rig: `{os.path.basename(str(target_rig_img))}`")
+                if os.path.exists(str(target_rig_img)):
+                    st.image(target_rig_img, width=300)
+                edit_image_path = target_rig_img
+            else:
+                st.warning("No image selected in Mapping Rig above. Pick a character, outfit, or location in the rig above.")
+        elif src_option == "Shortcut (from Gallery)":
             if st.session_state.wan_edit_image:
                 st.info(f"Using image from gallery shortcut: `{os.path.basename(st.session_state.wan_edit_image)}`")
                 st.image(st.session_state.wan_edit_image, width=300)
@@ -3807,9 +4017,10 @@ if selection == "Wan & Seedance Studio":
                     f.write(uploaded_edit_img.getbuffer())
                 st.image(uploaded_edit_img, width=300)
                 edit_image_path = temp_edit_path
+                
         # Extra Reference Images (for clothing, locations, multi-subject)
-        extra_ref_paths = []
-        with st.expander("🎨 Multi-Subject / Clothing & Location References (Optional)", expanded=False):
+        extra_ref_paths = list(rig_edit_res["extra_ref_paths"])
+        with st.expander("🎨 Multi-Subject / Clothing & Location References (Optional Uploads / URLs)", expanded=False):
             st.markdown("Add up to 8 additional reference images (e.g. clothing reference, face reference, background style reference) to guide the Wan edit.")
             
             ref_input_mode = st.radio("Reference Source Mode", ["Upload Files", "URLs (S3/Web)"], horizontal=True, key="wan_edit_ref_mode")
@@ -3825,8 +4036,9 @@ if selection == "Wan & Seedance Studio":
                         temp_ref_path = os.path.join("output", f"temp_wan_ref_{i}.png")
                         with open(temp_ref_path, "wb") as f:
                             f.write(file_obj.getbuffer())
-                        extra_ref_paths.append(temp_ref_path)
-                    st.success(f"Loaded {len(extra_ref_paths)} local upload reference images.")
+                        if temp_ref_path not in extra_ref_paths:
+                            extra_ref_paths.append(temp_ref_path)
+                    st.success(f"Loaded {len(uploaded_refs[:8])} local upload reference images.")
             else:
                 url_text = st.text_area(
                     "Reference URLs (One per line)",
@@ -3835,7 +4047,9 @@ if selection == "Wan & Seedance Studio":
                 )
                 if url_text.strip():
                     lines = [line.strip() for line in url_text.split("\n") if line.strip()]
-                    extra_ref_paths.extend(lines[:8])
+                    for u_line in lines[:8]:
+                        if u_line not in extra_ref_paths:
+                            extra_ref_paths.append(u_line)
                     st.success(f"Registered {len(lines[:8])} reference URLs.")
 
         edit_prompt = st.text_area("Edit Prompt (SOP instructions)", placeholder="e.g. Change the background to a sunny Malibu beach. Change her outfit to a red leather jacket and black jeans. Keep character identity identical.", key="wan_edit_prompt")
@@ -3885,6 +4099,9 @@ if selection == "Wan & Seedance Studio":
         st.markdown("#### Wan & Seedance Video Motion Generator")
         st.write("Animate your edited scene image or generate cinematic video clips from scratch.")
         
+        # 🎭 CHARACTER, OUTFIT & ENVIRONMENT MAPPING RIG
+        rig_anim_res = render_wan_asset_mapping_rig(prefix_key="wan_anim", prompt_target_key="wan_anim_prompt")
+        
         # Read selected model flavor to check if Text-to-Video
         model_flavor_val = st.session_state.get("wan_studio_flavor_select", "Wan 2.7 Standard (Image-to-Video)")
         is_txt_to_vid = "Text-to-Video" in model_flavor_val
@@ -3894,9 +4111,18 @@ if selection == "Wan & Seedance Studio":
             st.info("ℹ️ **Text-to-Video Mode Selected**: No input image is required. Video will be generated purely from your Motion Prompt.")
         else:
             # Select image source
-            anim_src_option = st.radio("Image Source", ["Shortcut (from Gallery or Editor)", "Upload custom image"], horizontal=True, key="wan_anim_source_option")
+            anim_src_option = st.radio("Image Source", ["Shortcut (from Mapping Rig)", "Shortcut (from Gallery or Editor)", "Upload custom image"], horizontal=True, key="wan_anim_source_option")
             
-            if anim_src_option == "Shortcut (from Gallery or Editor)":
+            if anim_src_option == "Shortcut (from Mapping Rig)":
+                if rig_anim_res["primary_image_path"]:
+                    target_p = rig_anim_res["primary_image_path"]
+                    st.info(f"Using image from Mapping Rig: `{os.path.basename(str(target_p))}`")
+                    if os.path.exists(str(target_p)):
+                        st.image(target_p, width=300)
+                    anim_image_path = target_p
+                else:
+                    st.warning("No image selected in Mapping Rig above. Pick a character, outfit, or location in the rig above.")
+            elif anim_src_option == "Shortcut (from Gallery or Editor)":
                 if st.session_state.wan_animate_image:
                     target_p = st.session_state.wan_animate_image
                     # If it's a signed S3 URL but we have a matching local file under output/ or user/ directories:
@@ -4087,7 +4313,7 @@ if selection == "Wan & Seedance Studio":
         
         if run_anim_btn:
             # 1. Gather all reference images and videos upfront FIRST!
-            extra_imgs = []
+            extra_imgs = list(rig_anim_res["extra_ref_paths"])
             extra_vids = []
             
             if "Reference-to-Video" in wan_model_flavor or "Seedance" in wan_model_flavor:
