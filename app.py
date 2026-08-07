@@ -621,23 +621,22 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
                     c_col1, c_col2 = st.columns([1.3, 3])
                     
                     with c_col1:
-                        # Character Photo Thumbnail Popup under Character Name
-                        if c_path and os.path.exists(str(c_path)):
+                        # Character Photo Thumbnail Popup under Character Name (Supports Local Files & S3 URLs)
+                        is_url = isinstance(c_path, str) and (c_path.startswith("http://") or c_path.startswith("https://"))
+                        if c_path and (is_url or os.path.exists(str(c_path))):
                             st.image(c_path, caption=f"Character: {c_name}", use_container_width=True)
-                            char_dir = os.path.dirname(str(c_path))
-                            valid_exts = ('.png', '.jpg', '.jpeg', '.webp')
-                            if os.path.exists(char_dir):
-                                siblings = [f for f in os.listdir(char_dir) if f.lower().endswith(valid_exts) and not f.startswith('.')]
-                                if siblings and len(siblings) > 1:
-                                    current_file = os.path.basename(str(c_path))
-                                    def_idx = siblings.index(current_file) if current_file in siblings else 0
-                                    selected_var = st.selectbox(f"Look Variant for {c_name}", siblings, index=def_idx, key=f"{prefix_key}_char_var_{member_key}_{c_idx}")
-                                    c_path = os.path.join(char_dir, selected_var)
+                            if not is_url:
+                                char_dir = os.path.dirname(str(c_path))
+                                valid_exts = ('.png', '.jpg', '.jpeg', '.webp')
+                                if os.path.exists(char_dir):
+                                    siblings = [f for f in os.listdir(char_dir) if f.lower().endswith(valid_exts) and not f.startswith('.')]
+                                    if siblings and len(siblings) > 1:
+                                        current_file = os.path.basename(str(c_path))
+                                        def_idx = siblings.index(current_file) if current_file in siblings else 0
+                                        selected_var = st.selectbox(f"Look Variant for {c_name}", siblings, index=def_idx, key=f"{prefix_key}_char_var_{member_key}_{c_idx}")
+                                        c_path = os.path.join(char_dir, selected_var)
                         else:
-                            # Try checking if default.png exists in global assets directory
-                            st.warning(f"📸 Image file loading for '{c_name}'...")
-                            if c_path:
-                                st.caption(f"`{c_path}`")
+                            st.image("https://via.placeholder.com/300x300.png?text=Character+Image", caption=f"Character: {c_name}", use_container_width=True)
                                 
                     with c_col2:
                         st.markdown(f"**Attach Outfit to {c_name}**")
