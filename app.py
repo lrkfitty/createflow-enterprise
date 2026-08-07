@@ -403,6 +403,20 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
             if env_mode == "Select from Library / Existing Master Stills":
                 loc_opts = get_assets_by_category("locations")
                 
+                # Fast Instant Search for Environments
+                env_search = st.text_input("🔍 Search Environment by name...", key=f"{prefix_key}_env_search_q", placeholder="e.g. Penthouse, Beach, Lounge")
+                if env_search.strip():
+                    q_env = env_search.strip().lower()
+                    filtered_loc_opts = {
+                        k: v for k, v in loc_opts.items() 
+                        if q_env in k.lower() or (isinstance(v, dict) and q_env in v.get('name', '').lower())
+                    }
+                    if filtered_loc_opts:
+                        loc_opts = filtered_loc_opts
+                        st.caption(f"Found {len(loc_opts)} matching location(s).")
+                    else:
+                        st.warning(f"No location assets matching '{env_search}'. Showing all options below.")
+                
                 # Check for existing generated master stills in session
                 existing_stills = st.session_state.get("selected_env_stills", []) or (
                     [st.session_state["primary_env_img"]] if "primary_env_img" in st.session_state and os.path.exists(st.session_state["primary_env_img"]) else []
@@ -531,6 +545,20 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
             characters_data.update(db.get('characters', {}))
             characters_data.update(session_assets.get('relations', {}))
             
+            # Fast Instant Search for Characters
+            char_search = st.text_input("🔍 Search Character by name...", key=f"{prefix_key}_char_search_q", placeholder="e.g. Shay, Anisa, Jason")
+            if char_search.strip():
+                q_char = char_search.strip().lower()
+                filtered_chars_data = {
+                    k: v for k, v in characters_data.items()
+                    if q_char in k.lower() or (isinstance(v, dict) and q_char in v.get('name', '').lower())
+                }
+                if filtered_chars_data:
+                    characters_data = filtered_chars_data
+                    st.caption(f"Found {len(characters_data)} matching character(s).")
+                else:
+                    st.warning(f"No character assets matching '{char_search}'. Showing all options below.")
+            
             char_key = thumbnail_carousel(
                 "Select Main Character",
                 {"None": None, **characters_data},
@@ -580,6 +608,20 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
             # Fall back to full outfit catalog if no custom filter match
             if not mapped_outfits:
                 mapped_outfits = all_outfits
+                
+            # Fast Instant Search for Outfits
+            fit_search = st.text_input("🔍 Search Outfit by name / style...", key=f"{prefix_key}_fit_search_q", placeholder="e.g. Red Dress, Bikini, Blazer, Tuxedo")
+            if fit_search.strip():
+                q_fit = fit_search.strip().lower()
+                filtered_mapped_outfits = {
+                    k: v for k, v in mapped_outfits.items()
+                    if q_fit in k.lower() or (isinstance(v, dict) and q_fit in v.get('name', '').lower())
+                }
+                if filtered_mapped_outfits:
+                    mapped_outfits = filtered_mapped_outfits
+                    st.caption(f"Found {len(mapped_outfits)} matching outfit(s).")
+                else:
+                    st.warning(f"No outfits matching '{fit_search}'. Showing pre-mapped options below.")
                 
             fit_key = thumbnail_carousel(
                 f"Select Outfit for {selected_char_name if selected_char_name else 'Character'}",
