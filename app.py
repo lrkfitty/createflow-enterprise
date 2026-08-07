@@ -1105,12 +1105,46 @@ if selection == "Video Vault":
             if not vids:
                 st.info("ℹ️ No videos found in your Video Vault history yet. Generate a video in **Mini Series** or **Wan & Seedance Studio** to automatically save it here!")
             else:
-                st.success(f"🎥 Found **{len(vids)} generated videos** in your Video Vault.")
+                if "vv_page" not in st.session_state:
+                    st.session_state.vv_page = 0
+                    
+                VIDEOS_PER_PAGE = 8
+                total_videos = len(vids)
+                total_pages = max(1, (total_videos + VIDEOS_PER_PAGE - 1) // VIDEOS_PER_PAGE)
                 
-                # Grid of video cards (2 columns per row)
-                for i in range(0, len(vids), 2):
+                current_page = st.session_state.vv_page
+                if current_page >= total_pages:
+                    current_page = total_pages - 1
+                    st.session_state.vv_page = current_page
+                if current_page < 0:
+                    current_page = 0
+                    st.session_state.vv_page = 0
+                    
+                start_idx = current_page * VIDEOS_PER_PAGE
+                end_idx = min(start_idx + VIDEOS_PER_PAGE, total_videos)
+                page_vids = vids[start_idx:end_idx]
+                
+                # Header stats & Page controls
+                v_head_col, v_page_col = st.columns([2, 2])
+                with v_head_col:
+                    st.success(f"🎥 Found **{total_videos} videos** in Vault (Page {current_page + 1}/{total_pages})")
+                with v_page_col:
+                    col_p1, col_p2, col_p3 = st.columns([1, 2, 1])
+                    with col_p1:
+                        if st.button("⬅️ Prev", disabled=(current_page == 0), key="vv_prev_top"):
+                            st.session_state.vv_page -= 1
+                            st.rerun()
+                    with col_p2:
+                        st.caption(f"Showing {start_idx+1}–{end_idx}")
+                    with col_p3:
+                        if st.button("Next ➡️", disabled=(current_page >= total_pages - 1), key="vv_next_top"):
+                            st.session_state.vv_page += 1
+                            st.rerun()
+                
+                # Grid of video cards (2 columns per row, paginated)
+                for i in range(0, len(page_vids), 2):
                     v_cols = st.columns(2)
-                    for c_idx, vid in enumerate(vids[i:i+2]):
+                    for c_idx, vid in enumerate(page_vids[i:i+2]):
                         with v_cols[c_idx]:
                             with st.container(border=True):
                                 st.markdown(f"**{vid['name']}**")
@@ -1121,7 +1155,7 @@ if selection == "Video Vault":
                                     st.video(vid_src)
                                 else:
                                     st.markdown(f"""
-                                    <video width="100%" controls preload="metadata" playsinline style="border-radius: 8px; max-height: 320px; background-color: #000; outline: none;">
+                                    <video width="100%" controls preload="none" playsinline style="border-radius: 8px; max-height: 320px; background-color: #000; outline: none;">
                                         <source src="{vid_src}" type="video/mp4">
                                         Your browser does not support HTML5 video streaming.
                                     </video>
@@ -1137,15 +1171,29 @@ if selection == "Video Vault":
                                                 file_name=vid["name"],
                                                 mime="video/mp4",
                                                 use_container_width=True,
-                                                key=f"vv_dl_{vid['name']}_{i}_{c_idx}"
+                                                key=f"vv_dl_{vid['name']}_{current_page}_{i}_{c_idx}"
                                             )
                                     else:
                                         st.markdown(f"[⬇️ Download MP4]({vid_src})")
                                 with c_act2:
-                                    if st.button("🎬 Edit in Studio", key=f"vv_edit_{vid['name']}_{i}_{c_idx}", use_container_width=True):
+                                    if st.button("🎬 Edit in Studio", key=f"vv_edit_{vid['name']}_{current_page}_{i}_{c_idx}", use_container_width=True):
                                         st.session_state.wan_edit_image = vid_src
                                         st.session_state.active_tab = "Wan & Seedance Studio"
                                         st.rerun()
+
+                if total_pages > 1:
+                    st.markdown("---")
+                    b_p1, b_p2, b_p3 = st.columns([1, 2, 1])
+                    with b_p1:
+                        if st.button("⬅️ Previous Page", disabled=(current_page == 0), key="vv_prev_bot"):
+                            st.session_state.vv_page -= 1
+                            st.rerun()
+                    with b_p2:
+                        st.markdown(f"<div style='text-align: center'>Page {current_page + 1} of {total_pages}</div>", unsafe_allow_html=True)
+                    with b_p3:
+                        if st.button("Next Page ➡️", disabled=(current_page >= total_pages - 1), key="vv_next_bot"):
+                            st.session_state.vv_page += 1
+                            st.rerun()
 
 if selection == "My Gallery":
     with st.container():
