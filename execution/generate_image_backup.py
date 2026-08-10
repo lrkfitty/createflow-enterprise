@@ -181,24 +181,38 @@ def generate_image_nano(prompt_data, output_folder, reference_image_path, outfit
         # Prepare multimodal input
         contents = []
         all_asset_logs = []
+        seen_paths = set()
 
-        # 1. Reference Image (if provided)
+        # 1. Reference Image (if provided explicitly)
         if reference_image_path:
-            ref_parts, ref_logs = process_single_asset({"path": reference_image_path, "label": "Reference Character"})
+            seen_paths.add(reference_image_path)
+            ref_parts, ref_logs = process_single_asset({"path": reference_image_path, "label": "Main Character"})
             contents.extend(ref_parts)
             all_asset_logs.extend(ref_logs)
 
-        # 2. Outfit Image (if provided)
+        # 2. Outfit Image (if provided explicitly)
         if outfit_path:
+            seen_paths.add(outfit_path)
             outfit_parts, outfit_logs = process_single_asset({"path": outfit_path, "label": "Outfit for Character"})
             contents.extend(outfit_parts)
             all_asset_logs.extend(outfit_logs)
 
-        # 3. Vibe Image (if provided)
+        # 3. Vibe Image (if provided explicitly)
         if vibe_path:
-            vibe_parts, vibe_logs = process_single_asset({"path": vibe_path, "label": "Vibe/Style Reference"})
+            seen_paths.add(vibe_path)
+            vibe_parts, vibe_logs = process_single_asset({"path": vibe_path, "label": "Location/Vibe Reference"})
             contents.extend(vibe_parts)
             all_asset_logs.extend(vibe_logs)
+
+        # 4. ALL World Builder / Multi-Asset Payload Items (Cast, Outfits, Props, Location, Pets)
+        if "assets" in prompt_data and isinstance(prompt_data["assets"], list):
+            for asset_item in prompt_data["assets"]:
+                p = asset_item.get("path")
+                if p and p not in seen_paths:
+                    seen_paths.add(p)
+                    a_parts, a_logs = process_single_asset(asset_item)
+                    contents.extend(a_parts)
+                    all_asset_logs.extend(a_logs)
 
         # Add the main text prompt
         contents.append({"text": positive_prompt})

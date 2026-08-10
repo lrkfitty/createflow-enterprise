@@ -399,51 +399,103 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
                 "Environment Source", 
                 ["Select from Library / Existing Master Stills", "✨ Generate New Cascading 35mm Environment Stills"], 
                 horizontal=True, 
-                key=f"{prefix_key}_env_mode_radio"
-            )
+                key=f"{prefix_key}_env_mode_radio")
             
             if env_mode == "Select from Library / Existing Master Stills":
-                loc_opts = get_assets_by_category("locations", user_assets_dir=user_asset_path)
+                raw_locs = session_assets.get('locations', {}).copy()
+                cat_locs = get_assets_by_category("locations", user_assets_dir=user_asset_path)
+                if cat_locs:
+                    raw_locs.update(cat_locs)
                 
-                # Fast Instant Search for Environments
-                env_search = st.text_input("🔍 Search Environment by name...", key=f"{prefix_key}_env_search_q", placeholder="e.g. Penthouse, Beach, Lounge")
-                if env_search.strip():
-                    q_env = env_search.strip().lower()
-                    filtered_loc_opts = {
-                        k: v for k, v in loc_opts.items() 
-                        if q_env in k.lower() or (isinstance(v, dict) and q_env in v.get('name', '').lower())
-                    }
-                    if filtered_loc_opts:
-                        loc_opts = filtered_loc_opts
-                        st.caption(f"Found {len(loc_opts)} matching location(s).")
-                    else:
-                        st.warning(f"No location assets matching '{env_search}'. Showing all options below.")
+                # Build unique location display dictionary (ensuring NO key collision)
+                loc_opts = {}
+                for r_k, r_v in raw_locs.items():
+                    raw_str_k = str(r_k).replace('{My}', '').strip()
+                    l_path = None
+                    if isinstance(r_v, dict):
+                        disp_name = r_v.get('name') or raw_str_k
+                        l_path = r_v.get('default_img') or r_v.get('path')
+                    elif r_v:
+                        disp_name = raw_str_k
+                        l_path = str(r_v)
+                        
+                    if l_path:
+                        if os.path.sep in disp_name and not disp_name.startswith("http"):
+                            parts = [p.replace('_', ' ').title() for p in disp_name.split(os.path.sep) if p and p != '.']
+                            if len(parts) >= 2:
+                                if parts[-1].lower() in ['default', 'image', 'primary', 'still', 'thumb', 'png', 'jpg', 'jpeg', 'webp']:
+                                    clean_k = parts[-2]
+                                else:
+                                    clean_k = f"{parts[-2]} - {parts[-1]}"
+                            else:
+                                clean_k = parts[-1]
+                            clean_k = os.path.splitext(clean_k)[0]
+                        else:
+                            clean_k = os.path.splitext(disp_name)[0].replace('_', ' ').title()
+                            
+                        # Ensure absolute uniqueness so keys never overwrite each other
+                        orig_clean = clean_k
+                        dup_counter = 1
+                        while clean_k in loc_opts:
+                            dup_counter += 1
+                            clean_k = f"{orig_clean} ({dup_counter})"
+                            
+                        loc_opts[clean_k] = l_path
                 
                 # Check for existing generated master stills in session
                 existing_stills = st.session_state.get("selected_env_stills", []) or (
                     [st.session_state["primary_env_img"]] if "primary_env_img" in st.session_state and os.path.exists(st.session_state["primary_env_img"]) else []
                 )
                 
-                loc_key = thumbnail_carousel(
-                    "Select Location Asset",
-                    {"None": None, **loc_opts},
-                    state_key=f"{prefix_key}_rig_loc_main",
+                st.markdown("##### 🏞️ Environment & Location Rig")
+                st.caption("Select one or multiple environment locations for your scene using the visual photo carousel below or the search multiselect.")
+                
+                carousel_selected = thumbnail_carousel(
+                    "Select Location Assets",
+                    loc_opts,
+                    state_key=f"{prefix_key}_rig_loc_multi",
                     thumb_cols=4,
-                    show_label=True
+                    show_label=True,
+                    multi_select=True
                 )
                 
-                if loc_key and loc_key != "None":
-                    l_val = loc_opts.get(loc_key)
-                    if isinstance(l_val, dict):
-                        selected_env_name = l_val.get('name', loc_key)
-                        l_path = l_val.get('default_img')
-                    elif l_val:
-                        selected_env_name = str(loc_key).split('/')[-1]
-                        if os.path.sep in selected_env_name:
-                            selected_env_name = os.path.splitext(selected_env_name)[0]
-                        l_path = l_val
-                    if l_path:
-                        selected_env_paths.append(l_path)
+                # Also allow multiselect dropdown search
+                state_ms_key = f"{prefix_key}_env_multiselect_v2"
+                if carousel_selected and isinstance(carousel_selected, list):
+                    st.session_state[state_ms_key] = carousel_selected
+                elif state_ms_key not in st.session_state:
+                    st.session_state[state_ms_key] = []
+                    
+                env_selection = st.multiselect(
+                    "🔍 Search & Select Environment Locations",
+                    options=list(loc_opts.keys()),
+                    key=state_ms_key
+                )
+                
+                env_names_list = []
+                active_env_list = env_selection if env_selection else (carousel_selected if isinstance(carousel_selected, list) else [])
+                
+                if active_env_list:
+                    st.markdown("---")
+                    st.markdown("##### 📍 Active Selected Environments")
+                    env_cols = st.columns(min(len(active_env_list), 4))
+                    
+                    for e_idx, member_name in enumerate(active_env_list):
+                        l_path = loc_opts.get(member_name)
+                        
+                        if l_path:
+                            selected_env_paths.append(l_path)
+                            env_names_list.append(member_name)
+                            
+                            with env_cols[e_idx % 4]:
+                                st.caption(f"**Image Slot #{e_idx+1}**")
+                                is_u_env = isinstance(l_path, str) and (l_path.startswith("http://") or l_path.startswith("https://"))
+                                if is_u_env or os.path.exists(str(l_path)):
+                                    st.image(l_path, caption=f"Location: {member_name}", use_container_width=True)
+                                else:
+                                    st.caption(f"Location: `{member_name}`")
+                                    
+                    selected_env_name = ", ".join(env_names_list)
                 elif existing_stills:
                     st.info(f"📸 Using {len(existing_stills)} generated Environment Master Still(s) from session.")
                     selected_env_paths.extend(existing_stills)
@@ -701,8 +753,9 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
         rig_imgs = []
         
         # 1. Environment Stills First (Image1, Image2, etc.)
-        for e_idx, e_p in enumerate(selected_env_paths[:3]):
-            rig_imgs.append((f"Image{len(rig_imgs)+1}", e_p, f"Location: {selected_env_name or 'Location Master'} Still #{e_idx+1}"))
+        for e_idx, e_p in enumerate(selected_env_paths[:10]):
+            e_label = env_names_list[e_idx] if e_idx < len(env_names_list) else (selected_env_name or 'Location Master')
+            rig_imgs.append((f"Image{len(rig_imgs)+1}", e_p, f"Location #{e_idx+1}: {e_label}"))
             
         # 2. Characters and their mapped Outfits Next
         for c_entry in selected_characters:
