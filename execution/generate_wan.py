@@ -325,16 +325,13 @@ def generate_wan_video(prompt, image_path, resolution="1080P", duration=5, aspec
         }
         
         res_raw = str(resolution).upper().strip()
-        if "720P_ESR" in res_raw or "720P ESR" in res_raw or "720P-ESR" in res_raw or "720P (ESR" in res_raw or ("720" in res_raw and "ESR" in res_raw):
-            norm_res = "720p-esr"
-        elif "1080P_ESR" in res_raw or "1080P ESR" in res_raw or "1080P-ESR" in res_raw or ("1080" in res_raw and "ESR" in res_raw):
-            norm_res = "1080p-esr"
+        is_esr = "ESR" in res_raw
+        if "720" in res_raw:
+            norm_res = "720p"
         elif "4K" in res_raw:
-            norm_res = "4K"
-        elif "720" in res_raw:
-            norm_res = "720P"
+            norm_res = "4k"
         else:
-            norm_res = "1080P"
+            norm_res = "1080p"
 
         raw_ar = str(aspect_ratio).strip() if aspect_ratio else "16:9"
         if "9:16" in raw_ar:
@@ -353,7 +350,11 @@ def generate_wan_video(prompt, image_path, resolution="1080P", duration=5, aspec
             "duration": duration,
             "seed": -1
         }
-        logs.append(f"Payload Config -> Model: {model} | Resolution: {norm_res} (ESR Enhanced) | Aspect Ratio: {norm_ar} | Duration: {duration}s")
+        if is_esr:
+            payload["enable_esr"] = True
+            payload["super_resolution"] = True
+            
+        logs.append(f"Payload Config -> Model: {model} | Resolution: {norm_res} {'(ESR Super-Resolution Enabled)' if is_esr else ''} | Aspect Ratio: {norm_ar} | Duration: {duration}s")
         
         if "seedance" in model.lower() and "reference-to-video" in model.lower():
              # Seedance 2.0 Reference-to-Video (Up to 6 Images + Videos + Audios)
