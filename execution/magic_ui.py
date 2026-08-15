@@ -704,7 +704,7 @@ def icon_grid_selector(label, options, icons_dir, key, cols_per_row=4):
     return selected
 
 
-def thumbnail_carousel(label, items_dict, state_key, thumb_cols=3, show_label=True):
+def thumbnail_carousel(label, items_dict, state_key, thumb_cols=3, show_label=True, multi_select=False):
     """
     Paginated photo-gallery carousel — shows `thumb_cols` items at a time
     with ◀ / ▶ navigation. Uses st.image() for local files (no base64 crash).
@@ -713,12 +713,13 @@ def thumbnail_carousel(label, items_dict, state_key, thumb_cols=3, show_label=Tr
         label:       Section header
         items_dict:  Dict {display_name: value}  value can be a path string,
                      a dict with 'default_img'/'name', or None.
-        state_key:   Session-state key storing the currently selected name.
+        state_key:   Session-state key storing the currently selected name (or list if multi_select=True).
         thumb_cols:  Items visible per page (default 3).
         show_label:  Whether to render the section header.
+        multi_select: If True, allows toggling multiple items into a list in session state.
 
     Returns:
-        Currently selected key (display name) or None.
+        Currently selected key (display name), list of keys if multi_select=True, or None.
     """
     import os
 
@@ -735,6 +736,13 @@ def thumbnail_carousel(label, items_dict, state_key, thumb_cols=3, show_label=Tr
 
     if page_key not in st.session_state:
         st.session_state[page_key] = 0
+
+    if multi_select:
+        if state_key not in st.session_state or not isinstance(st.session_state[state_key], list):
+            st.session_state[state_key] = []
+    else:
+        if state_key not in st.session_state:
+            st.session_state[state_key] = None
 
     # Keep page in bounds
     max_page = max(0, (total - 1) // thumb_cols)
@@ -754,7 +762,12 @@ def thumbnail_carousel(label, items_dict, state_key, thumb_cols=3, show_label=Tr
             st.session_state[page_key] -= 1
             st.rerun()
     with nav_mid:
-        st.caption(f"{start + 1}–{end} of {total}   |   {'✅ ' + str(st.session_state.get(state_key, '')) if st.session_state.get(state_key) else 'None selected'}")
+        if multi_select:
+            sel_list = st.session_state.get(state_key, [])
+            sel_count = len(sel_list) if isinstance(sel_list, list) else 0
+            st.caption(f"{start + 1}–{end} of {total}   |   {'✅ ' + str(sel_count) + ' selected' if sel_count > 0 else 'None selected'}")
+        else:
+            st.caption(f"{start + 1}–{end} of {total}   |   {'✅ ' + str(st.session_state.get(state_key, '')) if st.session_state.get(state_key) else 'None selected'}")
     with nav_r:
         if st.button("▶", key=f"_tc_next_{state_key}", disabled=(page >= max_page),
                      use_container_width=True):
@@ -762,12 +775,15 @@ def thumbnail_carousel(label, items_dict, state_key, thumb_cols=3, show_label=Tr
             st.rerun()
 
     # ── Gallery row ───────────────────────────────────────────────────────────
-    current = st.session_state.get(state_key)
-    cols    = st.columns(thumb_cols)
+    current_val = st.session_state.get(state_key)
+    cols        = st.columns(thumb_cols)
 
     for col_idx, (name, val) in enumerate(page_items):
         with cols[col_idx]:
-            is_selected  = (current == name)
+            if multi_select:
+                is_selected = isinstance(current_val, list) and (name in current_val)
+            else:
+                is_selected = (current_val == name)
 
             # Resolve metadata
             img_path     = None
@@ -776,7 +792,7 @@ def thumbnail_carousel(label, items_dict, state_key, thumb_cols=3, show_label=Tr
 
             if isinstance(val, dict):
                 display_name = val.get("name", name)
-                img_path     = val.get("default_img")
+                img_path     = val.get("default_img") or val.get("path")
                 is_celeb     = val.get("is_celebrity", False)
             elif isinstance(val, str) and val:
                 img_path = val
@@ -813,12 +829,20 @@ def thumbnail_carousel(label, items_dict, state_key, thumb_cols=3, show_label=Tr
             # Name label
             st.caption(f"{star}{short}")
 
-            # Select button — state update only, no manual rerun
+            # Select button
             btn_label = "✔ Selected" if is_selected else "Select"
             btn_type  = "primary" if is_selected else "secondary"
             if st.button(btn_label, key=f"tc_{state_key}_{start}_{col_idx}",
                          use_container_width=True, type=btn_type):
-                st.session_state[state_key] = name
+                if multi_select:
+                    curr_list = list(st.session_state.get(state_key, [])) if isinstance(st.session_state.get(state_key), list) else []
+                    if name in curr_list:
+                        curr_list.remove(name)
+                    else:
+                        curr_list.append(name)
+                    st.session_state[state_key] = curr_list
+                else:
+                    st.session_state[state_key] = name
                 st.rerun()
 
     return st.session_state.get(state_key)
