@@ -3978,7 +3978,7 @@ if selection == "Video Studio":
                     
                     col_wan_res, col_wan_ar, col_wan_dur = st.columns(3)
                     with col_wan_res:
-                        wan_studio_res = st.selectbox("Resolution", ["720p ESR (Cheaper & Fine Detail)", "1080P", "720P", "1080p ESR"], index=0, key="studio_wan_res")
+                        wan_studio_res = st.selectbox("Resolution", ["1080P", "720P"], index=0, key="studio_wan_res")
                     with col_wan_ar:
                         wan_studio_ar = st.selectbox("Aspect Ratio", ["16:9 (Widescreen)", "9:16 (Vertical / Reels)", "1:1 (Square)"], index=0, key="studio_wan_ar")
                     with col_wan_dur:
@@ -4652,7 +4652,7 @@ if selection == "Wan & Seedance Studio":
         
         c_res, c_ar, c_dur = st.columns(3)
         with c_res:
-            anim_res = st.selectbox("Resolution", ["720p ESR (Enhanced Super-Resolution - Cheaper & Fine Detail)", "1080P", "720P", "1080p ESR", "4K Ultra HD"], index=0, key="wan_anim_res")
+            anim_res = st.selectbox("Resolution", ["1080P", "720P", "4K Ultra HD"], index=0, key="wan_anim_res")
         with c_ar:
             anim_ar = st.selectbox("Aspect Ratio", ["16:9 (Widescreen)", "9:16 (Vertical / Reels)", "1:1 (Square)"], index=0, key="wan_anim_ar")
         with c_dur:
