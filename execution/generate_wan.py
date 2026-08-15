@@ -324,7 +324,18 @@ def generate_wan_video(prompt, image_path, resolution="1080P", duration=5, aspec
             "Authorization": f"Bearer {api_key}"
         }
         
-        norm_res = "720P" if "720" in str(resolution).upper() else "1080P"
+        res_raw = str(resolution).upper().strip()
+        if "720P_ESR" in res_raw or "720P ESR" in res_raw or "720P-ESR" in res_raw or "720P (ESR" in res_raw or ("720" in res_raw and "ESR" in res_raw):
+            norm_res = "720p-esr"
+        elif "1080P_ESR" in res_raw or "1080P ESR" in res_raw or "1080P-ESR" in res_raw or ("1080" in res_raw and "ESR" in res_raw):
+            norm_res = "1080p-esr"
+        elif "4K" in res_raw:
+            norm_res = "4K"
+        elif "720" in res_raw:
+            norm_res = "720P"
+        else:
+            norm_res = "1080P"
+
         raw_ar = str(aspect_ratio).strip() if aspect_ratio else "16:9"
         if "9:16" in raw_ar:
             norm_ar = "9:16"
@@ -342,7 +353,7 @@ def generate_wan_video(prompt, image_path, resolution="1080P", duration=5, aspec
             "duration": duration,
             "seed": -1
         }
-        logs.append(f"Payload Config -> Model: {model} | Resolution: {norm_res} | Aspect Ratio: {norm_ar} | Duration: {duration}s")
+        logs.append(f"Payload Config -> Model: {model} | Resolution: {norm_res} (ESR Enhanced) | Aspect Ratio: {norm_ar} | Duration: {duration}s")
         
         if "seedance" in model.lower() and "reference-to-video" in model.lower():
              # Seedance 2.0 Reference-to-Video (Up to 6 Images + Videos + Audios)
