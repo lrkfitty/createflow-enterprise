@@ -382,6 +382,7 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
         
         selected_env_paths = []
         selected_env_name = None
+        env_names_list = []
         selected_char_path = None
         selected_char_name = None
         selected_fit_path = None
