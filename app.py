@@ -512,10 +512,20 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
                     key=f"{prefix_key}_gen_env_name"
                 )
                 
-                g_col1, g_col2 = st.columns(2)
+                g_col1, g_col2, g_col3 = st.columns(3)
                 with g_col1:
-                    env_still_count = st.slider("Stills to Generate (1 to 4)", 1, 4, 3, key=f"{prefix_key}_gen_env_count")
+                    env_model_choice = st.selectbox(
+                        "Image Engine Model",
+                        [
+                            "Google Nano Banana 2 (Recommended / Multi-Ref)",
+                            "ByteDance Seedream 5.0 (Extreme Photorealism)"
+                        ],
+                        index=0,
+                        key=f"{prefix_key}_gen_env_model"
+                    )
                 with g_col2:
+                    env_still_count = st.slider("Stills to Generate (1 to 4)", 1, 4, 3, key=f"{prefix_key}_gen_env_count")
+                with g_col3:
                     env_notes = st.text_input(
                         "Textures & Lighting Cues",
                         placeholder="Volumetric fog, 5600K daylight, marble floors",
@@ -526,7 +536,7 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
                     if not env_name_input.strip():
                         st.error("Please enter a location name.")
                     else:
-                        with st.spinner(f"⚡ Generating {env_still_count} cascading environment stills for '{env_name_input}'..."):
+                        with st.spinner(f"⚡ Generating {env_still_count} cascading environment stills for '{env_name_input}' using {env_model_choice.split(' ')[0]}..."):
                             from execution.series_processor import generate_environment_master_prompt
                             
                             angles = [
@@ -570,7 +580,7 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
                                         
                                 p_data = {
                                     "positive_prompt": env_p,
-                                    "model_type": "Google Nano Banana 2 (Recommended / Multi-Ref)",
+                                    "model_type": env_model_choice,
                                     "is_environment_still": True,
                                     "assets": payload_assets,
                                     "aspect_ratio": "16:9",

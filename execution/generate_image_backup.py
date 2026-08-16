@@ -14,9 +14,118 @@ def generate_image_from_prompt(prompt_data, output_folder="output", reference_im
     Main Entry Point. Dispatches to the correct model engine.
     Returns: dict {"status": "success"|"failed", "image_path": str|None, "logs": str}
     """
+    model_type = str(prompt_data.get("model_type", "")).lower()
+    if "seedream" in model_type:
+        return generate_image_seedream(prompt_data, output_folder, reference_image_path, outfit_path, vibe_path)
     
-    # 1. Dispatch (Strictly Cloud)
     # Default to Nano Banana 2
+    return generate_image_nano(prompt_data, output_folder, reference_image_path, outfit_path, vibe_path)
+
+def generate_image_seedream(prompt_data, output_folder, reference_image_path=None, outfit_path=None, vibe_path=None):
+    """
+    Generates using ByteDance Seedream 5.0 via Atlas Cloud API.
+    Falls back to Google Nano Banana 2 if Atlas Cloud API returns an error or key is missing.
+    """
+    api_key = os.getenv("ATLASCLOUD_API_KEY")
+    logs = ["--- Attempting Generation with ByteDance Seedream 5.0 (Atlas Cloud API) ---"]
+    
+    if not api_key:
+        logs.append("⚠️ ATLASCLOUD_API_KEY missing in environment. Falling back to Google Nano Banana 2...")
+        return generate_image_nano(prompt_data, output_folder, reference_image_path, outfit_path, vibe_path)
+
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+
+    positive_prompt = prompt_data.get("positive_prompt", "")
+    aspect_ratio = prompt_data.get("aspect_ratio", "16:9")
+    
+    # Process reference images for Seedream 5.0
+    ref_images = []
+    if reference_image_path and os.path.exists(reference_image_path):
+        ref_images.append(reference_image_path)
+    if vibe_path and os.path.exists(vibe_path) and vibe_path not in ref_images:
+        ref_images.append(vibe_path)
+    if outfit_path and os.path.exists(outfit_path) and outfit_path not in ref_images:
+        ref_images.append(outfit_path)
+        
+    if "assets" in prompt_data and isinstance(prompt_data["assets"], list):
+        for a in prompt_data["assets"]:
+            p = a.get("path")
+            if p and os.path.exists(p) and p not in ref_images:
+                ref_images.append(p)
+                
+    b64_images = []
+    for r_img in ref_images[:10]:
+        try:
+            with open(r_img, "rb") as f_img:
+                b64_str = base64.b64encode(f_img.read()).decode("utf-8")
+                ext = "png" if r_img.lower().endswith(".png") else "jpeg"
+                b64_images.append(f"data:image/{ext};base64,{b64_str}")
+        except Exception as e:
+            logs.append(f"⚠️ Image encoding warning for {os.path.basename(r_img)}: {e}")
+
+    try:
+        url = "https://api.atlascloud.ai/v1/images/generations"
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}"
+        }
+        payload = {
+            "model": "bytedance/seedream-5.0",
+            "prompt": positive_prompt,
+            "aspect_ratio": aspect_ratio,
+            "response_format": "b64_json"
+        }
+        if b64_images:
+            payload["images"] = b64_images
+
+        logs.append(f"Submitting Seedream 5.0 request to Atlas API with {len(b64_images)} reference images...")
+        resp = requests.post(url, headers=headers, json=payload, timeout=60)
+        
+        if resp.status_code == 200:
+            res_json = resp.json()
+            data_items = res_json.get("data", [])
+            if data_items:
+                first_item = data_items[0]
+                img_bytes = None
+                if "b64_json" in first_item:
+                    img_bytes = base64.b64decode(first_item["b64_json"])
+                elif "url" in first_item:
+                    img_resp = requests.get(first_item["url"], timeout=30)
+                    if img_resp.status_code == 200:
+                        img_bytes = img_resp.content
+
+                if img_bytes:
+                    timestamp = int(time.time())
+                    filename = f"gen_seedream5_{timestamp}_{str(os.urandom(4).hex())}.jpg"
+                    filepath = os.path.join(output_folder, filename)
+                    with open(filepath, "wb") as f:
+                        f.write(img_bytes)
+                    logs.append(f"✅ Seedream 5.0 Generation Successful. Saved: {filename}")
+                    
+                    s3_url = None
+                    if os.getenv("S3_BUCKET_NAME"):
+                        try:
+                            from execution.s3_uploader import upload_file_obj
+                            s3_key = f"generated/{filename}"
+                            with open(filepath, "rb") as f_up:
+                                s3_url = upload_file_obj(f_up, object_name=s3_key)
+                            logs.append(f"☁️ Uploaded to S3: {s3_key}")
+                        except Exception as s3_e:
+                            logs.append(f"⚠️ S3 Upload Warning: {s3_e}")
+                            
+                    return {
+                        "status": "success",
+                        "image_path": filepath,
+                        "s3_url": s3_url,
+                        "model_used": "bytedance/seedream-5.0",
+                        "logs": "\n".join(logs)
+                    }
+
+        logs.append(f"⚠️ Atlas Seedream 5.0 returned HTTP {resp.status_code}: {resp.text[:200]}. Falling back to Google Nano Banana 2...")
+    except Exception as err:
+        logs.append(f"⚠️ Seedream 5.0 Error: {err}. Falling back to Google Nano Banana 2...")
+
     return generate_image_nano(prompt_data, output_folder, reference_image_path, outfit_path, vibe_path)
 
 def generate_image_nano(prompt_data, output_folder, reference_image_path, outfit_path, vibe_path):
