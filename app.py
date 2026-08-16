@@ -538,22 +538,36 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
                             
                             gen_stills = []
                             for idx in range(env_still_count):
-                                angle_lbl = angles[idx] if idx < len(angles) else "Alternate Angle"
+                                angle_lbl = angles[idx] if idx < len(angles) else f"Alternate Perspective #{idx+1}"
                                 env_prompt_data = generate_environment_master_prompt(
                                     location_name=f"{env_name_input}. {env_notes}" if env_notes else env_name_input,
                                     genre="Cinematic",
                                     tone="35mm Film Still",
-                                    shot_angle_type=angle_lbl
+                                    shot_angle_type=angle_lbl,
+                                    prior_still_index=idx
                                 )
                                 env_p = env_prompt_data.get("environment_prompt")
                                 
                                 payload_assets = []
-                                if gen_stills and os.path.exists(gen_stills[-1]):
-                                    payload_assets.append({
-                                        "path": gen_stills[-1],
-                                        "label": f"Prior Environment Reference Still #{len(gen_stills)}"
-                                    })
-                                    
+                                for p_idx, prev_s in enumerate(gen_stills):
+                                    if os.path.exists(prev_s):
+                                        payload_assets.append({
+                                            "path": prev_s,
+                                            "label": f"Master Environment Reference Still #{p_idx+1} (Base Location Anchor)"
+                                        })
+                                        
+                                primary_master_still = gen_stills[0] if gen_stills else None
+                                
+                                if idx > 0 and gen_stills:
+                                    continuity_preamble = (
+                                        f"SYSTEM INSTRUCTION: SPATIAL ENVIRONMENT CONTINUITY LOCK. "
+                                        f"Inspect attached Master Reference Still #1. "
+                                        f"Render camera angle '{angle_lbl}' INSIDE the EXACT SAME architectural location ({env_name_input}). "
+                                        f"Match wall textures, ceiling structures, window layout, flooring, and lighting setup from Reference Still #1. \n\n"
+                                    )
+                                    if "SYSTEM INSTRUCTION" not in env_p:
+                                        env_p = continuity_preamble + env_p
+                                        
                                 p_data = {
                                     "positive_prompt": env_p,
                                     "model_type": "Google Nano Banana 2 (Recommended / Multi-Ref)",
@@ -562,7 +576,11 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
                                     "aspect_ratio": "16:9",
                                     "image_size": "2K"
                                 }
-                                res_env = generate_image_from_prompt(p_data, get_user_out_dir("World/Environments"))
+                                res_env = generate_image_from_prompt(
+                                    p_data, 
+                                    output_folder=get_user_out_dir("World/Environments"),
+                                    vibe_path=primary_master_still
+                                )
                                 if res_env.get("status") == "success":
                                     gen_stills.append(res_env["image_path"])
                                 else:

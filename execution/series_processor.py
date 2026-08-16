@@ -50,12 +50,18 @@ def resize_bytes_to_jpeg(image_bytes, max_size=1280):
         print(f"Resize Error: {e}")
         return image_bytes # Fallback to original
 
-def generate_environment_master_prompt(location_name, genre="General", tone="Neutral", camera="Auto", lighting="Auto", style="Auto", shot_angle_type="Master Establishing View"):
+def generate_environment_master_prompt(location_name, genre="General", tone="Neutral", camera="Auto", lighting="Auto", style="Auto", shot_angle_type="Master Establishing View", prior_still_index=0):
     """
     Generates a Real-World Organic 35mm Film Texture Environment Master Prompt for a location.
     Enforces tactile physical textures, 3-layer depth, WB in Kelvin, optical lens falloff, and NO CGI/artificial sharpness.
+    When prior_still_index > 0, enforces spatial environment continuity with Master Reference Still #1.
     """
     atlas_key = get_atlas_key()
+    
+    continuity_rule = ""
+    if prior_still_index > 0:
+        continuity_rule = f"\n    8. SPATIAL ENVIRONMENT CONTINUITY MANDATE: This shot is a NEW camera perspective ({shot_angle_type}) of the PREVIOUSLY GENERATED ENVIRONMENT STILL (Master Reference Still #1). Explicitly instruct the image generation model to view attached Master Reference Still #1 and render this new perspective ({shot_angle_type}) INSIDE the EXACT SAME architectural location, matching walls, ceiling structure, flooring materials, windows, and color palette from Reference Still #1."
+        
     prompt_req = f"""
     ROLE: You are an Oscar-Winning Master Director of Photography and Film Production Designer.
     TASK: Write a master real-world 35mm motion picture film camera location prompt for: '{location_name}'.
@@ -69,7 +75,7 @@ def generate_environment_master_prompt(location_name, genre="General", tone="Neu
     4. OPTICS & FOV: Match perspective '{shot_angle_type}' (use FOV degrees: 107° for wide establishing, 84° for reverse angle, 63° for medium detail, 29° for texture macro).
     5. 3-LAYER DEPTH: Foreground physical props/occlusion, midground main space, deep background architecture.
     6. LIGHTING: Natural exposure, White Balance in Kelvin (5600K daylight or 3200K tungsten), unretouched specular reflections.
-    7. STRICT EMPTY SET MANDATE: Absolutely NO PEOPLE, NO CHARACTERS, NO HUMAN FIGURES, NO SILHOUETTES, NO PERSONS. This is a pure empty architectural film set location still (unless 'extras' or 'people' is explicitly stated in the location prompt).
+    7. STRICT EMPTY SET MANDATE: Absolutely NO PEOPLE, NO CHARACTERS, NO HUMAN FIGURES, NO SILHOUETTES, NO PERSONS. This is a pure empty architectural film set location still (unless 'extras' or 'people' is explicitly stated in the location prompt).{continuity_rule}
     8. Return ONLY valid JSON: {{"environment_prompt": "PURE EMPTY SET STILL (NO PEOPLE, NO CHARACTERS, NO HUMAN FIGURES). Cinematic 35mm film still of...", "location": "{location_name}"}}
     """
     if atlas_key:
@@ -88,7 +94,10 @@ def generate_environment_master_prompt(location_name, genre="General", tone="Neu
         except Exception as e:
             print(f"Environment prompt generation error: {e}")
             
-    default_prompt = f"PURE EMPTY SET STILL (NO PEOPLE, NO CHARACTERS, NO HUMAN FIGURES). Cinematic 35mm motion picture film still of {location_name}. 107° ultra-wide FOV, 3-layer depth composition with weathered foreground architectural details, midground main space, and deep background layers. Natural 35mm film grain, ISO 400, unpolished physical surfaces with realistic dust and patina, 5600K daylight balance, natural unretouched shadow falloff, optical lens depth of field, RAW photography, zero CGI, zero people."
+    default_prompt = f"PURE EMPTY SET STILL (NO PEOPLE, NO CHARACTERS, NO HUMAN FIGURES). Cinematic 35mm motion picture film still of {location_name}. {shot_angle_type}, 3-layer depth composition with weathered foreground architectural details, midground main space, and deep background layers. Natural 35mm film grain, ISO 400, unpolished physical surfaces with realistic dust and patina, 5600K daylight balance, natural unretouched shadow falloff, optical lens depth of field, RAW photography, zero CGI, zero people."
+    if prior_still_index > 0:
+        default_prompt = f"PURE EMPTY SET STILL (NO PEOPLE). Spatial Environment Continuity Lock: Inspect attached Master Reference Still #1. Render camera perspective '{shot_angle_type}' INSIDE the EXACT SAME architectural room/location ({location_name}). Match wall structures, ceiling beams, flooring, windows, and color palette from Reference Still #1. " + default_prompt
+        
     return {"environment_prompt": default_prompt, "location": location_name}
 
 
