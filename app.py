@@ -842,13 +842,34 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
                         # of the person in SOME outfit. Too many can outvote the
                         # mapped wardrobe, so keep this dialable per shot.
                         if c_extra_imgs:
-                            if not st.checkbox(
+                            # Is an outfit already mapped to this character? The
+                            # outfit carousel stores its pick in session state, so
+                            # this is readable before the picker re-renders below.
+                            _fit_state = st.session_state.get(f"{prefix_key}_rig_fit_{member_key}_{c_idx}")
+                            _has_outfit = bool(_fit_state) and _fit_state != "None"
+
+                            # st.checkbox's `value` is only an INITIAL value — once
+                            # the widget has state it is ignored. Drop that state
+                            # when outfit-presence flips so the correct default
+                            # applies (wardrobe priority once an outfit is mapped).
+                            _cb_key = f"{prefix_key}_char_allrefs_{member_key}_{c_idx}"
+                            _seen_key = f"_prev_hasfit_{_cb_key}"
+                            if st.session_state.get(_seen_key) != _has_outfit:
+                                st.session_state.pop(_cb_key, None)
+                                st.session_state[_seen_key] = _has_outfit
+
+                            _use_refs = st.checkbox(
                                 f"🎭 Use all {len(c_extra_imgs) + 1} identity refs",
-                                value=True,
-                                key=f"{prefix_key}_char_allrefs_{member_key}_{c_idx}",
-                                help="Uncheck to send only the primary photo. Fewer identity refs = the mapped outfit carries more weight."
-                            ):
+                                value=not _has_outfit,
+                                key=_cb_key,
+                                help=("Extra identity photos sharpen likeness, but each one shows the "
+                                      "person in some outfit and competes with the mapped wardrobe. "
+                                      "Off by default when an outfit is attached.")
+                            )
+                            if not _use_refs:
                                 c_extra_imgs = []
+                                if _has_outfit:
+                                    st.caption("🧥 Wardrobe priority: sending 1 identity photo so the outfit locks.")
 
                     with c_col2:
                         st.markdown(f"**Attach Outfit to {c_name}**")
@@ -941,18 +962,20 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
             c_entry["char_tag"] = c_tag_name
             rig_imgs.append((c_tag_name, c_p, f"Character: {c_n}"))
 
-            # Extra Character Profile references (angles 2..N) — Seedance 2.5
-            # locks identity far harder with several views of the same person.
+            # Outfit sits directly after its character, ahead of any identity
+            # refs, so the wardrobe reference is adjacent to the subject rather
+            # than trailing several photos of them in other clothes.
+            if f_p:
+                f_tag_name = f"Image{len(rig_imgs)+1}"
+                c_entry["fit_tag"] = f_tag_name
+                rig_imgs.append((f_tag_name, f_p, f"Outfit for {c_n}: {f_n} (WARDROBE — this garment only)"))
+
+            # Extra Character Profile references (angles 2..N) sharpen identity.
             c_entry["extra_tags"] = []
             for x_i, x_p in enumerate(c_entry.get("extra_imgs") or []):
                 x_tag = f"Image{len(rig_imgs)+1}"
                 c_entry["extra_tags"].append(x_tag)
-                rig_imgs.append((x_tag, x_p, f"Character: {c_n} (Ref {x_i+2} — same person)"))
-
-            if f_p:
-                f_tag_name = f"Image{len(rig_imgs)+1}"
-                c_entry["fit_tag"] = f_tag_name
-                rig_imgs.append((f_tag_name, f_p, f"Outfit for {c_n}: {f_n}"))
+                rig_imgs.append((x_tag, x_p, f"Character: {c_n} (Ref {x_i+2} — FACE ONLY, ignore clothing)"))
 
             # Voice sample rides along as a Seedance audio reference.
             if c_entry.get("voice_path"):
