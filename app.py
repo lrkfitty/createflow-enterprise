@@ -979,6 +979,7 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
 
             # Voice sample rides along as a Seedance audio reference.
             if c_entry.get("voice_path"):
+                c_entry["voice_tag"] = f"Audio{len(rig_results['ref_audio_paths'])+1}"
                 rig_results["ref_audio_paths"].append(c_entry["voice_path"])
             
         if rig_imgs:
@@ -1015,15 +1016,22 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
             # INJECTION BUTTON
             if prompt_target_key:
                 if st.button("⚡ Auto-Inject Mapping Rig to Prompt", key=f"{prefix_key}_inject_btn", use_container_width=True):
-                    tag_header = "\n".join([f"@{t}: {item_n}" for t, _, item_n in rig_imgs])
+                    header_lines = [f"@{t}: {item_n}" for t, _, item_n in rig_imgs]
+                    for c in selected_characters:
+                        if c.get("voice_tag"):
+                            clean_name = c["name"].replace('{My}', '').replace('(My)', '').strip()
+                            header_lines.append(f"@{c['voice_tag']}: Voice Sample for {clean_name} (Voiceprint & Timbre Reference)")
+                    tag_header = "\n".join(header_lines)
                     
                     char_pair_sentences = []
                     identity_lock_sentences = []
+                    voice_lock_sentences = []
                     for c in selected_characters:
                         c_n = c["name"]
                         c_tag = f"@{c.get('char_tag', '')}" if c.get("char_tag") else ""
                         f_tag = f"@{c.get('fit_tag', '')}" if c.get("fit_tag") else ""
                         f_n = c.get("fit_name", "")
+                        v_tag = f"@{c.get('voice_tag', '')}" if c.get("voice_tag") else ""
                         
                         clean_c_n = c_n.replace('{My}', '').replace('(My)', '').strip()
                         # Multi-reference identity lock: tell the model these
@@ -1052,6 +1060,11 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
                             char_pair_sentences.append(f"character {clean_c_n} ({c_tag}) wearing mapped outfit ({f_tag})")
                         elif c_tag:
                             char_pair_sentences.append(f"character {clean_c_n} ({c_tag})")
+                            
+                        if v_tag:
+                            voice_lock_sentences.append(
+                                f"Character {c_tag} ({clean_c_n}) speaks with the vocal timbre, tone, and cadence of {v_tag}"
+                            )
                             
                     combined_char_str = ", ".join(char_pair_sentences) if char_pair_sentences else "characters"
                     
@@ -1105,7 +1118,11 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
                     if identity_lock_sentences:
                         identity_lock_str = " Identity Lock: " + ". ".join(identity_lock_sentences) + "."
 
-                    injected_text = f"{tag_header}\n\nCinematic 35mm film shot of {combined_char_str} {env_directive}{env_profile_lock}{identity_lock_str} {wardrobe_lock_str} 16:9 widescreen, organic camera movement, realistic 35mm film lighting, zero CGI."
+                    voice_lock_str = ""
+                    if voice_lock_sentences:
+                        voice_lock_str = " Voice Binding: " + ". ".join(voice_lock_sentences) + "."
+
+                    injected_text = f"{tag_header}\n\nCinematic 35mm film shot of {combined_char_str} {env_directive}{env_profile_lock}{identity_lock_str} {wardrobe_lock_str}{voice_lock_str} 16:9 widescreen, organic camera movement, realistic 35mm film lighting, zero CGI."
                     st.session_state[prompt_target_key] = injected_text
                     st.toast("✅ Dynamic 3D Spatial & Strict Wardrobe Rig tags injected into Prompt!")
                     st.rerun()

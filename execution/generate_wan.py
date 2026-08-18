@@ -436,11 +436,24 @@ def generate_wan_video(prompt, image_path, resolution="1080P", duration=5, aspec
                          from execution.s3_uploader import upload_file_obj
                          with open(a_path, "rb") as f_ref:
                              s3_url = upload_file_obj(f_ref, object_name=f"ref_audios/{os.path.basename(a_path)}")
-                         if s3_url:
+                         if s3_url and s3_url.startswith(("http://", "https://")):
                              return s3_url
                      except Exception as s3_e:
                          logs.append(f"⚠️ Audio S3 Upload warning: {s3_e}")
-                     return a_path
+                         
+                     # 2. Convert to Base64 Audio Data URI fallback so Atlas Cloud in the cloud always receives the audio
+                     try:
+                         with open(a_path, "rb") as f_aud:
+                             aud_b64 = base64.b64encode(f_aud.read()).decode('utf-8')
+                             ext = os.path.splitext(a_path)[1].lower().replace('.', '')
+                             if ext == 'mp3': mime = 'audio/mpeg'
+                             elif ext == 'wav': mime = 'audio/wav'
+                             elif ext == 'm4a': mime = 'audio/mp4'
+                             elif ext == 'ogg': mime = 'audio/ogg'
+                             else: mime = f'audio/{ext}'
+                             return f"data:{mime};base64,{aud_b64}"
+                     except Exception as b64_e:
+                         logs.append(f"⚠️ Audio Base64 encoding warning: {b64_e}")
                  return None
 
              audios_payload = []
