@@ -591,7 +591,8 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
                         "Image Engine Model",
                         [
                             "Google Nano Banana 2 (Recommended / Multi-Ref)",
-                            "ByteDance Seedream 5.0 (Extreme Photorealism)"
+                            "ByteDance Seedream 5.0 (Extreme Photorealism)",
+                            "OpenAI GPT Image 2 (Reasoning & Text)"
                         ],
                         index=0,
                         key=f"{prefix_key}_gen_env_model"

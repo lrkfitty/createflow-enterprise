@@ -100,6 +100,7 @@ def render_multishot_ui(get_user_out_dir_func):
             [
                 "Google Nano Banana 2 (Recommended / Multi-Ref)",
                 "ByteDance Seedream 5.0 (Extreme Photorealism)",
+                "OpenAI GPT Image 2 (Reasoning & Text)",
                 "Flux 1.1 Pro (Cinematic Lighting)",
                 "Ideogram v2 (Typography & Style)"
             ],

@@ -114,14 +114,14 @@ def generate_image_nano(prompt_data, output_folder, reference_image_path, outfit
 
     try:
         requested_model = prompt_data.get("model_type") or prompt_data.get("model") or ""
-        if "seedream" in str(requested_model).lower() or "seadream" in str(requested_model).lower():
+        if "gpt-image-2" in str(requested_model).lower() or "gpt 2" in str(requested_model).lower() or "gpt2" in str(requested_model).lower() or "gpt-2" in str(requested_model).lower() or "gpt" in str(requested_model).lower() or "dalle" in str(requested_model).lower():
+            model_name = "openai/gpt-image-2"
+        elif "seedream" in str(requested_model).lower() or "seadream" in str(requested_model).lower():
             model_name = "bytedance/seedream-5.0"
         elif "flux" in str(requested_model).lower():
             model_name = "black-forest-labs/flux-1.1-pro"
         elif "ideogram" in str(requested_model).lower():
             model_name = "ideogram/ideogram-v2"
-        elif "dalle" in str(requested_model).lower() or "gpt" in str(requested_model).lower():
-            model_name = "openai/dall-e-3"
         elif "recraft" in str(requested_model).lower():
             model_name = "recraft/recraft-v3"
         else:
