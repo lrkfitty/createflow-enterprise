@@ -335,13 +335,15 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
 
                     # Character Profile: cache the additional reference angles and
                     # the voice sample so Seedance can lock identity AND voice.
-                    if isinstance(c_data, dict):
+                    from load_assets import profile_refs as _prof_refs, profile_voice as _prof_voice
+                    _c_refs = _prof_refs(c_data)
+                    if len(_c_refs) > 1 or _prof_voice(c_data):
                         p_extra = []
-                        for x_i, x_ref in enumerate((c_data.get('reference_images') or [])[1:]):
+                        for x_i, x_ref in enumerate(_c_refs[1:]):
                             cx = cache_asset_locally(x_ref, user_out_dir, prefix=f"cast_{member_basename}_ref{x_i+2}")
                             if cx:
                                 p_extra.append(cx)
-                        p_voice = c_data.get('voice_sample')
+                        p_voice = _prof_voice(c_data)
                         if p_voice:
                             p_voice = cache_asset_locally(p_voice, user_out_dir, prefix=f"voice_{member_basename}") or p_voice
                         if p_extra or p_voice:

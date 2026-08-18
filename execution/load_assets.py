@@ -45,26 +45,90 @@ def _s3_public_url(bucket, key):
     return f"https://{bucket}.s3.{region}.amazonaws.com/{encoded_key}"
 
 
+class AssetRef(str):
+    """
+    An asset value that IS the primary image path/URL (a real str), while also
+    carrying the rest of its Profile.
+
+    This is deliberately a str subclass rather than a dict. The app has many
+    consumers that pass an asset value straight into st.image(), os.path.exists(),
+    .startswith("http"), etc. Handing those a dict crashes them (it did — the
+    Asset Library grid blew up on st.image). As a str subclass every existing
+    consumer keeps working untouched, and profile-aware code reads the extras
+    via profile_refs()/profile_voice().
+    """
+    __slots__ = ("reference_images", "voice_sample", "profile_name")
+
+    def __new__(cls, primary, reference_images=None, voice_sample=None, name=None):
+        obj = super().__new__(cls, primary)
+        obj.reference_images = list(reference_images) if reference_images else [str(primary)]
+        obj.voice_sample = voice_sample
+        obj.profile_name = name
+        return obj
+
+    def __reduce__(self):
+        # REQUIRED. st.cache_data serializes what it stores, and a str subclass's
+        # default reduce only round-trips the string value — the attached profile
+        # silently collapsed to a single reference. Spelling out __reduce__ makes
+        # the full profile survive caching, deepcopy and disk persistence.
+        return (
+            _rebuild_asset_ref,
+            (str(self), list(self.reference_images), self.voice_sample, self.profile_name),
+        )
+
+
+def _rebuild_asset_ref(primary, reference_images, voice_sample, name):
+    """Module-level rebuilder so AssetRef is picklable (see AssetRef.__reduce__)."""
+    return AssetRef(primary, reference_images=reference_images,
+                    voice_sample=voice_sample, name=name)
+
+
+def profile_refs(value):
+    """
+    Every reference image for an asset value, whatever shape it is.
+    Returns a plain list of str. Legacy single-image assets return one entry.
+
+    Deliberately duck-typed rather than isinstance(value, AssetRef): app.py puts
+    execution/ on sys.path, so this file gets imported under BOTH `load_assets`
+    and `execution.load_assets` — two module objects, two distinct AssetRef
+    classes. isinstance() silently fails across that boundary and the profile
+    collapses to a single reference. getattr works regardless of which copy
+    built the value.
+    """
+    refs = getattr(value, "reference_images", None)
+    if refs:
+        return [r for r in refs if r]
+    if isinstance(value, dict):
+        d_refs = [r for r in (value.get("reference_images") or []) if r]
+        if d_refs:
+            return list(d_refs)
+        primary = value.get("default_img") or value.get("path")
+        return [primary] if primary else []
+    return [value] if value else []
+
+
+def profile_voice(value):
+    """The voice sample for an asset value, or None. Safe for every shape."""
+    voice = getattr(value, "voice_sample", None)
+    if voice:
+        return voice
+    if isinstance(value, dict):
+        return value.get("voice_sample")
+    return None
+
+
 def build_profile_entry(asset_name, ref_map, voice=None):
     """
-    Assembles the canonical profile dict from {index: location} where location is
-    an absolute path (local mode) or an https URL (cloud mode).
+    Assembles the canonical profile value from {index: location} where location
+    is an absolute path (local mode) or an https URL (cloud mode).
 
-    The returned shape is deliberately backward compatible: every existing
-    consumer reads `default_img` (falling back to `path`) as a single string, so
-    old call sites keep working untouched while new ones can read the full
-    `reference_images` list and `voice_sample`.
+    Returns an AssetRef: a string equal to the primary image, so every legacy
+    consumer keeps working, with the full reference set attached.
     """
     ordered = [ref_map[i] for i in sorted(ref_map.keys())]
     if not ordered:
         return None
-    return {
-        "name": asset_name,
-        "default_img": ordered[0],
-        "path": ordered[0],
-        "reference_images": ordered,
-        "voice_sample": voice,
-    }
+    return AssetRef(ordered[0], reference_images=ordered, voice_sample=voice, name=asset_name)
 
 
 def scan_directory(directory):
@@ -532,7 +596,7 @@ def load_assets(base_path="assets", user_assets_dir=None, skip_base=False, targe
                         new_cache_list.append({
                             "category": target_key,
                             "name": p_display,
-                            "url": entry["default_img"],
+                            "url": str(entry),
                             "key": grp["refs"][sorted(grp["refs"].keys())[0]],
                             "profile": {
                                 "name": grp["name"],

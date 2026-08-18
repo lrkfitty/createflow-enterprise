@@ -15,7 +15,9 @@ try:
     importlib.reload(la_module)
     import load_assets as la_module
     importlib.reload(la_module)
-    from load_assets import load_assets, promote_image_to_asset
+    from load_assets import (load_assets, promote_image_to_asset,
+                             profile_refs as _profile_refs,
+                             profile_voice as _profile_voice)
     import execution.magic_ui as magic_ui_module
     importlib.reload(magic_ui_module)
     from execution.magic_ui import inject_magic_css, magic_text, card_begin, card_end, circular_progress, hover_button, icon_grid_selector, thumbnail_carousel, fidelity_mode_selector
@@ -421,10 +423,11 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
                     if isinstance(r_v, dict):
                         disp_name = r_v.get('name') or raw_str_k
                         l_path = r_v.get('default_img') or r_v.get('path')
-                        l_refs = [r for r in (r_v.get('reference_images') or []) if r]
+                        l_refs = _profile_refs(r_v)
                     elif r_v:
                         disp_name = raw_str_k
                         l_path = str(r_v)
+                        l_refs = _profile_refs(r_v)
                         
                     if l_path:
                         if os.path.sep in disp_name and not disp_name.startswith("http"):
@@ -448,7 +451,7 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
                             clean_k = f"{orig_clean} ({dup_counter})"
                             
                         loc_opts[clean_k] = l_path
-                        if l_refs:
+                        if len(l_refs) > 1:
                             loc_profile_refs[clean_k] = l_refs
 
                 # Check for existing generated master stills in session
@@ -750,7 +753,7 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
                                 p_val = v
                                 break
                                 
-                    c_name = str(member_key).replace('{My}', '').strip()
+                    c_name = str(member_key).replace('{My}', '').replace('(My)', '').strip()
                     c_path = None
                     c_extra_imgs = []   # Character Profile refs beyond the primary
                     c_voice = None      # Character Profile voice sample
@@ -758,12 +761,18 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
                     if isinstance(p_val, dict):
                         c_name = p_val.get('name', c_name)
                         c_path = p_val.get('default_img') or p_val.get('path')
-                        # Profile records carry the full reference set + voice.
-                        # .get() with defaults keeps pre-profile records working.
-                        c_extra_imgs = [r for r in (p_val.get('reference_images') or []) if r][1:]
-                        c_voice = p_val.get('voice_sample')
+                        c_extra_imgs = _profile_refs(p_val)[1:]
+                        c_voice = _profile_voice(p_val)
                     elif isinstance(p_val, str):
                         c_path = p_val
+                        # AssetRef is a str subclass carrying its Profile.
+                        c_extra_imgs = _profile_refs(p_val)[1:]
+                        c_voice = _profile_voice(p_val)
+                        # Prefer the Profile's real name — otherwise the library
+                        # key leaks into the prompt as "character (My) Name".
+                        _pname = getattr(p_val, "profile_name", None)
+                        if _pname:
+                            c_name = _pname
                     elif not p_val and isinstance(member_key, str) and os.path.exists(member_key):
                         c_path = member_key
                         
