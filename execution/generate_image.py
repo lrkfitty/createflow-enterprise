@@ -114,8 +114,8 @@ def generate_image_nano(prompt_data, output_folder, reference_image_path, outfit
 
     try:
         requested_model = prompt_data.get("model_type") or prompt_data.get("model") or ""
-        if "seadream" in str(requested_model).lower():
-            model_name = "bytedance/seadream-5.0"
+        if "seedream" in str(requested_model).lower() or "seadream" in str(requested_model).lower():
+            model_name = "bytedance/seedream-5.0"
         elif "flux" in str(requested_model).lower():
             model_name = "black-forest-labs/flux-1.1-pro"
         elif "ideogram" in str(requested_model).lower():

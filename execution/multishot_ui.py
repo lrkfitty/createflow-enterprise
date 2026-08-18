@@ -80,7 +80,7 @@ def render_multishot_ui(get_user_out_dir_func):
     
     # --- Mode Selection (OUTSIDE form so it reruns instantly) ---
     st.markdown("**1. Output Format**")
-    ms_mode_col, ms_res_col = st.columns([2, 1])
+    ms_mode_col, ms_model_col, ms_res_col = st.columns([2, 1.5, 1])
     with ms_mode_col:
         multishot_mode = st.selectbox(
             "Generation Mode",
@@ -93,6 +93,18 @@ def render_multishot_ui(get_user_out_dir_func):
                 "Cinematic Coverage (Scene)"
             ],
             key="multishot_mode_select"
+        )
+    with ms_model_col:
+        ms_model_choice = st.selectbox(
+            "Atlas Image Engine",
+            [
+                "Google Nano Banana 2 (Recommended / Multi-Ref)",
+                "ByteDance Seedream 5.0 (Extreme Photorealism)",
+                "Flux 1.1 Pro (Cinematic Lighting)",
+                "Ideogram v2 (Typography & Style)"
+            ],
+            index=0,
+            key="ms_model_select"
         )
     with ms_res_col:
         ms_resolution = st.selectbox("Resolution", ["1K", "2K", "4K"], index=0, key="ms_res", help="Higher = sharper but slower")
@@ -723,7 +735,7 @@ def render_multishot_ui(get_user_out_dir_func):
                             "positive_prompt": full_prompt,
                             "aspect_ratio": "4:5",
                             "image_size": st.session_state.get("ms_res", "1K"),
-                            "model_type": "nano",
+                            "model_type": st.session_state.get("ms_model_select", "Google Nano Banana 2"),
                             "assets": assets
                         }
                         
@@ -751,7 +763,7 @@ def render_multishot_ui(get_user_out_dir_func):
                             "positive_prompt": full_prompt,
                             "aspect_ratio": "1:1",  # Square is best for 4-panel grids (2x2)
                             "image_size": st.session_state.get("ms_res", "1K"),
-                            "model_type": "nano",
+                            "model_type": st.session_state.get("ms_model_select", "Google Nano Banana 2"),
                             "assets": assets
                         }
                         
@@ -786,7 +798,7 @@ def render_multishot_ui(get_user_out_dir_func):
                                     "positive_prompt": angle_prompt,
                                     "aspect_ratio": "4:5",
                                     "image_size": st.session_state.get("ms_res", "1K"),
-                                    "model_type": "nano",
+                                    "model_type": st.session_state.get("ms_model_select", "Google Nano Banana 2"),
                                     "assets": assets
                                 }
                                 
@@ -821,7 +833,7 @@ def render_multishot_ui(get_user_out_dir_func):
                                 "positive_prompt": custom_prompt,
                                 "aspect_ratio": "4:5",
                                 "image_size": st.session_state.get("ms_res", "1K"),
-                                "model_type": "nano",
+                                "model_type": st.session_state.get("ms_model_select", "Google Nano Banana 2"),
                                 "assets": assets
                             }
                             
@@ -890,7 +902,7 @@ def render_multishot_ui(get_user_out_dir_func):
                                 "positive_prompt": endframe_prompt,
                                 "aspect_ratio": selected_ar,
                                 "image_size": st.session_state.get("ms_ef_res", "1K"),
-                                "model_type": "nano",
+                                "model_type": st.session_state.get("ms_model_select", "Google Nano Banana 2"),
                                 "assets": assets
                             }
                             
@@ -1061,7 +1073,7 @@ def render_multishot_ui(get_user_out_dir_func):
                                     "positive_prompt": coverage_prompt,
                                     "aspect_ratio": "16:9",
                                     "image_size": st.session_state.get("ms_res", "1K"),
-                                    "model_type": "nano",
+                                    "model_type": st.session_state.get("ms_model_select", "Google Nano Banana 2"),
                                     "assets": shot_assets
                                 }
                                 
