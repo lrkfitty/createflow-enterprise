@@ -473,19 +473,36 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
                 
                 # Also allow multiselect dropdown search
                 state_ms_key = f"{prefix_key}_env_multiselect_v2"
-                if carousel_selected and isinstance(carousel_selected, list):
-                    st.session_state[state_ms_key] = carousel_selected
-                elif state_ms_key not in st.session_state:
-                    st.session_state[state_ms_key] = []
-                    
+                car_key = f"{prefix_key}_rig_loc_multi"
+                prev_car_key = f"_prev_car_{car_key}"
+
+                cur_car = list(carousel_selected) if isinstance(carousel_selected, list) else []
+                prev_car = st.session_state.get(prev_car_key)
+
+                # Only let the carousel drive the multiselect when the carousel
+                # itself changed this run. Unconditionally copying it (the old
+                # behaviour) meant a de-selection in the multiselect was
+                # overwritten on the very next rerun and appeared to re-add itself.
+                if state_ms_key not in st.session_state:
+                    st.session_state[state_ms_key] = list(cur_car)
+                elif prev_car is not None and cur_car != prev_car:
+                    st.session_state[state_ms_key] = list(cur_car)
+                st.session_state[prev_car_key] = list(cur_car)
+
                 env_selection = st.multiselect(
                     "🔍 Search & Select Environment Locations",
                     options=list(loc_opts.keys()),
                     key=state_ms_key
                 )
-                
+
+                # Push the multiselect back onto the carousel so removing an item
+                # clears its highlight too (keeps the two controls in agreement).
+                if list(env_selection) != cur_car:
+                    st.session_state[car_key] = list(env_selection)
+                    st.session_state[prev_car_key] = list(env_selection)
+
                 env_names_list = []
-                active_env_list = env_selection if env_selection else (carousel_selected if isinstance(carousel_selected, list) else [])
+                active_env_list = list(env_selection)
                 
                 if active_env_list:
                     st.markdown("---")
@@ -496,36 +513,55 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
                         l_path = loc_opts.get(member_name)
                         
                         if l_path:
-                            # An Environment Profile contributes every angle it
-                            # holds, giving Seedance full scene coverage instead
-                            # of a single fixed camera position.
                             prof_refs = loc_profile_refs.get(member_name) or []
-                            if prof_refs:
-                                for a_i, pr in enumerate(prof_refs):
-                                    if pr not in selected_env_paths:
-                                        selected_env_paths.append(pr)
-                                        env_slot_labels.append(f"{member_name} (Angle {a_i+1})")
-                            else:
-                                selected_env_paths.append(l_path)
-                                env_slot_labels.append(member_name)
                             env_names_list.append(member_name)
 
                             with env_cols[e_idx % 4]:
                                 st.caption(f"**Image Slot #{e_idx+1}**")
-                                if prof_refs:
-                                    st.caption(f"🎞️ Profile · {len(prof_refs)} angles")
+
+                                # A Profile can supply every angle it holds, but
+                                # that is a CHOICE — never force extra images in.
+                                use_all_angles = False
+                                if prof_refs and len(prof_refs) > 1:
+                                    use_all_angles = st.checkbox(
+                                        f"🎞️ Use all {len(prof_refs)} angles",
+                                        value=True,
+                                        key=f"{prefix_key}_env_allangles_{member_name}_{e_idx}",
+                                        help="Uncheck to attach only the primary image for this location."
+                                    )
+
                                 is_u_env = isinstance(l_path, str) and (l_path.startswith("http://") or l_path.startswith("https://"))
                                 if is_u_env or os.path.exists(str(l_path)):
                                     st.image(l_path, caption=f"Location: {member_name}", use_container_width=True)
                                 else:
                                     st.caption(f"Location: `{member_name}`")
+
+                            if prof_refs and use_all_angles:
+                                for a_i, pr in enumerate(prof_refs):
+                                    if pr not in selected_env_paths:
+                                        selected_env_paths.append(pr)
+                                        env_slot_labels.append(f"{member_name} (Angle {a_i+1})")
+                            elif l_path not in selected_env_paths:
+                                selected_env_paths.append(l_path)
+                                env_slot_labels.append(member_name)
                                     
                     selected_env_name = ", ".join(env_names_list)
                 elif existing_stills:
-                    st.info(f"📸 Using {len(existing_stills)} generated Environment Master Still(s) from session.")
-                    selected_env_paths.extend(existing_stills)
-                    env_slot_labels.extend([f"Master Still #{i+1}" for i in range(len(existing_stills))])
-                    selected_env_name = "Generated Environment Master Stills"
+                    # Opt-in: this used to attach automatically whenever the
+                    # selection was empty, which made de-selecting everything
+                    # look like stills were re-adding themselves.
+                    use_session_stills = st.checkbox(
+                        f"📸 Use {len(existing_stills)} generated Environment Master Still(s) from this session",
+                        value=True,
+                        key=f"{prefix_key}_use_session_stills",
+                        help="Uncheck to ignore stills generated earlier in this session."
+                    )
+                    if use_session_stills:
+                        selected_env_paths.extend(existing_stills)
+                        env_slot_labels.extend([f"Master Still #{i+1}" for i in range(len(existing_stills))])
+                        selected_env_name = "Generated Environment Master Stills"
+                    else:
+                        st.caption("No environment attached.")
                     
             else:
                 # ENVIRONMENT GENERATOR RIG (Cascading Stills -> one Environment Profile)
