@@ -1015,21 +1015,21 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
             # INJECTION BUTTON
             if prompt_target_key:
                 if st.button("⚡ Auto-Inject Mapping Rig to Prompt", key=f"{prefix_key}_inject_btn", use_container_width=True):
-                    tag_header = "\n".join([f"{t}: {item_n}" for t, _, item_n in rig_imgs])
+                    tag_header = "\n".join([f"@{t}: {item_n}" for t, _, item_n in rig_imgs])
                     
                     char_pair_sentences = []
                     identity_lock_sentences = []
                     for c in selected_characters:
                         c_n = c["name"]
-                        c_tag = c.get("char_tag", "")
-                        f_tag = c.get("fit_tag", "")
+                        c_tag = f"@{c.get('char_tag', '')}" if c.get("char_tag") else ""
+                        f_tag = f"@{c.get('fit_tag', '')}" if c.get("fit_tag") else ""
                         f_n = c.get("fit_name", "")
                         
                         clean_c_n = c_n.replace('{My}', '').replace('(My)', '').strip()
                         # Multi-reference identity lock: tell the model these
                         # separate images are ONE person, or it can read them
                         # as different characters.
-                        x_tags = c.get("extra_tags") or []
+                        x_tags = [f"@{x}" for x in (c.get("extra_tags") or [])]
                         if x_tags:
                             all_id_tags = ", ".join([c_tag] + list(x_tags))
                             id_sentence = (
@@ -1041,13 +1041,13 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
                                 # references and outvote the outfit 3-to-1.
                                 id_sentence += (
                                     f". They are identity references, NOT wardrobe references — "
-                                    f"completely IGNORE the clothing worn in {all_id_tags}; "
-                                    f"it must not appear in the shot"
+                                    f"completely IGNORE all clothing worn in {all_id_tags}; "
+                                    f"discard that clothing completely"
                                 )
                             identity_lock_sentences.append(id_sentence)
                         if c_tag and f_tag and f_n:
                             clean_fit_name = f_n.replace('{My}', '').replace('(My)', '').strip()
-                            char_pair_sentences.append(f"character {clean_c_n} ({c_tag}) strictly wearing the complete wardrobe from outfit {f_tag} ({clean_fit_name})")
+                            char_pair_sentences.append(f"character {clean_c_n} ({c_tag}) strictly wearing the complete wardrobe garment from {f_tag} ({clean_fit_name})")
                         elif c_tag and f_tag:
                             char_pair_sentences.append(f"character {clean_c_n} ({c_tag}) wearing mapped outfit ({f_tag})")
                         elif c_tag:
@@ -1058,32 +1058,32 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
                     # 3D Spatial Environment Placement & Multi-Angle Camera Directive
                     if selected_env_name:
                         env_directive = (
-                            f"placed INSIDE the 3D environment space of Image1 ({selected_env_name}). "
-                            f"Use Image1 as the master 3D spatial and architectural set anchor for time, place, and location design. "
+                            f"placed INSIDE the 3D environment space of @Image1 ({selected_env_name}). "
+                            f"Use @Image1 as the master 3D spatial and architectural set anchor for time, place, and location design. "
                             f"The camera moves dynamically through different angles, reverse perspectives, spatial depth, "
-                            f"and room angles inside this environment (do NOT restrict camera to static angle of Image1)."
+                            f"and room angles inside this environment (do NOT restrict camera to static angle of @Image1)."
                         )
                     else:
                         env_directive = (
-                            "placed INSIDE the 3D scene location of Image1. "
-                            "Use Image1 as the 3D set anchor, exploring dynamic camera angles, depth, and spatial perspectives inside the space."
+                            "placed INSIDE the 3D scene location of @Image1. "
+                            "Use @Image1 as the 3D set anchor, exploring dynamic camera angles, depth, and spatial perspectives inside the space."
                         )
                     
                     wardrobe_pairs = [
-                        (c.get("fit_tag"), c["name"].replace('{My}', '').replace('(My)', '').strip(), c.get("fit_name"))
+                        (f"@{c.get('fit_tag')}", c["name"].replace('{My}', '').replace('(My)', '').strip(), c.get("fit_name"), f"@{c.get('char_tag')}")
                         for c in selected_characters if c.get("fit_tag")
                     ]
                     if wardrobe_pairs:
                         wardrobe_bits = [
-                            f"{nm} wears ONLY the garment shown in {tag}"
+                            f"Character {char_tag} ({nm}) wears EXCLUSIVELY the complete clothing and garment shown in {tag}"
                             + (f" ({str(fn).replace('{My}', '').replace('(My)', '').strip()})" if fn else "")
-                            for tag, nm, fn in wardrobe_pairs
+                            + f". Discard all clothing from {char_tag}'s identity photo and transfer the full garment from {tag} onto {char_tag}"
+                            for tag, nm, fn, char_tag in wardrobe_pairs
                         ]
                         wardrobe_lock_str = (
-                            "Strict Wardrobe Lock: " + "; ".join(wardrobe_bits) + ". "
+                            "Strict Wardrobe Binding: " + "; ".join(wardrobe_bits) + ". "
                             "Reproduce that garment's exact cut, straps, coverage, colour, fabric and detailing "
-                            "as the single source of truth for wardrobe — it overrides any clothing visible in the "
-                            "character identity references. Do not substitute, restyle, or omit any part of it."
+                            "as the single source of truth for wardrobe. Do not invent, alter, or replace this outfit with any made-up clothing."
                         )
                     else:
                         wardrobe_lock_str = "Strict Wardrobe Lock: Ensure every character wears the full complete clothing items shown in their mapped outfit reference image without altering or omitting jackets, tops, or pants."
@@ -1094,7 +1094,7 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
                     env_slot_count = min(len(selected_env_paths), 10)
                     env_profile_lock = ""
                     if env_slot_count > 1:
-                        env_tags = ", ".join(f"Image{i+1}" for i in range(env_slot_count))
+                        env_tags = ", ".join(f"@Image{i+1}" for i in range(env_slot_count))
                         env_profile_lock = (
                             f" Environment Profile: {env_tags} are the SAME single location shown from "
                             f"different camera angles — match wall textures, ceiling structure, window layout, "

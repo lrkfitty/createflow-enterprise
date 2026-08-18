@@ -73,14 +73,14 @@ def extract_last_frame_as_base64(video_path):
 
 def image_to_base64_data_uri(img_path_or_url):
     """
-    Converts a local file path or HTTP URL to an optimized lightweight base64 data URI.
-    Resizes images to max 640px at JPEG quality 65 to keep total request payload lightweight (<100KB per image)
-    and prevent network connection socket timeouts or HTTP 502 payload size limit errors.
+    Converts a local file path or HTTP URL to an optimized high-fidelity base64 data URI.
+    Resizes images to max 1280px at JPEG quality 85 to preserve fine fabric textures, patterns, and facial details
+    for Seedance 2.5 and Wan vision encoders while keeping payload transmission fast.
     """
     if not img_path_or_url:
         return None
         
-    # If HTTP URL, try fetching locally to convert to lightweight base64
+    # If HTTP URL, try fetching locally to convert to high-fidelity base64
     if str(img_path_or_url).startswith(("http://", "https://")):
         try:
             resp = requests.get(img_path_or_url, timeout=15)
@@ -88,13 +88,13 @@ def image_to_base64_data_uri(img_path_or_url):
                 from PIL import Image
                 from io import BytesIO
                 img = Image.open(BytesIO(resp.content))
-                max_dim = 640
+                max_dim = 1280
                 if max(img.width, img.height) > max_dim:
                     img.thumbnail((max_dim, max_dim), Image.Resampling.LANCZOS)
                 if img.mode != 'RGB':
                     img = img.convert('RGB')
                 buffer = BytesIO()
-                img.save(buffer, format="JPEG", quality=65)
+                img.save(buffer, format="JPEG", quality=85)
                 encoded = base64.b64encode(buffer.getvalue()).decode('utf-8')
                 return f"data:image/jpeg;base64,{encoded}"
         except Exception as err:
@@ -107,7 +107,7 @@ def image_to_base64_data_uri(img_path_or_url):
             from io import BytesIO
             
             img = Image.open(img_path_or_url)
-            max_dim = 640
+            max_dim = 1280
             if max(img.width, img.height) > max_dim:
                 img.thumbnail((max_dim, max_dim), Image.Resampling.LANCZOS)
                 
@@ -115,7 +115,7 @@ def image_to_base64_data_uri(img_path_or_url):
                 img = img.convert('RGB')
                 
             buffer = BytesIO()
-            img.save(buffer, format="JPEG", quality=65)
+            img.save(buffer, format="JPEG", quality=85)
             encoded = base64.b64encode(buffer.getvalue()).decode('utf-8')
             return f"data:image/jpeg;base64,{encoded}"
         except Exception as e:
