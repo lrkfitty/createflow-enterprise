@@ -322,6 +322,7 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
                 # Build & Permanently Cache Cast Lookup Map
                 user_out_dir = get_user_out_dir_func("Series")
                 cast_lookup_map = {}
+                cast_profile_map = {}   # extra Character Profile refs + voice sample
                 for member in cast_selection:
                     c_data = all_cast_opts.get(member)
                     c_path = c_data.get('default_img') if isinstance(c_data, dict) else c_data
@@ -331,6 +332,23 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
                     cast_lookup_map[member] = cached_c_path
                     cast_lookup_map[member_basename] = cached_c_path
                     cast_lookup_map[member_basename.replace('_', ' ').split(' ')[0]] = cached_c_path
+
+                    # Character Profile: cache the additional reference angles and
+                    # the voice sample so Seedance can lock identity AND voice.
+                    if isinstance(c_data, dict):
+                        p_extra = []
+                        for x_i, x_ref in enumerate((c_data.get('reference_images') or [])[1:]):
+                            cx = cache_asset_locally(x_ref, user_out_dir, prefix=f"cast_{member_basename}_ref{x_i+2}")
+                            if cx:
+                                p_extra.append(cx)
+                        p_voice = c_data.get('voice_sample')
+                        if p_voice:
+                            p_voice = cache_asset_locally(p_voice, user_out_dir, prefix=f"voice_{member_basename}") or p_voice
+                        if p_extra or p_voice:
+                            prof_rec = {"extra_imgs": p_extra, "voice": p_voice}
+                            cast_profile_map[member] = prof_rec
+                            cast_profile_map[member_basename] = prof_rec
+                            cast_profile_map[member_basename.replace('_', ' ').split(' ')[0]] = prof_rec
                     
                     sel_fit = cast_wardrobe_map.get(member)
                     if sel_fit and sel_fit != "Default Outfit":
@@ -340,6 +358,7 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
                             cache_asset_locally(o_path, user_out_dir, prefix=f"wardrobe_{sel_fit}")
 
                 st.session_state["cast_lookup_map"] = cast_lookup_map
+                st.session_state["cast_profile_map"] = cast_profile_map
                 st.session_state["cast_wardrobe_map_snapshot"] = cast_wardrobe_map
     st.markdown("---")
     with st.expander("🌄 Step 2: Higgsfield AI Environment Master Studio", expanded=True):
@@ -1048,6 +1067,7 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
                                         # 1. Resolve Active Cast Character References (FIRST PRIORITY at index 0!)
                                         user_out_dir = get_user_out_dir_func("Series")
                                         char_ref_paths = []
+                                        cast_voice_paths = []   # per-character voice samples
                                         for c_ref_name in sel_anim_cast:
                                             c_path = st.session_state.cast_lookup_map.get(c_ref_name)
                                             if not c_path:
@@ -1058,6 +1078,21 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
                                                 cached_c_path = cache_asset_locally(c_path, user_out_dir, prefix=f"cast_{c_ref_name}")
                                                 if cached_c_path and cached_c_path not in char_ref_paths:
                                                     char_ref_paths.append(cached_c_path)
+
+                                            # Character Profile: extra angles of the
+                                            # same person + their voice sample.
+                                            _pmap = st.session_state.get("cast_profile_map", {})
+                                            _c_clean2 = c_ref_name.replace('(My)', '').replace('(User)', '').replace('[My]', '').strip()
+                                            _prof = (_pmap.get(c_ref_name)
+                                                     or _pmap.get(_c_clean2)
+                                                     or _pmap.get(_c_clean2.replace('_', ' ').split(' ')[0]))
+                                            if _prof:
+                                                for _xp in _prof.get("extra_imgs", []):
+                                                    if _xp and os.path.exists(_xp) and _xp not in char_ref_paths:
+                                                        char_ref_paths.append(_xp)
+                                                _pv = _prof.get("voice")
+                                                if _pv and _pv not in cast_voice_paths:
+                                                    cast_voice_paths.append(_pv)
                                                 
                                         # 2. Resolve Active Wardrobe References (SECOND PRIORITY!)
                                         wardrobe_ref_paths = []
@@ -1167,7 +1202,11 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
                                             duration=v_dur,
                                             aspect_ratio=v_ar.split(" ")[0],
                                             ref_video_path=temp_v_path,
-                                            ref_audio_path=temp_a_path,
+                                            ref_audio_path=temp_a_path or (cast_voice_paths[0] if cast_voice_paths else None),
+                                            extra_audio_paths=(
+                                                cast_voice_paths if temp_a_path
+                                                else (cast_voice_paths[1:] if len(cast_voice_paths) > 1 else None)
+                                            ),
                                             extra_images=ref_images if ref_images else None,
                                             model=target_model,
                                             output_folder=get_user_out_dir_func("Series/Videos")

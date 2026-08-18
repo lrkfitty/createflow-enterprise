@@ -363,7 +363,8 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
         "char_name": str or None,
         "outfit_name": str or None,
         "env_name": str or None,
-        "mapping_tags": list of str
+        "mapping_tags": list of str,
+        "ref_audio_paths": list of str   # character voice samples (Seedance 2.5)
       }
     """
     rig_results = {
@@ -372,7 +373,8 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
         "char_name": None,
         "outfit_name": None,
         "env_name": None,
-        "mapping_tags": []
+        "mapping_tags": [],
+        "ref_audio_paths": []
     }
     
     with st.expander("🎭 Environment, Character & Outfit Mapping Rig", expanded=True):
@@ -383,6 +385,7 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
         selected_env_paths = []
         selected_env_name = None
         env_names_list = []
+        env_slot_labels = []   # one label PER PATH (a profile contributes several)
         selected_char_path = None
         selected_char_name = None
         selected_fit_path = None
@@ -410,12 +413,15 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
                 
                 # Build unique location display dictionary (ensuring NO key collision)
                 loc_opts = {}
+                loc_profile_refs = {}  # display key -> full Environment Profile ref list
                 for r_k, r_v in raw_locs.items():
                     raw_str_k = str(r_k).replace('{My}', '').strip()
                     l_path = None
+                    l_refs = []
                     if isinstance(r_v, dict):
                         disp_name = r_v.get('name') or raw_str_k
                         l_path = r_v.get('default_img') or r_v.get('path')
+                        l_refs = [r for r in (r_v.get('reference_images') or []) if r]
                     elif r_v:
                         disp_name = raw_str_k
                         l_path = str(r_v)
@@ -442,7 +448,9 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
                             clean_k = f"{orig_clean} ({dup_counter})"
                             
                         loc_opts[clean_k] = l_path
-                
+                        if l_refs:
+                            loc_profile_refs[clean_k] = l_refs
+
                 # Check for existing generated master stills in session
                 existing_stills = st.session_state.get("selected_env_stills", []) or (
                     [st.session_state["primary_env_img"]] if "primary_env_img" in st.session_state and os.path.exists(st.session_state["primary_env_img"]) else []
@@ -485,11 +493,24 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
                         l_path = loc_opts.get(member_name)
                         
                         if l_path:
-                            selected_env_paths.append(l_path)
+                            # An Environment Profile contributes every angle it
+                            # holds, giving Seedance full scene coverage instead
+                            # of a single fixed camera position.
+                            prof_refs = loc_profile_refs.get(member_name) or []
+                            if prof_refs:
+                                for a_i, pr in enumerate(prof_refs):
+                                    if pr not in selected_env_paths:
+                                        selected_env_paths.append(pr)
+                                        env_slot_labels.append(f"{member_name} (Angle {a_i+1})")
+                            else:
+                                selected_env_paths.append(l_path)
+                                env_slot_labels.append(member_name)
                             env_names_list.append(member_name)
-                            
+
                             with env_cols[e_idx % 4]:
                                 st.caption(f"**Image Slot #{e_idx+1}**")
+                                if prof_refs:
+                                    st.caption(f"🎞️ Profile · {len(prof_refs)} angles")
                                 is_u_env = isinstance(l_path, str) and (l_path.startswith("http://") or l_path.startswith("https://"))
                                 if is_u_env or os.path.exists(str(l_path)):
                                     st.image(l_path, caption=f"Location: {member_name}", use_container_width=True)
@@ -500,19 +521,31 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
                 elif existing_stills:
                     st.info(f"📸 Using {len(existing_stills)} generated Environment Master Still(s) from session.")
                     selected_env_paths.extend(existing_stills)
+                    env_slot_labels.extend([f"Master Still #{i+1}" for i in range(len(existing_stills))])
                     selected_env_name = "Generated Environment Master Stills"
                     
             else:
-                # ENVIRONMENT GENERATOR RIG (Cascading 1-4 Stills)
+                # ENVIRONMENT GENERATOR RIG (Cascading Stills -> one Environment Profile)
                 st.markdown("##### 🎨 35mm Cinematic Environment Generator")
-                st.caption("Generate up to 4 cascading stills to build complete 360° architectural coverage for your location.")
-                
+                st.caption("Generate up to 3 cascading stills to build an Environment Profile — full scene coverage and continuity from a single location.")
+
                 env_name_input = st.text_input(
                     "Location / Environment Name",
                     placeholder="e.g. Modern Penthouse Lounge, Rainy Tokyo Alleyway, Tropical Resort Poolside",
                     key=f"{prefix_key}_gen_env_name"
                 )
-                
+
+                # Optional real photo to anchor the profile. When present it becomes
+                # still #1 and every generated angle is continuity-locked to it,
+                # instead of the location being invented from text alone.
+                env_seed_image = st.file_uploader(
+                    "📸 Anchor Photo (Optional) — generate additional angles OF THIS location",
+                    type=['png', 'jpg', 'jpeg'],
+                    accept_multiple_files=False,
+                    key=f"{prefix_key}_env_seed_img",
+                    help="Upload a real photo of the location. It becomes reference #1 and the generated angles match its architecture, materials and lighting."
+                )
+
                 g_col1, g_col2, g_col3 = st.columns(3)
                 with g_col1:
                     env_model_choice = st.selectbox(
@@ -525,7 +558,11 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
                         key=f"{prefix_key}_gen_env_model"
                     )
                 with g_col2:
-                    env_still_count = st.slider("Stills to Generate (1 to 4)", 1, 4, 3, key=f"{prefix_key}_gen_env_count")
+                    env_still_count = st.slider(
+                        "Total Stills in Profile (1 to 3)", 1, 3, 3,
+                        key=f"{prefix_key}_gen_env_count",
+                        help="Total reference images in this Environment Profile, including the anchor photo if you uploaded one."
+                    )
                 with g_col3:
                     env_notes = st.text_input(
                         "Textures & Lighting Cues",
@@ -548,7 +585,23 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
                             ]
                             
                             gen_stills = []
-                            for idx in range(env_still_count):
+
+                            # An uploaded anchor photo becomes still #1. The
+                            # continuity-lock block below already treats
+                            # gen_stills[0] as the spatial source of truth for
+                            # every later angle, so seeding it here makes the
+                            # generated angles match a REAL location.
+                            if env_seed_image is not None:
+                                seed_path = os.path.join(
+                                    "output", f"temp_env_seed_{prefix_key}{os.path.splitext(env_seed_image.name)[1] or '.png'}"
+                                )
+                                os.makedirs("output", exist_ok=True)
+                                with open(seed_path, "wb") as f_seed:
+                                    f_seed.write(env_seed_image.getbuffer())
+                                gen_stills.append(seed_path)
+                                st.caption(f"📸 Anchored to uploaded photo — generating {max(env_still_count - 1, 0)} matching angle(s).")
+
+                            for idx in range(len(gen_stills), env_still_count):
                                 angle_lbl = angles[idx] if idx < len(angles) else f"Alternate Perspective #{idx+1}"
                                 env_prompt_data = generate_environment_master_prompt(
                                     location_name=f"{env_name_input}. {env_notes}" if env_notes else env_name_input,
@@ -618,8 +671,11 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
                                 if is_chk:
                                     chosen_stills.append(s_p)
                                     
-                    selected_env_paths.extend(chosen_stills if chosen_stills else active_gen_stills)
-                    selected_env_name = env_name_input if env_name_input else "Generated Environment Stills"
+                    _env_chosen = chosen_stills if chosen_stills else active_gen_stills
+                    selected_env_paths.extend(_env_chosen)
+                    _env_lbl = env_name_input if env_name_input else "Generated Environment Stills"
+                    env_slot_labels.extend([f"{_env_lbl} (Angle {i+1})" for i in range(len(_env_chosen))])
+                    selected_env_name = _env_lbl
                     
                     # 💾 SAVE TO LOCATIONS ASSET LIBRARY WITH INSTANT REFRESH
                     s_col1, s_col2 = st.columns([2, 1])
@@ -628,19 +684,31 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
                     with s_col2:
                         st.write("") # spacing
                         st.write("") 
-                        if st.button("💾 Save to Locations Library", key=f"{prefix_key}_btn_save_loc", use_container_width=True):
+                        if st.button("💾 Save as Environment Profile", key=f"{prefix_key}_btn_save_loc", use_container_width=True):
                             if selected_env_paths:
-                                saved_count = 0
-                                for idx, img_p in enumerate(selected_env_paths):
-                                    if os.path.exists(img_p):
-                                        asset_n = f"{save_loc_name} Still {idx+1}" if len(selected_env_paths) > 1 else save_loc_name
-                                        promote_image_to_asset(img_p, username, "Locations", asset_n, f"Environment still for {save_loc_name}")
-                                        saved_count += 1
-                                from execution.load_assets import load_assets
-                                st.session_state["global_assets"] = load_assets(user_assets_dir=user_asset_path)
-                                st.cache_data.clear()
-                                st.toast(f"✅ Saved {saved_count} Location asset(s) to Library!")
-                                st.rerun()
+                                # Save all chosen angles as ONE grouped profile.
+                                # Previously each still became its own disconnected
+                                # library entry, which lost the continuity link
+                                # between angles of the same location.
+                                from load_assets import promote_multi_image_profile
+                                res_env_save = promote_multi_image_profile(
+                                    [p for p in selected_env_paths if os.path.exists(p)],
+                                    username,
+                                    "Locations",
+                                    save_loc_name,
+                                    prompt=f"Environment profile for {save_loc_name}",
+                                    voice_path=None,
+                                    max_images=3,
+                                )
+                                if res_env_save.get("status") == "success":
+                                    from execution.load_assets import load_assets
+                                    st.session_state["global_assets"] = load_assets(user_assets_dir=user_asset_path)
+                                    st.cache_data.clear()
+                                    n_saved = len(res_env_save.get("reference_images", []))
+                                    st.toast(f"✅ Saved '{save_loc_name}' Environment Profile ({n_saved} angle(s))!")
+                                    st.rerun()
+                                else:
+                                    st.error(f"Save failed: {res_env_save.get('error')}")
                                 
             if selected_env_paths:
                 st.caption(f"✅ **Environment Ready ({len(selected_env_paths)} still(s) attached)**")
@@ -684,10 +752,16 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
                                 
                     c_name = str(member_key).replace('{My}', '').strip()
                     c_path = None
-                    
+                    c_extra_imgs = []   # Character Profile refs beyond the primary
+                    c_voice = None      # Character Profile voice sample
+
                     if isinstance(p_val, dict):
                         c_name = p_val.get('name', c_name)
                         c_path = p_val.get('default_img') or p_val.get('path')
+                        # Profile records carry the full reference set + voice.
+                        # .get() with defaults keeps pre-profile records working.
+                        c_extra_imgs = [r for r in (p_val.get('reference_images') or []) if r][1:]
+                        c_voice = p_val.get('voice_sample')
                     elif isinstance(p_val, str):
                         c_path = p_val
                     elif not p_val and isinstance(member_key, str) and os.path.exists(member_key):
@@ -771,9 +845,17 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
                             "name": c_name,
                             "char_path": c_path,
                             "fit_name": f_name,
-                            "fit_path": f_path
+                            "fit_path": f_path,
+                            "extra_imgs": [p for p in c_extra_imgs if p and p != c_path],
+                            "voice_path": c_voice
                         })
-                        st.caption(f"✅ Mapped Slot #{len(selected_characters)}: `{c_name}`" + (f" wearing `{f_name}`" if f_name else ""))
+                        profile_bits = []
+                        if c_extra_imgs:
+                            profile_bits.append(f"{len(c_extra_imgs) + 1} refs")
+                        if c_voice:
+                            profile_bits.append("voice")
+                        prof_note = f" · Profile ({', '.join(profile_bits)})" if profile_bits else ""
+                        st.caption(f"✅ Mapped Slot #{len(selected_characters)}: `{c_name}`" + (f" wearing `{f_name}`" if f_name else "") + prof_note)
                     st.markdown("---")
 
         # -------------------------------------------------------------
@@ -783,7 +865,12 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
         
         # 1. Environment Stills First (Image1, Image2, etc.)
         for e_idx, e_p in enumerate(selected_env_paths[:10]):
-            e_label = env_names_list[e_idx] if e_idx < len(env_names_list) else (selected_env_name or 'Location Master')
+            if e_idx < len(env_slot_labels):
+                e_label = env_slot_labels[e_idx]
+            elif e_idx < len(env_names_list):
+                e_label = env_names_list[e_idx]
+            else:
+                e_label = selected_env_name or 'Location Master'
             rig_imgs.append((f"Image{len(rig_imgs)+1}", e_p, f"Location #{e_idx+1}: {e_label}"))
             
         # 2. Characters and their mapped Outfits Next
@@ -796,23 +883,41 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
             c_tag_name = f"Image{len(rig_imgs)+1}"
             c_entry["char_tag"] = c_tag_name
             rig_imgs.append((c_tag_name, c_p, f"Character: {c_n}"))
-            
+
+            # Extra Character Profile references (angles 2..N) — Seedance 2.5
+            # locks identity far harder with several views of the same person.
+            c_entry["extra_tags"] = []
+            for x_i, x_p in enumerate(c_entry.get("extra_imgs") or []):
+                x_tag = f"Image{len(rig_imgs)+1}"
+                c_entry["extra_tags"].append(x_tag)
+                rig_imgs.append((x_tag, x_p, f"Character: {c_n} (Ref {x_i+2} — same person)"))
+
             if f_p:
                 f_tag_name = f"Image{len(rig_imgs)+1}"
                 c_entry["fit_tag"] = f_tag_name
                 rig_imgs.append((f_tag_name, f_p, f"Outfit for {c_n}: {f_n}"))
+
+            # Voice sample rides along as a Seedance audio reference.
+            if c_entry.get("voice_path"):
+                rig_results["ref_audio_paths"].append(c_entry["voice_path"])
             
         if rig_imgs:
             st.markdown("---")
             st.markdown("##### 📌 Active Rig Mapping Slots")
-            cols = st.columns(len(rig_imgs))
-            for i, (slot_tag, img_p, item_n) in enumerate(rig_imgs):
-                with cols[i]:
-                    st.caption(f"**{slot_tag}**")
-                    is_u = isinstance(img_p, str) and (img_p.startswith("http://") or img_p.startswith("https://"))
-                    if img_p and (is_u or os.path.exists(str(img_p))):
-                        st.image(img_p, use_container_width=True)
-                    st.caption(f"`{item_n}`")
+            if rig_results["ref_audio_paths"]:
+                st.caption(f"🎙️ {len(rig_results['ref_audio_paths'])} character voice sample(s) attached as audio references.")
+            # Wrap into rows — Profiles can push this well past a single row.
+            PER_ROW = 6
+            for row_start in range(0, len(rig_imgs), PER_ROW):
+                row_items = rig_imgs[row_start:row_start + PER_ROW]
+                cols = st.columns(len(row_items))
+                for i, (slot_tag, img_p, item_n) in enumerate(row_items):
+                    with cols[i]:
+                        st.caption(f"**{slot_tag}**")
+                        is_u = isinstance(img_p, str) and (img_p.startswith("http://") or img_p.startswith("https://"))
+                        if img_p and (is_u or os.path.exists(str(img_p))):
+                            st.image(img_p, use_container_width=True)
+                        st.caption(f"`{item_n}`")
                     
             # Build API Outputs
             rig_results["primary_image_path"] = rig_imgs[0][1]
@@ -833,6 +938,7 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
                     tag_header = "\n".join([f"{t}: {item_n}" for t, _, item_n in rig_imgs])
                     
                     char_pair_sentences = []
+                    identity_lock_sentences = []
                     for c in selected_characters:
                         c_n = c["name"]
                         c_tag = c.get("char_tag", "")
@@ -840,6 +946,16 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
                         f_n = c.get("fit_name", "")
                         
                         clean_c_n = c_n.replace('{My}', '').strip()
+                        # Multi-reference identity lock: tell the model these
+                        # separate images are ONE person, or it can read them
+                        # as different characters.
+                        x_tags = c.get("extra_tags") or []
+                        if x_tags:
+                            identity_lock_sentences.append(
+                                f"{c_tag} and {', '.join(x_tags)} are the SAME PERSON ({clean_c_n}) "
+                                f"shown from different angles — treat them as one identity, "
+                                f"matching face, bone structure, skin tone, hair and tattoos exactly"
+                            )
                         if c_tag and f_tag and f_n:
                             clean_fit_name = f_n.replace('{My}', '').strip()
                             char_pair_sentences.append(f"character {clean_c_n} ({c_tag}) strictly wearing the complete wardrobe from outfit {f_tag} ({clean_fit_name})")
@@ -865,8 +981,25 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
                         )
                     
                     wardrobe_lock_str = "Strict Wardrobe Lock: Ensure every character wears the full complete clothing items shown in their mapped outfit reference image without altering or omitting jackets, tops, or pants."
-                    
-                    injected_text = f"{tag_header}\n\nCinematic 35mm film shot of {combined_char_str} {env_directive} {wardrobe_lock_str} 16:9 widescreen, organic camera movement, realistic 35mm film lighting, zero CGI."
+
+                    # Environment Profile: several slots are the SAME location from
+                    # different angles — spell that out so the model treats them as
+                    # one continuous space (360° spatial lock).
+                    env_slot_count = min(len(selected_env_paths), 10)
+                    env_profile_lock = ""
+                    if env_slot_count > 1:
+                        env_tags = ", ".join(f"Image{i+1}" for i in range(env_slot_count))
+                        env_profile_lock = (
+                            f" Environment Profile: {env_tags} are the SAME single location shown from "
+                            f"different camera angles — match wall textures, ceiling structure, window layout, "
+                            f"flooring materials and lighting setup across every shot, never invent a new room."
+                        )
+
+                    identity_lock_str = ""
+                    if identity_lock_sentences:
+                        identity_lock_str = " Identity Lock: " + ". ".join(identity_lock_sentences) + "."
+
+                    injected_text = f"{tag_header}\n\nCinematic 35mm film shot of {combined_char_str} {env_directive}{env_profile_lock}{identity_lock_str} {wardrobe_lock_str} 16:9 widescreen, organic camera movement, realistic 35mm film lighting, zero CGI."
                     st.session_state[prompt_target_key] = injected_text
                     st.toast("✅ Dynamic 3D Spatial & Strict Wardrobe Rig tags injected into Prompt!")
                     st.rerun()
@@ -4693,8 +4826,18 @@ if selection == "Wan & Seedance Studio":
             # 1. Gather all reference images and videos upfront FIRST!
             extra_imgs = list(rig_anim_res["extra_ref_paths"])
             extra_vids = []
-            
+
             max_extra_allowed = 49 if "2.5" in wan_model_flavor else 8
+
+            # Profiles can contribute many refs (env angles + per-character
+            # angles). Older models accept far fewer, so trim before sending.
+            if len(extra_imgs) > max_extra_allowed:
+                st.warning(
+                    f"⚠️ {len(extra_imgs)} reference images mapped but "
+                    f"{wan_model_flavor} accepts {max_extra_allowed} — using the first {max_extra_allowed}. "
+                    f"Switch to a Seedance 2.5 variant to use the full set."
+                )
+                extra_imgs = extra_imgs[:max_extra_allowed]
             if "Reference-to-Video" in wan_model_flavor or "Seedance" in wan_model_flavor:
                 bulk_uploads_st = st.session_state.get("studio_wan_extra_imgs_bulk", [])
                 if bulk_uploads_st:
@@ -4792,6 +4935,8 @@ if selection == "Wan & Seedance Studio":
                              )
                         
                         out_dir = get_user_out_dir("Videos")
+                        # Character Profile voice samples -> Seedance audio refs
+                        rig_audios = list(rig_anim_res.get("ref_audio_paths") or [])
                         res = generate_wan_video(
                             prompt=final_wan_prompt,
                             image_path=anim_image_path,
@@ -4799,6 +4944,8 @@ if selection == "Wan & Seedance Studio":
                             duration=anim_dur,
                             aspect_ratio=anim_ar.split(" ")[0],
                             ref_video_path=ref_video_url,
+                            ref_audio_path=rig_audios[0] if rig_audios else None,
+                            extra_audio_paths=rig_audios[1:] if len(rig_audios) > 1 else None,
                             extra_images=extra_imgs if extra_imgs else None,
                             extra_videos=extra_vids if extra_vids else None,
                             model=target_engine,

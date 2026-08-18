@@ -8,7 +8,7 @@ import shutil
 from execution.magic_ui import card_begin, card_end, circular_progress
 from execution.character_utils import build_character_prompt, get_character_sheet_prompt
 from execution.generate_image import generate_image_from_prompt
-from load_assets import promote_image_to_asset
+from load_assets import promote_image_to_asset, promote_multi_image_profile
 from execution.auth import auth_mgr
 from execution.s3_uploader import upload_file_obj
 from execution.celebrities import CELEBRITIES, CELEB_CATEGORIES, get_celebrities_by_category, get_celebrity_by_name
@@ -27,6 +27,99 @@ def render_character_studio(characters_data, get_user_out_dir_func, campaign_mgr
         
         # Initialize user early to prevent UnboundLocalError in save block
         user = st.session_state.current_user.get("username") if st.session_state.get("current_user") else "guest"
+
+        # ─────────────────────────────────────────────────────────────
+        # IMPORT EXISTING CHARACTER (no generation, no credits)
+        # For cast you ALREADY have photos + a voice clip for — registers
+        # them straight into the library as a Character Profile.
+        # ─────────────────────────────────────────────────────────────
+        with st.expander("📁 Import Existing Character (already have the photos?)", expanded=False):
+            st.caption(
+                "Already have your reference photos and a voice clip? Save them directly as a "
+                "Character Profile — no generation, no credits used."
+            )
+            imp_name = st.text_input(
+                "Character Name",
+                key="imp_char_name",
+                placeholder="e.g. Angeil"
+            )
+            imp_imgs = st.file_uploader(
+                "Reference Images (up to 4 — different angles of the same person)",
+                type=['png', 'jpg', 'jpeg', 'webp'],
+                accept_multiple_files=True,
+                key="imp_char_imgs",
+                help="These become the character's reference set for Seedance 2.5 identity lock."
+            )
+            if imp_imgs:
+                i_cols = st.columns(min(len(imp_imgs), 4))
+                for i, f_img in enumerate(imp_imgs[:4]):
+                    with i_cols[i % 4]:
+                        st.image(f_img, caption=f"Ref {i+1}", use_container_width=True)
+                if len(imp_imgs) > 4:
+                    st.caption(f"ℹ️ {len(imp_imgs)} selected — the first **4** will be saved.")
+
+            imp_voice = st.file_uploader(
+                "Voice Sample (Optional, ~15s)",
+                type=['mp3', 'wav', 'm4a'],
+                accept_multiple_files=False,
+                key="imp_char_voice",
+                help="Auto-attached as an audio reference whenever this character appears in a scene."
+            )
+
+            if imp_name and imp_name.strip() in {
+                str(k).replace('{My}', '').replace('(My)', '').strip()
+                for k in (characters_data or {})
+            }:
+                st.warning(f"⚠️ '{imp_name.strip()}' already exists — saving will overwrite its reference set.")
+
+            if st.button("💾 Save Character Profile", use_container_width=True, type="primary", key="imp_char_save"):
+                if not imp_name or not imp_name.strip():
+                    st.error("Enter a character name.")
+                elif not imp_imgs:
+                    st.error("Upload at least one reference image.")
+                else:
+                    import tempfile
+                    tmp_imgs = []
+                    for f_img in imp_imgs[:4]:
+                        t = tempfile.NamedTemporaryFile(
+                            delete=False, suffix=os.path.splitext(f_img.name)[1] or '.jpg')
+                        t.write(f_img.getbuffer()); t.flush(); t.close()
+                        tmp_imgs.append(t.name)
+
+                    tmp_voice = None
+                    if imp_voice is not None:
+                        tv = tempfile.NamedTemporaryFile(
+                            delete=False, suffix=os.path.splitext(imp_voice.name)[1] or '.mp3')
+                        tv.write(imp_voice.getbuffer()); tv.flush(); tv.close()
+                        tmp_voice = tv.name
+
+                    res_imp = promote_multi_image_profile(
+                        tmp_imgs,
+                        user,
+                        "Characters",
+                        imp_name.strip(),
+                        prompt=f"Imported Character Profile: {imp_name.strip()}",
+                        voice_path=tmp_voice,
+                        max_images=4,
+                    )
+
+                    if res_imp.get("status") == "success":
+                        n_refs = len(res_imp.get("reference_images", []))
+                        has_v = "with voice sample" if res_imp.get("voice_sample") else "no voice sample"
+                        st.success(f"✅ Saved '{imp_name.strip()}' — {n_refs} reference image(s), {has_v}.")
+                        st.info(res_imp.get("logs", ""))
+                        # Refresh the library so the new profile is immediately selectable.
+                        try:
+                            from load_assets import load_assets as _reload_assets
+                            st.session_state["global_assets"] = _reload_assets(
+                                user_assets_dir=os.path.join("output", "users", user, "Assets"))
+                        except Exception as _re:
+                            st.caption(f"(library refresh deferred: {_re})")
+                        st.cache_data.clear()
+                        time.sleep(1)
+                        st.rerun()
+                    else:
+                        st.error(f"Save Failed: {res_imp.get('error')}")
 
         st.markdown("#### Design Specs")
         
@@ -85,6 +178,18 @@ def render_character_studio(characters_data, get_user_out_dir_func, campaign_mgr
                 for i, img_f in enumerate(ref_imgs):
                     with thumb_cols[i % 5]:
                         st.image(img_f, caption=f"Ref {i+1}", use_container_width=True)
+                if len(ref_imgs) > 4:
+                    st.caption(f"ℹ️ {len(ref_imgs)} uploaded — the first **4** are saved to the Character Profile.")
+
+            # Voice sample — saved with the profile and auto-attached as a
+            # Seedance audio reference whenever this character is in a scene.
+            st.markdown("**Voice Sample (Optional, ~15s)**")
+            voice_sample_file = st.file_uploader(
+                "Upload a short voice clip for this character",
+                type=['mp3', 'wav', 'm4a'],
+                accept_multiple_files=False,
+                help="Used as an audio reference for voice-consistent Seedance 2.5 generations of this character."
+            )
             
             # ── CELEBRITY INSPIRATION ────────────────────────────────────
             with st.expander("⭐ Celebrity Inspiration (Optional)", expanded=False):
@@ -817,15 +922,53 @@ def render_character_studio(characters_data, get_user_out_dir_func, campaign_mgr
             with c_save:
                 if st.button("Save as New Asset", use_container_width=True):
                      if char_name:
-                         # Use Unified Helper
-                         res_save = promote_image_to_asset(
-                             preview_path, 
-                             user, 
-                             "Characters", 
-                             char_name, 
-                             st.session_state.get('char_final_prompt', '')
-                         )
-                         
+                         saved_prompt = st.session_state.get('char_final_prompt', '')
+
+                         # Persist the real uploaded source photos (up to 4) as the
+                         # character's reference set — they give Seedance 2.5 a far
+                         # stronger identity lock than the single generated preview,
+                         # and until now they were discarded at save time.
+                         import tempfile
+                         profile_imgs = []
+                         for uploaded_ref in (ref_imgs or [])[:4]:
+                             tmp_r = tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(uploaded_ref.name)[1] or '.jpg')
+                             tmp_r.write(uploaded_ref.getbuffer())
+                             tmp_r.flush()
+                             tmp_r.close()
+                             profile_imgs.append(tmp_r.name)
+
+                         voice_tmp = None
+                         if voice_sample_file is not None:
+                             tmp_v = tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(voice_sample_file.name)[1] or '.mp3')
+                             tmp_v.write(voice_sample_file.getbuffer())
+                             tmp_v.flush()
+                             tmp_v.close()
+                             voice_tmp = tmp_v.name
+
+                         if profile_imgs:
+                             # Generated preview leads the set so default_img stays
+                             # the approved look, followed by the source photos.
+                             res_save = promote_multi_image_profile(
+                                 [preview_path] + profile_imgs,
+                                 user,
+                                 "Characters",
+                                 char_name,
+                                 prompt=saved_prompt,
+                                 voice_path=voice_tmp,
+                                 max_images=4,
+                             )
+                         else:
+                             # No source photos uploaded — original single-image path.
+                             res_save = promote_image_to_asset(
+                                 preview_path,
+                                 user,
+                                 "Characters",
+                                 char_name,
+                                 saved_prompt
+                             )
+                             if voice_tmp:
+                                 st.warning("Voice sample needs at least one reference photo to attach to — upload a reference image and save again.")
+
                          if res_save["status"] == "success":
                              st.success(f"Saved {char_name} to Assets!")
                              st.info(res_save.get("logs", ""))
