@@ -837,7 +837,19 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
                                         c_path = os.path.join(char_dir, selected_var)
                         else:
                             st.image("https://via.placeholder.com/300x300.png?text=Character+Image", caption=f"Character: {c_name}", use_container_width=True)
-                                
+
+                        # Identity refs sharpen likeness, but each one is a photo
+                        # of the person in SOME outfit. Too many can outvote the
+                        # mapped wardrobe, so keep this dialable per shot.
+                        if c_extra_imgs:
+                            if not st.checkbox(
+                                f"🎭 Use all {len(c_extra_imgs) + 1} identity refs",
+                                value=True,
+                                key=f"{prefix_key}_char_allrefs_{member_key}_{c_idx}",
+                                help="Uncheck to send only the primary photo. Fewer identity refs = the mapped outfit carries more weight."
+                            ):
+                                c_extra_imgs = []
+
                     with c_col2:
                         st.markdown(f"**Attach Outfit to {c_name}**")
                         c_clean = c_name.lower().strip() if c_name else ""
@@ -990,19 +1002,28 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
                         f_tag = c.get("fit_tag", "")
                         f_n = c.get("fit_name", "")
                         
-                        clean_c_n = c_n.replace('{My}', '').strip()
+                        clean_c_n = c_n.replace('{My}', '').replace('(My)', '').strip()
                         # Multi-reference identity lock: tell the model these
                         # separate images are ONE person, or it can read them
                         # as different characters.
                         x_tags = c.get("extra_tags") or []
                         if x_tags:
-                            identity_lock_sentences.append(
-                                f"{c_tag} and {', '.join(x_tags)} are the SAME PERSON ({clean_c_n}) "
-                                f"shown from different angles — treat them as one identity, "
-                                f"matching face, bone structure, skin tone, hair and tattoos exactly"
+                            all_id_tags = ", ".join([c_tag] + list(x_tags))
+                            id_sentence = (
+                                f"{all_id_tags} are the SAME PERSON ({clean_c_n}) shown from different angles. "
+                                f"Use them ONLY for facial identity, bone structure, skin tone, hair and tattoos"
                             )
+                            if f_tag:
+                                # Without this the identity photos act as wardrobe
+                                # references and outvote the outfit 3-to-1.
+                                id_sentence += (
+                                    f". They are identity references, NOT wardrobe references — "
+                                    f"completely IGNORE the clothing worn in {all_id_tags}; "
+                                    f"it must not appear in the shot"
+                                )
+                            identity_lock_sentences.append(id_sentence)
                         if c_tag and f_tag and f_n:
-                            clean_fit_name = f_n.replace('{My}', '').strip()
+                            clean_fit_name = f_n.replace('{My}', '').replace('(My)', '').strip()
                             char_pair_sentences.append(f"character {clean_c_n} ({c_tag}) strictly wearing the complete wardrobe from outfit {f_tag} ({clean_fit_name})")
                         elif c_tag and f_tag:
                             char_pair_sentences.append(f"character {clean_c_n} ({c_tag}) wearing mapped outfit ({f_tag})")
@@ -1025,7 +1046,24 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
                             "Use Image1 as the 3D set anchor, exploring dynamic camera angles, depth, and spatial perspectives inside the space."
                         )
                     
-                    wardrobe_lock_str = "Strict Wardrobe Lock: Ensure every character wears the full complete clothing items shown in their mapped outfit reference image without altering or omitting jackets, tops, or pants."
+                    wardrobe_pairs = [
+                        (c.get("fit_tag"), c["name"].replace('{My}', '').replace('(My)', '').strip(), c.get("fit_name"))
+                        for c in selected_characters if c.get("fit_tag")
+                    ]
+                    if wardrobe_pairs:
+                        wardrobe_bits = [
+                            f"{nm} wears ONLY the garment shown in {tag}"
+                            + (f" ({str(fn).replace('{My}', '').replace('(My)', '').strip()})" if fn else "")
+                            for tag, nm, fn in wardrobe_pairs
+                        ]
+                        wardrobe_lock_str = (
+                            "Strict Wardrobe Lock: " + "; ".join(wardrobe_bits) + ". "
+                            "Reproduce that garment's exact cut, straps, coverage, colour, fabric and detailing "
+                            "as the single source of truth for wardrobe — it overrides any clothing visible in the "
+                            "character identity references. Do not substitute, restyle, or omit any part of it."
+                        )
+                    else:
+                        wardrobe_lock_str = "Strict Wardrobe Lock: Ensure every character wears the full complete clothing items shown in their mapped outfit reference image without altering or omitting jackets, tops, or pants."
 
                     # Environment Profile: several slots are the SAME location from
                     # different angles — spell that out so the model treats them as
