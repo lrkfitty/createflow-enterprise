@@ -19,43 +19,60 @@ def generate_image_from_prompt(prompt_data, output_folder="output", reference_im
 
 def generate_image_nano(prompt_data, output_folder, reference_image_path, outfit_path, vibe_path):
     """
-    Generates images via Atlas Cloud API (Nano Banana 2, GPT Image 2, Wan 2.7, Flux 1.1 Pro).
+    Generates using Google Nano Banana 2 via the Atlas Cloud API.
     """
     load_dotenv(override=True)
     api_key = os.getenv("ATLASCLOUD_API_KEY")
-    logs = ["--- Attempting Image Generation via Atlas Cloud API ---"]
+    logs = ["--- Attempting Generation with Nano Banana 2 via Atlas Cloud API ---"]
     
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
 
     positive_prompt = prompt_data.get("positive_prompt", "")
     
-    # --- REAL-WORLD ORGANIC CINEMATIC QUALITY MANDATE ---
+    # --- REAL-WORLD ORGANIC CINEMATIC TEXTURE MANDATE ---
     real_world_texture_directive = (
-        "High-fidelity authentic 35mm film photograph. Natural skin texture with micro-pores and fine details, "
-        "crisp focus, realistic catchlights in the eyes, natural hair strands, "
-        "natural optical depth of field, balanced studio lighting, zero plastic CGI smoothing, zero cartoon distortion.\n\n"
+        "CRITICAL VISUAL QUALITY MANDATE: Generate ONLY authentic, real-world live-action 35mm film photography with raw, organic tactile physical textures. "
+        "STRICTLY FORBID plastic skin, artificial smooth surfaces, digital CGI sharpness, video-game rendering, 3D graphics, unreal engine gloss, or over-sharpened AI artifacts. "
+        "Capture natural optical lens imperfections, genuine 35mm film grain (ISO 400), unpolished physical surfaces (weathered wood, dusty air, matte concrete, raw fabric, peeling paint), "
+        "and true-to-life optical shadow falloff. Must look indistinguishable from an unretouched 35mm cinematic film frame. \n\n"
     )
+    
+    # Strip CGI / Digital buzzwords that trigger artificial rendering
+    import re
+    cgi_buzzwords = [r"\b8K\b", r"\b4K\b", r"\bphotorealistic\b", r"\bhyperrealistic\b", r"\b3D render\b", r"\bunreal engine\b", r"\boctane render\b", r"\bvolumetric light beams\b", r"\bmasterpiece\b"]
+    for bw in cgi_buzzwords:
+        positive_prompt = re.sub(bw, "", positive_prompt, flags=re.IGNORECASE)
     
     # Check if this is an environment still (Empty Set Mandate)
     is_empty_env = prompt_data.get("is_environment_still", False) or "PURE EMPTY SET" in positive_prompt or "NO PEOPLE" in positive_prompt or "ENVIRONMENT" in prompt_data.get("model_type", "").upper()
-    has_explicit_people = any(w in positive_prompt.lower() for w in ["extras", "crowd", "person", "character", "actor", "standing", "sitting", "portrait", "woman", "man"])
+    has_explicit_people = any(w in positive_prompt.lower() for w in ["extras", "crowd", "person", "character", "actor", "standing", "sitting"])
     
     if is_empty_env and not has_explicit_people:
         system_instruction = (
-            "PURE EMPTY ARCHITECTURAL SET MANDATE: Master film production location designer. "
-            "Generate a PURE EMPTY cinematic film location set still. "
+            real_world_texture_directive + 
+            "PURE EMPTY ARCHITECTURAL SET MANDATE: You are a master film production location designer. "
+            "Your task is to generate a PURE EMPTY cinematic film location set still. "
             "STRICTLY DO NOT INCLUDE ANY PEOPLE, CHARACTERS, HUMAN FIGURES, ACTORS, OR SILHOUETTES IN THIS IMAGE. "
-            "Focus 100% purely on empty architectural space, set design, furniture, lighting, and surface textures.\n\n"
+            "Focus 100% purely on empty architectural space, set design, furniture, lighting, and raw surface textures. \n\n"
         )
-        if "PURE EMPTY ARCHITECTURAL SET MANDATE" not in positive_prompt:
-            positive_prompt = system_instruction + positive_prompt
+    else:
+        system_instruction = (
+            real_world_texture_directive + 
+            "SYSTEM INSTRUCTION: You are a master cinematography & continuity engine. Your primary goal is to generate raw 35mm cinematic film stills "
+            "while EXPERTLY matching the visual identities and environmental architecture of provided reference images. "
+            "Match faces, hair, outfit, and location details with genuine organic film texture. Do not hallucinate CGI features. \n\n"
+        )
         
     multi_ref_instruction = (
-        "MULTI-REFERENCE FUSION: Multiple reference images of the SAME person provided. "
-        "Fuse all provided facial references into ONE consistent identity matching facial bone structure, skin tone, "
-        "eye shape, nose, lips, hair, and distinctive features.\n\n"
+        "MULTI-REFERENCE FUSION MODE: Multiple reference images of the SAME person have been provided. "
+        "You MUST fuse all provided facial references into ONE single composite identity. "
+        "Analyze all reference images together and extract the definitive facial structure, skin tone, "
+        "eye shape, nose, lips, and distinctive features. The output must portray ONE person whose face "
+        "is consistent across all provided references with natural unretouched skin texture. \n\n"
     )
+    if "SYSTEM INSTRUCTION" not in positive_prompt and "PURE EMPTY ARCHITECTURAL SET MANDATE" not in positive_prompt:
+        positive_prompt = system_instruction + positive_prompt
     aspect_ratio = prompt_data.get("aspect_ratio")
     image_size = prompt_data.get("image_size", "1K")  # "512px", "1K", "2K", "4K"
     if aspect_ratio and aspect_ratio.lower() != "auto":
@@ -339,31 +356,10 @@ def generate_image_nano(prompt_data, output_folder, reference_image_path, outfit
         if image_size:
             res_val = image_size.lower()
 
-        model_type = str(prompt_data.get("model_type", "nano")).lower()
+        model_type = prompt_data.get("model_type", "nano")
         has_images = len(input_images) > 0
         
-        if "gpt" in model_type or "openai" in model_type:
-            if has_images:
-                model_name = "openai/gpt-image-2-developer/edit"
-                payload = {
-                    "model": model_name,
-                    "prompt": positive_prompt,
-                    "images": input_images,
-                    "resolution": res_val,
-                    "enable_sync_mode": False,
-                    "enable_base64_output": False
-                }
-            else:
-                model_name = "openai/gpt-image-2-developer/text-to-image"
-                payload = {
-                    "model": model_name,
-                    "prompt": positive_prompt,
-                    "aspect_ratio": ar_val,
-                    "resolution": res_val,
-                    "enable_sync_mode": False,
-                    "enable_base64_output": False
-                }
-        elif "wan" in model_type:
+        if model_type == "wan":
             if has_images:
                 model_name = "alibaba/wan-2.7-pro/image-edit"
                 payload = {
@@ -386,21 +382,41 @@ def generate_image_nano(prompt_data, output_folder, reference_image_path, outfit
                     "enable_sync_mode": False,
                     "enable_base64_output": False
                 }
-        elif "flux" in model_type:
-            model_name = "black-forest-labs/flux-1.1-pro"
+        elif model_type == "gpt":
+            if has_images:
+                model_name = "openai/gpt-image-2-developer/edit"
+                payload = {
+                    "model": model_name,
+                    "prompt": positive_prompt,
+                    "images": input_images,
+                    "resolution": res_val,
+                    "enable_sync_mode": False,
+                    "enable_base64_output": False
+                }
+            else:
+                model_name = "openai/gpt-image-2-developer/text-to-image"
+                payload = {
+                    "model": model_name,
+                    "prompt": positive_prompt,
+                    "aspect_ratio": ar_val,
+                    "resolution": res_val,
+                    "enable_sync_mode": False,
+                    "enable_base64_output": False
+                }
+        else: # nano
+            model_name = "google/nano-banana-2/reference-to-image-developer"
             payload = {
                 "model": model_name,
                 "prompt": positive_prompt,
-                "aspect_ratio": ar_val,
-                "resolution": res_val,
-                "enable_sync_mode": False,
-                "enable_base64_output": False
-            }
-        else: # nano (google/nano-banana-2)
-            model_name = "google/nano-banana-2/reference-to-image-developer" if has_images else "google/nano-banana-2/text-to-image"
-            payload = {
-                "model": model_name,
-                "prompt": positive_prompt,
+                "images": input_images,
+                "video_clips": [
+                    {
+                        "url": "https://www.youtube.com/watch?v=TnG89ChN9LQ",
+                        "start": 0,
+                        "ends": 1,
+                        "fps": 1
+                    }
+                ],
                 "aspect_ratio": ar_val,
                 "resolution": res_val,
                 "thinking_level": "default",
@@ -408,8 +424,6 @@ def generate_image_nano(prompt_data, output_folder, reference_image_path, outfit
                 "enable_base64_output": False,
                 "enable_web_search": False
             }
-            if has_images:
-                payload["images"] = input_images
         
         logs.append(f"Submitting job to Atlas Cloud API for model {model_name}...")
         
