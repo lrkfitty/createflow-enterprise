@@ -122,20 +122,30 @@ def render_character_studio(characters_data, get_user_out_dir_func, campaign_mgr
                         st.error(f"Save Failed: {res_imp.get('error')}")
 
         st.markdown("#### Design Specs")
-        
         # 1.5 Model Engine Selection
-        st.markdown("**Image Engine**")
-        model_opt = st.selectbox("Select Model", [
-            "Nano (SDXL Fine-Tuned)",
-            "Wan 2.7 (High Fidelity)",
-            "GPT Image 2.0 (DALL-E 3)"
-        ], index=0)
-        
-        model_key = "nano"
-        if "Wan" in model_opt:
-            model_key = "wan"
-        elif "GPT" in model_opt:
-            model_key = "gpt"
+        col_m1, col_m2 = st.columns(2)
+        with col_m1:
+            st.markdown("**Image Engine**")
+            model_opt = st.selectbox("Select Model", [
+                "Google Nano Banana 2",
+                "OpenAI GPT Image 2.0",
+                "Alibaba Wan 2.7 Pro"
+            ], index=0)
+            
+            model_key = "nano"
+            if "Wan" in model_opt:
+                model_key = "wan"
+            elif "GPT" in model_opt:
+                model_key = "gpt"
+                
+        with col_m2:
+            st.markdown("**Resolution**")
+            res_opt = st.selectbox("Output Resolution", [
+                "4K (Ultra HD)",
+                "2K (High Definition)",
+                "1K (Standard)"
+            ], index=0)
+            chosen_res = "4K" if "4K" in res_opt else ("2K" if "2K" in res_opt else "1K")
             
         # 2. Output Mode (Outside Form for Instant Reactivity)
         st.markdown("**Output Format**")
@@ -703,7 +713,7 @@ def render_character_studio(characters_data, get_user_out_dir_func, campaign_mgr
                              "positive_prompt": full_prompt,
                              "width": target_w, "height": target_h,
                              "aspect_ratio": ar,
-                             "image_size": "4K",
+                             "image_size": chosen_res,
                              "model_type": model_key,
                              "assets": assets
                         },
@@ -762,7 +772,7 @@ def render_character_studio(characters_data, get_user_out_dir_func, campaign_mgr
                                             "positive_prompt": modified_prompt,
                                             "width": target_w, "height": target_h,
                                             "aspect_ratio": ar,
-                                            "image_size": "4K",
+                                            "image_size": chosen_res,
                                             "model_type": model_key,
                                             "assets": current_assets
                                         }
@@ -809,7 +819,7 @@ def render_character_studio(characters_data, get_user_out_dir_func, campaign_mgr
                                      "positive_prompt": full_prompt,
                                      "width": target_w, "height": target_h,
                                      "aspect_ratio": ar,
-                                     "image_size": "4K",
+                                     "image_size": chosen_res,
                                      "model_type": model_key,
                                      "assets": assets
                                  }

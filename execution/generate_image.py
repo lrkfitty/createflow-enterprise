@@ -325,7 +325,7 @@ def generate_image_nano(prompt_data, output_folder, reference_image_path, outfit
         if aspect_ratio and aspect_ratio.lower() != "auto":
             ar_val = aspect_ratio
             
-        res_val = "1k"
+        res_val = "4k"
         if image_size:
             res_val = image_size.lower()
 
