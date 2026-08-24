@@ -33,7 +33,7 @@ def generate_image_nano(prompt_data, output_folder, reference_image_path, outfit
     # --- REAL-WORLD ORGANIC CINEMATIC QUALITY MANDATE ---
     real_world_texture_directive = (
         "High-fidelity authentic 35mm film photograph. Natural skin texture with micro-pores and fine details, "
-        "crisp facial focus, realistic catchlights in the eyes, natural hair strands, accurate physical proportions, "
+        "crisp focus, realistic catchlights in the eyes, natural hair strands, "
         "natural optical depth of field, balanced studio lighting, zero plastic CGI smoothing, zero cartoon distortion.\n\n"
     )
     

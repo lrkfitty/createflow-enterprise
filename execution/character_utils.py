@@ -1,5 +1,5 @@
 # Character Creator Utility
-# Handles logic to map UI sliders/inputs to valid Prompt Keywords with WEIGHTS
+# Handles logic to map UI sliders/inputs to valid Prompt Keywords with high physical adherence
 
 def get_weighted_body_desc(value):
     """0-100 Slider for General Physique"""
@@ -20,17 +20,17 @@ def get_weighted_muscle_desc(value):
 
 def get_weighted_bust_desc(value, b_type):
     """0-100 Slider + Type for Bust"""
-    if value < 20: size_str = "flat petite chest, small bust"
-    elif value < 40: size_str = "moderate bust"
-    elif value < 60: size_str = "full cleavage, large bust"
-    elif value < 80: size_str = "voluptuous heavy cleavage, very large breasts"
-    else: size_str = "extremely large voluptuous bust, prominent cleavage"
+    if value < 20: size_str = "flat petite chest, small A-cup bust"
+    elif value < 40: size_str = "moderate B-cup bust"
+    elif value < 60: size_str = "full C-cup cleavage, large bust"
+    elif value < 80: size_str = "voluptuous heavy DD-cup cleavage, very large breasts"
+    else: size_str = "hyper-voluptuous massive bust, extremely large heavy breasts, deep cleavage"
     
     type_str = ""
     if b_type == "Augmented / Implants":
-        type_str = ", rounded augmented implants"
+        type_str = ", prominent rounded augmented implants, firm round high-profile bust"
     elif b_type == "Natural / Drop":
-        type_str = ", natural teardrop shape"
+        type_str = ", natural soft teardrop shape"
     elif b_type == "Perky / Athletic":
         type_str = ", perky lifted athletic shape"
     
@@ -38,19 +38,19 @@ def get_weighted_bust_desc(value, b_type):
 
 def get_weighted_waist_desc(value):
     """0-100 Slider for Waist"""
-    if value < 20: return "extremely narrow tiny cinched corset wasp waist"
-    elif value < 40: return "slim narrow waist, hourglass proportions"
+    if value < 20: return "extremely tiny micro-cinched wasp waist, ultra-narrow 20-inch corset waist, dramatic hourglass midsection"
+    elif value < 40: return "slim narrow waist, defined hourglass proportions"
     elif value < 60: return "natural proportioned waist"
     elif value < 80: return "wider midsection waist"
     else: return "broad thick midsection"
 
 def get_weighted_hip_desc(value):
     """0-100 Slider for Hips"""
-    if value < 20: return "narrow slender hips"
+    if value < 20: return "narrow slender straight hips"
     elif value < 40: return "moderate proportioned hips"
     elif value < 60: return "curvy wide hips, shapely"
     elif value < 80: return "wide pear-shaped voluptuous hips"
-    else: return "extremely wide exaggerated shelf hips, dramatic hourglass curves"
+    else: return "ultra-wide exaggerated shelf hips, dramatic wide hip flare, extreme pear hourglass curves"
 
 def get_weighted_glute_desc(value, g_type):
     """0-100 Slider + Type for Glutes"""
@@ -58,13 +58,13 @@ def get_weighted_glute_desc(value, g_type):
     elif value < 40: size_str = "moderate glutes"
     elif value < 60: size_str = "curvy shapely round glutes"
     elif value < 80: size_str = "large bubble butt, voluptuous glutes and thick thighs"
-    else: size_str = "massively curved prominent bubble butt, exaggerated curves"
+    else: size_str = "massively large exaggerated bubble butt, huge voluptuous rear, prominent extreme curves, thick curvy thighs"
 
     type_str = ""
     if g_type == "BBL / Surgical":
-        type_str = ", sculpted shelf aesthetic"
+        type_str = ", surgically sculpted BBL shelf aesthetic, dramatic high-projection rear"
     elif g_type == "Athletic / Hard":
-        type_str = ", firm toned athletic glutes"
+        type_str = ", firm toned muscular glutes"
     elif g_type == "Soft / Natural":
         type_str = ", natural soft curve"
 
@@ -80,7 +80,13 @@ def get_age_description(value):
 
 def get_character_sheet_prompt(base_prompt):
     """Wraps the prompt to generate a character reference sheet."""
-    suffix = "character reference sheet, split into 5 panels, top half 2 images: close up of facial details looking straight at camera and close up of 3/4 view, bottom half 3 images: side profile right, side profile left, full body standing shot, white studio background, consistent character, detailed anatomy, 35mm film photography, raw photo"
+    suffix = (
+        "character reference model sheet, split into 5 panels displaying consistent physical anatomy and body curves across all angles: "
+        "top row 2 panels: front facial close-up and 3/4 angle facial close-up; "
+        "bottom row 3 panels: full-length standing side profile (strictly showing body curves, bust projection, waist cinching, and glute profile), "
+        "full-length standing front view (strictly showing full hourglass waist-to-hip silhouette and bust size), "
+        "and full-length standing side profile left. Clean white studio background, photorealistic 35mm film photograph, raw photo"
+    )
     return f"{base_prompt}, {suffix}"
 
 def get_product_sheet_prompt(base_prompt):
@@ -150,15 +156,24 @@ def build_character_prompt(attributes):
     if is_femme:
         bust_desc = get_weighted_bust_desc(bust_val, bust_type)
         
+    # Detect if user configured extreme/dramatic body proportions
+    has_extreme_curves = (waist_val <= 35 and (hip_val >= 65 or bust_val >= 65 or glute_val >= 65)) or (bust_val >= 80) or (glute_val >= 80) or (hip_val >= 80)
+        
     # Base Subject
     if ethnicity != "Any":
-        subject = f"portrait photograph of a {ethnicity} {gender}"
+        subject = f"full-length photograph of a {ethnicity} {gender}"
     else:
-        subject = f"portrait photograph of a {gender}"
+        subject = f"full-length photograph of a {gender}"
         
     # Construct Physical Traits List
-    traits = [age_desc, body_desc, muscle_desc, waist_desc, hip_desc, glute_desc]
-    if bust_desc: traits.append(bust_desc)
+    traits = []
+    if has_extreme_curves:
+        silhouette_parts = [p for p in [bust_desc, waist_desc, hip_desc, glute_desc] if p]
+        traits.append(f"extreme dramatic hourglass figure with {', '.join(silhouette_parts)}")
+        traits.extend([muscle_desc, age_desc])
+    else:
+        traits.extend([age_desc, body_desc, muscle_desc, waist_desc, hip_desc, glute_desc])
+        if bust_desc: traits.append(bust_desc)
     
     # Hair
     h_str = ""
@@ -245,12 +260,12 @@ def build_character_prompt(attributes):
     outfit = attributes.get("outfit", "")
     if not outfit:
         if is_femme:
-            outfit = "tight black leggings, black sports bra, tight athletic fit"
+            outfit = "tight black leggings, black sports bra, form-fitting athletic wear"
         else:
             outfit = "athletic shorts, shirtless, bare chest, athletic fit, no shirt"
     
     # Combine
-    full_prompt = f"{subject}, {traits_str}, wearing {outfit}, {env}, {lighting}, full body shot"
+    full_prompt = f"{subject}, {traits_str}, wearing {outfit}, {env}, {lighting}"
     
     # Append Character Description if provided
     if description:
