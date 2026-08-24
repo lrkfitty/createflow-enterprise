@@ -345,11 +345,17 @@ def generate_wan_video(prompt, image_path, resolution="1080P", duration=5, aspec
             norm_ar = "16:9"
             
         clean_prompt = sanitize_prompt_for_provider(prompt)
+        if norm_ar == "9:16":
+            clean_prompt = clean_prompt.replace("16:9 widescreen", "9:16 vertical orientation").replace("16:9", "9:16")
+        elif norm_ar == "1:1":
+            clean_prompt = clean_prompt.replace("16:9 widescreen", "1:1 square framing").replace("16:9", "1:1")
+
         payload = {
             "model": model,
             "prompt": clean_prompt,
             "resolution": norm_res,
             "aspect_ratio": norm_ar,
+            "ratio": norm_ar,
             "duration": duration,
             "seed": -1
         }
@@ -426,9 +432,40 @@ def generate_wan_video(prompt, image_path, resolution="1080P", duration=5, aspec
                  
              # Reference Audios / Voiceover (primary + per-character voice samples)
              def process_audio_ref(a_path):
-                 """Returns a URL Seedance can fetch, uploading local files to S3."""
+                 """Returns an MP3/WAV URL Seedance can fetch, auto-converting M4A/other formats if needed."""
                  if not a_path:
                      return None
+                 
+                 clean_a = str(a_path).split("?")[0].lower()
+                 # If format is m4a, mov, ogg, or other non-mp3/wav, convert to MP3
+                 if not clean_a.endswith((".mp3", ".wav")):
+                     try:
+                         import urllib.request, tempfile, subprocess
+                         ext = os.path.splitext(clean_a)[1] or ".m4a"
+                         with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as tmp_in:
+                             if a_path.startswith(("http://", "https://")):
+                                 urllib.request.urlretrieve(a_path, tmp_in.name)
+                             elif os.path.exists(a_path):
+                                 import shutil
+                                 shutil.copyfile(a_path, tmp_in.name)
+                             else:
+                                 tmp_in = None
+                             
+                             if tmp_in and os.path.exists(tmp_in.name):
+                                 mp3_out = tmp_in.name.rsplit(".", 1)[0] + ".mp3"
+                                 res = subprocess.run(["ffmpeg", "-y", "-i", tmp_in.name, "-vn", "-ar", "44100", "-ac", "2", "-b:a", "192k", mp3_out],
+                                                      stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                                 if res.returncode == 0 and os.path.exists(mp3_out) and os.path.getsize(mp3_out) > 0:
+                                     from execution.s3_uploader import upload_file_obj
+                                     base_name = os.path.splitext(os.path.basename(clean_a))[0] + ".mp3"
+                                     with open(mp3_out, "rb") as f_mp3:
+                                         s3_url = upload_file_obj(f_mp3, object_name=f"ref_audios/{base_name}")
+                                     if s3_url:
+                                         logs.append(f"🔄 Converted audio from {ext} to MP3 format for Seedance 2.5 compliance: {base_name}")
+                                         return s3_url
+                     except Exception as conv_err:
+                         logs.append(f"⚠️ Audio conversion notice: {conv_err}")
+
                  if a_path.startswith(("http://", "https://")):
                      return a_path
                  if os.path.exists(a_path):
@@ -441,15 +478,12 @@ def generate_wan_video(prompt, image_path, resolution="1080P", duration=5, aspec
                      except Exception as s3_e:
                          logs.append(f"⚠️ Audio S3 Upload warning: {s3_e}")
                          
-                     # 2. Convert to Base64 Audio Data URI fallback so Atlas Cloud in the cloud always receives the audio
                      try:
                          with open(a_path, "rb") as f_aud:
                              aud_b64 = base64.b64encode(f_aud.read()).decode('utf-8')
                              ext = os.path.splitext(a_path)[1].lower().replace('.', '')
                              if ext == 'mp3': mime = 'audio/mpeg'
                              elif ext == 'wav': mime = 'audio/wav'
-                             elif ext == 'm4a': mime = 'audio/mp4'
-                             elif ext == 'ogg': mime = 'audio/ogg'
                              else: mime = f'audio/{ext}'
                              return f"data:{mime};base64,{aud_b64}"
                      except Exception as b64_e:

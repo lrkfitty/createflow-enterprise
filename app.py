@@ -1123,7 +1123,7 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
                     if voice_lock_sentences:
                         voice_lock_str = " Voice Binding: " + ". ".join(voice_lock_sentences) + "."
 
-                    injected_text = f"{tag_header}\n\nCinematic 35mm film shot of {combined_char_str} {env_directive}{env_profile_lock}{identity_lock_str} {wardrobe_lock_str}{voice_lock_str} 16:9 widescreen, organic camera movement, realistic 35mm film lighting, zero CGI."
+                    injected_text = f"{tag_header}\n\nCinematic 35mm film shot of {combined_char_str} {env_directive}{env_profile_lock}{identity_lock_str} {wardrobe_lock_str}{voice_lock_str} organic camera movement, realistic 35mm film lighting, zero CGI."
                     st.session_state[prompt_target_key] = injected_text
                     st.toast("✅ Dynamic 3D Spatial & Strict Wardrobe Rig tags injected into Prompt!")
                     st.rerun()
