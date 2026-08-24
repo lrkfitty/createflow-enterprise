@@ -19,11 +19,11 @@ def generate_image_from_prompt(prompt_data, output_folder="output", reference_im
 
 def generate_image_nano(prompt_data, output_folder, reference_image_path, outfit_path, vibe_path):
     """
-    Generates using Google Nano Banana 2 via the Atlas Cloud API.
+    Generates images via Atlas Cloud API (Nano Banana 2, GPT Image 2, Wan 2.7, Flux 1.1 Pro).
     """
     load_dotenv(override=True)
     api_key = os.getenv("ATLASCLOUD_API_KEY")
-    logs = ["--- Attempting Generation with Nano Banana 2 via Atlas Cloud API ---"]
+    logs = ["--- Attempting Image Generation via Atlas Cloud API ---"]
     
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
@@ -347,21 +347,30 @@ def generate_image_nano(prompt_data, output_folder, reference_image_path, outfit
         if image_size:
             res_val = image_size.lower()
 
-        model_type = str(prompt_data.get("model_type", "seedream")).lower()
+        model_type = str(prompt_data.get("model_type", "nano")).lower()
         has_images = len(input_images) > 0
         
-        if "seedream" in model_type or "bytedance" in model_type:
-            model_name = "bytedance/seedream-5.0"
-            payload = {
-                "model": model_name,
-                "prompt": positive_prompt,
-                "aspect_ratio": ar_val,
-                "resolution": res_val,
-                "enable_sync_mode": False,
-                "enable_base64_output": False
-            }
+        if "gpt" in model_type or "openai" in model_type:
             if has_images:
-                payload["images"] = input_images
+                model_name = "openai/gpt-image-2-developer/edit"
+                payload = {
+                    "model": model_name,
+                    "prompt": positive_prompt,
+                    "images": input_images,
+                    "resolution": res_val,
+                    "enable_sync_mode": False,
+                    "enable_base64_output": False
+                }
+            else:
+                model_name = "openai/gpt-image-2-developer/text-to-image"
+                payload = {
+                    "model": model_name,
+                    "prompt": positive_prompt,
+                    "aspect_ratio": ar_val,
+                    "resolution": res_val,
+                    "enable_sync_mode": False,
+                    "enable_base64_output": False
+                }
         elif "wan" in model_type:
             if has_images:
                 model_name = "alibaba/wan-2.7-pro/image-edit"
@@ -385,28 +394,17 @@ def generate_image_nano(prompt_data, output_folder, reference_image_path, outfit
                     "enable_sync_mode": False,
                     "enable_base64_output": False
                 }
-        elif "gpt" in model_type or "openai" in model_type:
-            if has_images:
-                model_name = "openai/gpt-image-2-developer/edit"
-                payload = {
-                    "model": model_name,
-                    "prompt": positive_prompt,
-                    "images": input_images,
-                    "resolution": res_val,
-                    "enable_sync_mode": False,
-                    "enable_base64_output": False
-                }
-            else:
-                model_name = "openai/gpt-image-2-developer/text-to-image"
-                payload = {
-                    "model": model_name,
-                    "prompt": positive_prompt,
-                    "aspect_ratio": ar_val,
-                    "resolution": res_val,
-                    "enable_sync_mode": False,
-                    "enable_base64_output": False
-                }
-        else: # nano
+        elif "flux" in model_type:
+            model_name = "black-forest-labs/flux-1.1-pro"
+            payload = {
+                "model": model_name,
+                "prompt": positive_prompt,
+                "aspect_ratio": ar_val,
+                "resolution": res_val,
+                "enable_sync_mode": False,
+                "enable_base64_output": False
+            }
+        else: # nano (google/nano-banana-2)
             model_name = "google/nano-banana-2/reference-to-image-developer" if has_images else "google/nano-banana-2/text-to-image"
             payload = {
                 "model": model_name,
