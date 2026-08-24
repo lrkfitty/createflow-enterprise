@@ -30,39 +30,19 @@ def generate_image_nano(prompt_data, output_folder, reference_image_path, outfit
 
     positive_prompt = prompt_data.get("positive_prompt", "")
     
-    # --- REAL-WORLD ORGANIC CINEMATIC TEXTURE MANDATE ---
-    real_world_texture_directive = (
-        "CRITICAL VISUAL QUALITY MANDATE: Generate ONLY authentic, real-world live-action 35mm film photography with raw, organic tactile physical textures. "
-        "STRICTLY FORBID plastic skin, artificial smooth surfaces, digital CGI sharpness, video-game rendering, 3D graphics, unreal engine gloss, or over-sharpened AI artifacts. "
-        "Capture natural optical lens imperfections, genuine 35mm film grain (ISO 400), unpolished physical surfaces (weathered wood, dusty air, matte concrete, raw fabric, peeling paint), "
-        "and true-to-life optical shadow falloff. Must look indistinguishable from an unretouched 35mm cinematic film frame. \n\n"
-    )
-    
-    # Strip CGI / Digital buzzwords that trigger artificial rendering
-    import re
-    cgi_buzzwords = [r"\b8K\b", r"\b4K\b", r"\bphotorealistic\b", r"\bhyperrealistic\b", r"\b3D render\b", r"\bunreal engine\b", r"\boctane render\b", r"\bvolumetric light beams\b", r"\bmasterpiece\b"]
-    for bw in cgi_buzzwords:
-        positive_prompt = re.sub(bw, "", positive_prompt, flags=re.IGNORECASE)
-    
     # Check if this is an environment still (Empty Set Mandate)
     is_empty_env = prompt_data.get("is_environment_still", False) or "PURE EMPTY SET" in positive_prompt or "NO PEOPLE" in positive_prompt or "ENVIRONMENT" in prompt_data.get("model_type", "").upper()
-    has_explicit_people = any(w in positive_prompt.lower() for w in ["extras", "crowd", "person", "character", "actor", "standing", "sitting"])
+    has_explicit_people = any(w in positive_prompt.lower() for w in ["extras", "crowd", "person", "character", "actor", "standing", "sitting", "portrait", "woman", "man"])
     
     if is_empty_env and not has_explicit_people:
         system_instruction = (
-            real_world_texture_directive + 
             "PURE EMPTY ARCHITECTURAL SET MANDATE: You are a master film production location designer. "
             "Your task is to generate a PURE EMPTY cinematic film location set still. "
             "STRICTLY DO NOT INCLUDE ANY PEOPLE, CHARACTERS, HUMAN FIGURES, ACTORS, OR SILHOUETTES IN THIS IMAGE. "
             "Focus 100% purely on empty architectural space, set design, furniture, lighting, and raw surface textures. \n\n"
         )
-    else:
-        system_instruction = (
-            real_world_texture_directive + 
-            "SYSTEM INSTRUCTION: You are a master cinematography & continuity engine. Your primary goal is to generate raw 35mm cinematic film stills "
-            "while EXPERTLY matching the visual identities and environmental architecture of provided reference images. "
-            "Match faces, hair, outfit, and location details with genuine organic film texture. Do not hallucinate CGI features. \n\n"
-        )
+        if "PURE EMPTY ARCHITECTURAL SET MANDATE" not in positive_prompt:
+            positive_prompt = system_instruction + positive_prompt
         
     multi_ref_instruction = (
         "MULTI-REFERENCE FUSION MODE: Multiple reference images of the SAME person have been provided. "
@@ -71,8 +51,6 @@ def generate_image_nano(prompt_data, output_folder, reference_image_path, outfit
         "eye shape, nose, lips, and distinctive features. The output must portray ONE person whose face "
         "is consistent across all provided references with natural unretouched skin texture. \n\n"
     )
-    if "SYSTEM INSTRUCTION" not in positive_prompt and "PURE EMPTY ARCHITECTURAL SET MANDATE" not in positive_prompt:
-        positive_prompt = system_instruction + positive_prompt
     aspect_ratio = prompt_data.get("aspect_ratio")
     image_size = prompt_data.get("image_size", "1K")  # "512px", "1K", "2K", "4K"
     if aspect_ratio and aspect_ratio.lower() != "auto":
@@ -114,20 +92,14 @@ def generate_image_nano(prompt_data, output_folder, reference_image_path, outfit
 
     try:
         requested_model = prompt_data.get("model_type") or prompt_data.get("model") or ""
-        if "gpt-image-2" in str(requested_model).lower() or "gpt 2" in str(requested_model).lower() or "gpt2" in str(requested_model).lower() or "gpt-2" in str(requested_model).lower() or "gpt" in str(requested_model).lower() or "dalle" in str(requested_model).lower():
-            model_name = "openai/gpt-image-2"
-        elif "seedream" in str(requested_model).lower() or "seadream" in str(requested_model).lower():
-            model_name = "bytedance/seedream-5.0"
-        elif "flux" in str(requested_model).lower():
-            model_name = "black-forest-labs/flux-1.1-pro"
-        elif "ideogram" in str(requested_model).lower():
-            model_name = "ideogram/ideogram-v2"
-        elif "recraft" in str(requested_model).lower():
-            model_name = "recraft/recraft-v3"
+        if "gpt" in str(requested_model).lower() or "openai" in str(requested_model).lower() or "dalle" in str(requested_model).lower():
+            model_type = "gpt"
+        elif "wan" in str(requested_model).lower() or "alibaba" in str(requested_model).lower():
+            model_type = "wan"
         else:
-            model_name = "google/nano-banana-2/reference-to-image-developer"
+            model_type = "nano"
             
-        logs.append(f"Selected Atlas Cloud Model Engine: {model_name}")
+        logs.append(f"Selected Atlas Cloud Model Engine: {model_type}")
         url = "https://api.atlascloud.ai/api/v1/model/generateImage"
         headers = { 
             "Content-Type": "application/json",
@@ -271,20 +243,21 @@ def generate_image_nano(prompt_data, output_folder, reference_image_path, outfit
         processed_assets_map = {}
         all_asset_logs = []
         
-        logs.append(f"⚡ Parallel processing {len(assets_to_process)} assets...")
-        t_batch_start = time.time()
-        
-        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
-            future_to_asset = {executor.submit(process_single_asset, asset): asset for asset in assets_to_process}
-            for future in concurrent.futures.as_completed(future_to_asset):
-                 original_asset = future_to_asset[future]
-                 try:
-                     res_uri, res_label, res_logs = future.result()
-                     processed_assets_map[original_asset.get("path")] = (res_uri, res_label, res_logs)
-                 except Exception as e:
-                     logs.append(f"⚠️ Worker Error: {e}")
+        if assets_to_process:
+            logs.append(f"⚡ Parallel processing {len(assets_to_process)} assets...")
+            t_batch_start = time.time()
+            
+            with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+                future_to_asset = {executor.submit(process_single_asset, asset): asset for asset in assets_to_process}
+                for future in concurrent.futures.as_completed(future_to_asset):
+                     original_asset = future_to_asset[future]
+                     try:
+                         res_uri, res_label, res_logs = future.result()
+                         processed_assets_map[original_asset.get("path")] = (res_uri, res_label, res_logs)
+                     except Exception as e:
+                         logs.append(f"⚠️ Worker Error: {e}")
 
-        logs.append(f"⚡ Assets ready in {time.time() - t_batch_start:.2f}s")
+            logs.append(f"⚡ Assets ready in {time.time() - t_batch_start:.2f}s")
 
         # Interleave assets and create positional label prompts
         input_images = []
@@ -356,7 +329,6 @@ def generate_image_nano(prompt_data, output_folder, reference_image_path, outfit
         if image_size:
             res_val = image_size.lower()
 
-        model_type = prompt_data.get("model_type", "nano")
         has_images = len(input_images) > 0
         
         if model_type == "wan":
@@ -403,27 +375,30 @@ def generate_image_nano(prompt_data, output_folder, reference_image_path, outfit
                     "enable_sync_mode": False,
                     "enable_base64_output": False
                 }
-        else: # nano
-            model_name = "google/nano-banana-2/reference-to-image-developer"
-            payload = {
-                "model": model_name,
-                "prompt": positive_prompt,
-                "images": input_images,
-                "video_clips": [
-                    {
-                        "url": "https://www.youtube.com/watch?v=TnG89ChN9LQ",
-                        "start": 0,
-                        "ends": 1,
-                        "fps": 1
-                    }
-                ],
-                "aspect_ratio": ar_val,
-                "resolution": res_val,
-                "thinking_level": "default",
-                "enable_sync_mode": False,
-                "enable_base64_output": False,
-                "enable_web_search": False
-            }
+        else: # nano (google/nano-banana-2)
+            if has_images:
+                model_name = "google/nano-banana-2/reference-to-image-developer"
+                payload = {
+                    "model": model_name,
+                    "prompt": positive_prompt,
+                    "images": input_images,
+                    "aspect_ratio": ar_val,
+                    "resolution": res_val,
+                    "thinking_level": "default",
+                    "enable_sync_mode": False,
+                    "enable_base64_output": False,
+                    "enable_web_search": False
+                }
+            else:
+                model_name = "google/nano-banana-2/text-to-image"
+                payload = {
+                    "model": model_name,
+                    "prompt": positive_prompt,
+                    "aspect_ratio": ar_val,
+                    "resolution": res_val,
+                    "enable_sync_mode": False,
+                    "enable_base64_output": False
+                }
         
         logs.append(f"Submitting job to Atlas Cloud API for model {model_name}...")
         
