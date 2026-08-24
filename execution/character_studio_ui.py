@@ -618,7 +618,7 @@ def render_character_studio(characters_data, get_user_out_dir_func, campaign_mgr
                     if likeness == 80:
                         likeness = celeb_obj.get("likeness_hint", 85)
 
-                has_ref = bool(ref_imgs) or (ref_identity != "None" and bool(st.session_state.get("lock_identity_path")))
+                has_ref = bool(ref_imgs) or (ref_identity != "None" and bool(lock_identity_path))
                 attrs = {
                    "gender": c_gender,
                    "ethnicity": c_ethnicity,
@@ -689,10 +689,10 @@ def render_character_studio(characters_data, get_user_out_dir_func, campaign_mgr
                          tmp.write(uploaded_ref.getbuffer())
                          tmp.flush()
                          assets.append({"path": tmp.name, "label": f"Cast: {char_name or 'Main'} (Ref {i+1})"})
-                     # Library identity lock (fallback if no uploads)
-                     if not assets and st.session_state.get("lock_identity_path"):
+                     # Library identity lock (ONLY if user explicitly selected a base character)
+                     if not assets and ref_identity != "None" and lock_identity_path:
                          assets.append({
-                             "path": st.session_state["lock_identity_path"],
+                             "path": lock_identity_path,
                              "label": f"Cast: {char_name or 'Main'}"
                          })
                          
@@ -709,7 +709,7 @@ def render_character_studio(characters_data, get_user_out_dir_func, campaign_mgr
                         },
                         settings={"batch_count": 1},
                         output_folder=get_user_out_dir_func("Characters/Concepts"),
-                        char_path=st.session_state.get("lock_identity_path")
+                        char_path=lock_identity_path if ref_identity != "None" else None
                      )
                      st.success(f"✅ Added '{char_name}' to Campaign Queue!")
                      
@@ -735,8 +735,8 @@ def render_character_studio(characters_data, get_user_out_dir_func, campaign_mgr
                                     tmp.write(uploaded_ref.getbuffer())
                                     tmp.flush()
                                     assets.append({"path": tmp.name, "label": f"Cast: IdentityLock (Ref {i+1})"})
-                                if not assets and st.session_state.get("lock_identity_path"):
-                                    assets.append({"path": st.session_state["lock_identity_path"], "label": f"Cast: {char_name or 'Main'}"})
+                                if not assets and ref_identity != "None" and lock_identity_path:
+                                    assets.append({"path": lock_identity_path, "label": f"Cast: {char_name or 'Main'}"})
                                 
                                 for idx, angle in enumerate(selected_angles):
                                     with st.spinner(f"Generating angle: {angle}..."):
@@ -797,10 +797,10 @@ def render_character_studio(characters_data, get_user_out_dir_func, campaign_mgr
                                      tmp.write(uploaded_ref.getbuffer())
                                      tmp.flush()
                                      assets.append({"path": tmp.name, "label": f"Cast: {char_name or 'Main'} (Ref {i+1})"})
-                                 # Library identity lock (fallback)
-                                 if not assets and st.session_state.get("lock_identity_path"):
+                                 # Library identity lock (ONLY if user explicitly selected a base character)
+                                 if not assets and ref_identity != "None" and lock_identity_path:
                                      assets.append({
-                                         "path": st.session_state["lock_identity_path"],
+                                         "path": lock_identity_path,
                                          "label": f"Cast: {char_name or 'Main'}"
                                      })
                                  
