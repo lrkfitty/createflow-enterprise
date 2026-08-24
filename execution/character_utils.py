@@ -1,110 +1,104 @@
 
 # Character Creator Utility
-# Handles logic to map UI sliders/inputs to valid Prompt Keywords with WEIGHTS
+# Maps UI sliders/inputs directly to high-potency descriptive natural language prompts
 
 def get_weighted_body_desc(value):
     """0-100 Slider for General Physique"""
-    if value < 10: return "(extremely slender frame:1.4), (visible bones:1.2), straight silhouette"
-    elif value < 30: return "(slim physique:1.2), petite, slender"
-    elif value < 50: return "athletic, fit, toned"
-    elif value < 70: return "(curvy figure:1.2), shapely, fit"
-    elif value < 90: return "(voluptuous figure:1.3), thick curves, full figure"
-    else: return "(heavyset:1.3), (extremely voluptuous:1.5), (massive curves:1.4)"
+    if value < 15: return "extremely slender delicate frame, very slim silhouette"
+    elif value < 35: return "slim slender petite physique"
+    elif value < 55: return "athletic, fit, toned physique"
+    elif value < 75: return "curvy, shapely, hourglass figure"
+    elif value < 90: return "voluptuous, thick curvy full figure"
+    else: return "heavyset, very voluptuous, deeply curved full figure"
 
 def get_weighted_muscle_desc(value):
     """0-100 Slider for Muscle Mass"""
-    if value < 20: return "soft skin, no visible muscle"
-    elif value < 40: return "lightly toned"
-    elif value < 60: return "(athletic definition:1.2), visible abs"
-    elif value < 80: return "(ripped muscles:1.3), (six pack abs:1.3), muscular arms"
-    else: return "(hyper muscular:1.5), (vascularity:1.3), (female bodybuilder:1.4)"
+    if value < 20: return "soft smooth feminine skin"
+    elif value < 40: return "lightly toned athletic definition"
+    elif value < 60: return "athletic muscle definition, visible toned abs"
+    elif value < 80: return "ripped muscular physique, six pack abs, sculpted arms"
+    else: return "heavily muscular bodybuilder physique, vascular muscle definition"
 
 def get_weighted_bust_desc(value, b_type):
     """0-100 Slider + Type for Bust"""
-    # Size Base
-    size_str = ""
-    weight = 1.0
+    if value < 20: size_str = "petite flat chest, small A-cup bust"
+    elif value < 40: size_str = "moderate B-cup bust"
+    elif value < 60: size_str = "full C-cup cleavage, large bust"
+    elif value < 80: size_str = "voluptuous heavy DD-cup cleavage, very large breasts"
+    else: size_str = "massive heavy hyper-voluptuous bust with deep prominent cleavage"
     
-    if value < 20: size_str = "flat chest, small bust"; weight=1.0
-    elif value < 40: size_str = "average bust"; weight=1.1
-    elif value < 60: size_str = "full bust, large breasts"; weight=1.2
-    elif value < 80: size_str = "voluptuous bust, heavy cleavage, massive breasts"; weight=1.4
-    else: size_str = "huge breasts, hyper huge bust, extreme cleavage"; weight=1.6
-    
-    # Type Modifier
     type_str = ""
-    if b_type == "Augmented / Implants":
-        type_str = ", (round implants:1.4), (high profile augmentation:1.3), (fake boobs:1.3), (hard round look:1.2)"
-        weight += 0.2 # Augmentation implies prominence
-    elif b_type == "Natural / Drop":
-        type_str = ", (natural sagging:1.2), (soft teardrop shape:1.2), (heavy natural breasts:1.2)"
-    elif b_type == "Perky / Athletic":
-        type_str = ", (perky breasts:1.2), (athletic lift:1.1)"
+    if "Augmented" in str(b_type) or "Implants" in str(b_type):
+        type_str = ", high-profile round augmented implants, firm round silhouette"
+    elif "Natural" in str(b_type) or "Drop" in str(b_type):
+        type_str = ", natural soft teardrop shape"
+    elif "Perky" in str(b_type) or "Athletic" in str(b_type):
+        type_str = ", perky lifted athletic shape"
     
-    return f"({size_str}:{weight}){type_str}"
+    return f"{size_str}{type_str}"
 
 def get_weighted_waist_desc(value):
     """0-100 Slider for Waist"""
-    if value < 20: return "(extremely cinched waist:1.5), (corset waist:1.4), (wasp waist:1.4)"
-    elif value < 40: return "(small waist:1.2), hourglass"
-    elif value < 60: return "average waist"
-    elif value < 80: return "wide waist, thick midsection"
-    else: return "(broad waist:1.3), heavy midsection"
+    if value < 20: return "microscopic ultra-narrow 20-inch cinched corset wasp waist"
+    elif value < 40: return "slim narrow waist, defined hourglass midsection"
+    elif value < 60: return "natural proportioned waist"
+    elif value < 80: return "wider midsection waist"
+    else: return "broad thick midsection"
 
 def get_weighted_hip_desc(value):
     """0-100 Slider for Hips"""
-    if value < 20: return "narrow hips, straight frame"
-    elif value < 40: return "average hips"
-    elif value < 60: return "(curvy hips:1.2), shapely"
-    elif value < 80: return "(wide hips:1.4), (pear shape:1.3), voluptuous"
-    else: return "(extremely wide hips:1.6), (shelf hips:1.5), (hyper exaggerated curves:1.5)"
+    if value < 20: return "narrow slender straight hips"
+    elif value < 40: return "moderate proportioned hips"
+    elif value < 60: return "curvy wide hips, shapely"
+    elif value < 80: return "wide pear-shaped voluptuous hips"
+    else: return "dramatically wide exaggerated shelf hips with extreme hourglass curves"
 
 def get_weighted_glute_desc(value, g_type):
     """0-100 Slider + Type for Glutes"""
-    # Size
-    size_str = ""
-    weight = 1.0
-    
-    if value < 20: size_str = "flat glutes"; weight=1.0
-    elif value < 40: size_str = "average glutes"; weight=1.1
-    elif value < 60: size_str = "curvy rear, shapely glutes"; weight=1.2
-    elif value < 80: size_str = "large glutes, bubble butt, thick thighs"; weight=1.4
-    else: size_str = "massive glutes, hyper exaggerated bubble butt, extreme rear"; weight=1.6
+    if value < 20: size_str = "slim flat glutes"
+    elif value < 40: size_str = "moderate glutes"
+    elif value < 60: size_str = "curvy shapely round glutes"
+    elif value < 80: size_str = "large round bubble butt, voluptuous glutes and thick curvy thighs"
+    else: size_str = "massively large exaggerated bubble butt, huge voluptuous rear with thick curvy thighs"
 
-    # Type
     type_str = ""
-    if g_type == "BBL / Surgical":
-        type_str = ", (surgically enhanced buttocks:1.4), (BBL aesthetic:1.4), (shelf glutes:1.4)"
-        weight += 0.2
-    elif g_type == "Athletic / Hard":
-        type_str = ", (rock hard glutes:1.3), (muscle definition:1.2)"
-    elif g_type == "Soft / Natural":
-        type_str = ", (soft jiggly glutes:1.2), (natural texture:1.1)"
+    if "BBL" in str(g_type) or "Surgical" in str(g_type):
+        type_str = ", surgically sculpted BBL shelf aesthetic with dramatic high-projection rear"
+    elif "Athletic" in str(g_type) or "Hard" in str(g_type):
+        type_str = ", firm toned muscular glutes"
+    elif "Soft" in str(g_type) or "Natural" in str(g_type):
+        type_str = ", natural soft curve"
 
-    return f"({size_str}:{weight}){type_str}"
+    return f"{size_str}{type_str}"
 
 def get_age_description(value):
     """Maps age number to descriptive text."""
-    if value < 25: return f"{value} years old, young adult, fresh face"
-    elif value < 35: return f"{value} years old, adult, mature feature"
-    elif value < 50: return f"{value} years old, middle aged, mature"
-    elif value < 70: return f"{value} years old, senior, elderly"
-    else: return f"{value} years old, very elderly, aged"
+    if value < 25: return f"{value}-year-old, young adult, fresh youthful face"
+    elif value < 35: return f"{value}-year-old, adult, mature defined features"
+    elif value < 50: return f"{value}-year-old, middle aged, distinguished"
+    elif value < 70: return f"{value}-year-old, senior, mature aged"
+    else: return f"{value}-year-old, elderly"
 
 def get_character_sheet_prompt(base_prompt):
-    """Wraps the prompt to generate a character reference sheet."""
-    # Strong weights for sheet structure + High Fidelity Enforcement
-    suffix = "(character reference sheet:1.5), (split into 5 panels:1.5), (top half 2 images: close up of facial details straight at camera, close up of 3/4 view:1.4), (bottom half 3 images: side profile right, side profile left, full body shot:1.4), white background, consistent character, detailed anatomy, 8k, (photorealistic:1.4), (raw photo:1.3), (hyperrealistic:1.3), (not illustration:1.5), (not cartoon:1.5), (not 3d render:1.5)"
+    """Wraps the prompt to generate a 5-panel character reference sheet."""
+    suffix = (
+        "5-panel character reference model sheet arranged on a seamless neutral grey studio background: "
+        "top row contains 2 close-up facial portraits (straight front view and 3/4 angle view showing makeup and hair details); "
+        "bottom row contains 3 full-body standing shots (side profile right showcasing breast projection and high-projection BBL glute shelf curve, "
+        "full front view showcasing the microscopic cinched 20-inch corset waist and dramatic wide shelf hips, "
+        "and full back view showcasing the massive bubble butt and sculpted waist-to-hip ratio). "
+        "Consistent character likeness across all 5 panels, continuous anatomy, photorealistic 35mm film photograph, sharp focus"
+    )
     return f"{base_prompt}, {suffix}"
 
 def get_product_sheet_prompt(base_prompt):
     """Wraps the prompt to generate a product reference sheet."""
-    suffix = "(product reference sheet:1.5), (split into 4 panels:1.5), (four different angles:1.5), (front view, side profile, back view, angled top-down view:1.4), clean studio background, consistent product design, detailed materials, 8k, (commercial product photography:1.4), (photorealistic:1.4), (macro details:1.3)"
+    suffix = "product reference sheet, split into 4 panels, four different angles: front view, side profile, back view, angled top-down view, clean neutral studio background, consistent product design, detailed materials, commercial product photography"
     return f"{base_prompt}, {suffix}"
 
 def build_character_prompt(attributes):
     """
-    Constructs a full character prompt with WEIGHTED attributes.
+    Constructs a full character prompt with natural descriptive attributes.
     """
     
     # Extract Basic
@@ -142,14 +136,10 @@ def build_character_prompt(attributes):
     glute_val = attributes.get("glutes", 50)
     glute_type = attributes.get("glute_type", "Natural")
     
-    # Extract Tattoos (List)
-    tattoo_style = attributes.get("tattoo_style", "None")
-    tattoo_places = attributes.get("tattoo_places", []) # List now
-    
     # Character Description
     description = attributes.get("description", "")
 
-    # Map Sliders to Weighted Strings
+    # Map Sliders to Natural Language Strings
     age_desc = get_age_description(age_val)
     body_desc = get_weighted_body_desc(body_val)
     muscle_desc = get_weighted_muscle_desc(muscle_val)
@@ -159,26 +149,32 @@ def build_character_prompt(attributes):
     
     # Contextual Bust
     bust_desc = ""
-    # Add female anatomy if gender is female/nb/femme
     is_femme = "Female" in gender or gender == "Non-Binary"
     if is_femme:
         bust_desc = get_weighted_bust_desc(bust_val, bust_type)
         
+    # Detect if user configured extreme/dramatic body proportions
+    has_extreme_curves = (waist_val <= 35 and (hip_val >= 65 or bust_val >= 65 or glute_val >= 65)) or (bust_val >= 80) or (glute_val >= 80) or (hip_val >= 80)
+
     # Base Subject
-    if ethnicity != "Any":
-        subject = f"portrait of a {ethnicity} {gender}"
-    else:
-        subject = f"portrait of a {gender}"
+    eth_str = f"{ethnicity} " if ethnicity != "Any" else ""
+    subject = f"Full-body photograph of a {age_desc} {eth_str}{gender}"
         
     # Construct Physical Traits List
-    traits = [age_desc, body_desc, muscle_desc, waist_desc, hip_desc, glute_desc]
-    if bust_desc: traits.append(bust_desc)
+    traits = []
+    if has_extreme_curves:
+        silhouette_parts = [p for p in [bust_desc, waist_desc, hip_desc, glute_desc] if p]
+        traits.append(f"extreme dramatic hourglass figure with {', '.join(silhouette_parts)}")
+        traits.append(muscle_desc)
+    else:
+        traits.extend([body_desc, muscle_desc, waist_desc, hip_desc, glute_desc])
+        if bust_desc: traits.append(bust_desc)
     
     # Hair
     h_str = ""
     if hair_color != "Any": h_str += hair_color + " "
     if hair_style != "Any": h_str += hair_style
-    if h_str: traits.append(f"{h_str} hair")
+    if h_str: traits.append(f"{h_str.strip()} hair")
 
     # Eyes & Face
     if eye_color != "Any": traits.append(f"{eye_color} eyes")
@@ -194,52 +190,31 @@ def build_character_prompt(attributes):
     
     # Makeup (Granular)
     makeup_parts = []
-    if lashes != "None": makeup_parts.append(lashes)
-    if eyebrows != "Natural": makeup_parts.append(f"{eyebrows} eyebrows")
-    if foundation != "None": makeup_parts.append(f"{foundation} foundation")
-    if lipgloss != "None": makeup_parts.append(f"{lipgloss} lips")
-    if eyeshadow != "None": makeup_parts.append(eyeshadow)
-    if blush != "None": makeup_parts.append(blush)
+    if lashes != "None": makeup_parts.append(lashes.lower())
+    if eyebrows != "Natural": makeup_parts.append(f"{eyebrows.lower()} eyebrows")
+    if foundation != "None": makeup_parts.append(f"{foundation.lower()} skin finish")
+    if lipgloss != "None": makeup_parts.append(f"{lipgloss.lower()} lips")
+    if eyeshadow != "None": makeup_parts.append(eyeshadow.lower())
+    if blush != "None": makeup_parts.append(blush.lower())
     
     if makeup_parts:
         traits.append(", ".join(makeup_parts))
     
-    # Tattoos — Granular Prompt
+    # Tattoos
     tattoo_style = attributes.get("tattoo_style", "None")
     tattoo_places = attributes.get("tattoo_places", [])
     tattoo_coverage = attributes.get("tattoo_coverage", "None")
     tattoo_sleeve = attributes.get("tattoo_sleeve", "None")
 
     if tattoo_style != "None":
-        tat_parts = []
-
-        # 1. Art style
-        tat_parts.append(f"{tattoo_style} tattoos")
-
-        # 2. Coverage / Density
-        coverage_map = {
-            "Light (a few small pieces)":    "a few small tattoo pieces",
-            "Moderate (scattered pieces)":   "moderate tattoo coverage, scattered pieces",
-            "Heavy (large coverage)":        "heavy tattoo coverage, large pieces",
-            "Very Heavy (nearly filled)":    "very heavy tattoo coverage, skin nearly filled with ink",
-        }
-        if tattoo_coverage in coverage_map:
-            tat_parts.append(coverage_map[tattoo_coverage])
-
-        # 3. Sleeve style
+        tat_parts = [f"{tattoo_style} tattoos"]
+        if tattoo_coverage != "None":
+            tat_parts.append(tattoo_coverage.lower())
         if tattoo_sleeve and tattoo_sleeve != "None":
             tat_parts.append(tattoo_sleeve.lower())
-
-        # 4. Specific placements
         if tattoo_places:
-            joined = ", ".join(tattoo_places)
-            tat_parts.append(f"on {joined}")
-
-        final_tat = " — ".join(tat_parts[:3])
-        if tattoo_places:
-            final_tat += f", on {', '.join(tattoo_places)}"
-        traits.append(f"({final_tat}:1.3)")
-
+            tat_parts.append(f"on {', '.join(tattoo_places)}")
+        traits.append(" — ".join(tat_parts))
     
     # Skin
     if skin_details:
@@ -255,75 +230,54 @@ def build_character_prompt(attributes):
 
     acc_parts = []
     if earrings and earrings not in ["None", "No Earrings"]:
-        acc_parts.append(f"wearing {earrings}")
+        acc_parts.append(earrings.lower())
     if necklace and necklace not in ["None", "No Necklace"]:
-        acc_parts.append(f"{necklace}")
+        acc_parts.append(necklace.lower())
     if watch and watch not in ["None", "No Watch"]:
-        acc_parts.append(f"{watch} on wrist")
+        acc_parts.append(f"{watch.lower()} on wrist")
     if rings:
-        acc_parts.append(f"rings: {', '.join(rings)}")
+        acc_parts.append(f"rings: {', '.join(rings).lower()}")
     if bracelets:
-        acc_parts.append(f"bracelets: {', '.join(bracelets)}")
+        acc_parts.append(f"bracelets: {', '.join(bracelets).lower()}")
     if piercings:
-        acc_parts.append(f"piercings: {', '.join(piercings)}")
+        acc_parts.append(f"piercings: {', '.join(piercings).lower()}")
+
     if acc_parts:
-        traits.append(f"({', '.join(acc_parts)}:1.2)")
+        traits.append(f"wearing {', '.join(acc_parts)}")
         
     traits_str = ", ".join(traits)
     
     # Environment & Style (Studio)
-    env = "professional studio photography, solid neutral background, seamless backdrop"
-    
-    # TEXTURE & REALISM BOOST (User Key Requirement)
-    # 2026-01-26: Added High Fidelity Skin/Hair Tokens
-    texture_boost = "(natural skin texture:1.3), (visible pores:1.2), (subsurface scattering:1.2), (vellus hair:1.1), (detailed iris:1.2), (hyperrealistic hair strands:1.2), 8k, raw photo, fuji film"
-    
-    lighting = f"soft studio lighting, rembrandt lighting, photography, highly detailed, sharp focus, consistent anatomy, {texture_boost}"
+    env = "professional studio photography, solid neutral grey seamless backdrop"
+    lighting = "soft studio glamour lighting, rembrandt lighting, photography, highly detailed, sharp focus, natural skin texture"
     
     # Outfit (Smart Default)
     outfit = attributes.get("outfit", "")
     if not outfit:
         if is_femme:
-            outfit = "(tight black leggings:1.3), (sports bra:1.2), tight fit"
+            outfit = "form-fitting black sports bra and tight high-waisted black athletic leggings, tight athletic fit"
         else:
-            outfit = "(athletic shorts:1.2), shirtless, bare chest, athletic fit, no shirt"
+            outfit = "athletic shorts, shirtless, bare chest, athletic fit, no shirt"
     
     # Combine
-    full_prompt = f"{subject}, {traits_str}, wearing {outfit}, {env}, {lighting}, full body shot"
+    full_prompt = f"{subject}, {traits_str}, wearing {outfit}, {env}, {lighting}"
     
     # Append Character Description if provided
     if description:
         full_prompt += f", {description}"
     
-    # Identity Likeness (from slider - only if reference image is present)
+    # Identity Likeness (ONLY if reference image is provided)
     has_ref = attributes.get("has_reference", False)
     likeness = attributes.get("likeness", 80)
     if has_ref:
         if likeness >= 90:
-            full_prompt += (
-                ", (ultra-high fidelity face match:1.6), (DO NOT deviate from reference face:1.5), "
-                "(identical face to reference:1.5), (exact same person:1.5), "
-                "(preserve facial features exactly:1.4), (same bone structure:1.4), "
-                "(same nose shape:1.4), (same jawline:1.4), (same eye shape:1.4), "
-                "(same skin tone:1.3), (same brow shape:1.3), "
-                "(photographic identity match:1.5), DO NOT alter facial features, "
-                "(face clone:1.4)"
-            )
+            full_prompt += ", ultra-high fidelity face match to reference photo, identical facial features and bone structure"
         elif likeness >= 80:
-            full_prompt += (
-                ", (identical face to reference:1.5), (exact same person:1.5), "
-                "(preserve facial features exactly:1.4), (same bone structure:1.3), "
-                "(same nose shape:1.3), (same jawline:1.3), (same eye shape:1.3), "
-                "(photographic identity match:1.4), DO NOT alter facial features"
-            )
+            full_prompt += ", high-fidelity resemblance to reference photo, matching facial features, bone structure, and eye shape"
         elif likeness >= 60:
-            full_prompt += (
-                ", (strong resemblance to reference:1.4), (same face:1.4), "
-                "(preserve key facial features:1.3), (similar bone structure:1.3), "
-                "(match skin tone:1.2), (match eye shape:1.2)"
-            )
+            full_prompt += ", strong resemblance to reference photo, matching overall look and facial features"
         elif likeness >= 40:
-            full_prompt += ", (inspired by reference:1.2), similar features to reference, (match overall look:1.1)"
+            full_prompt += ", inspired by reference photo"
     
     return full_prompt
 

@@ -531,7 +531,7 @@ def render_character_studio(characters_data, get_user_out_dir_func, campaign_mgr
                     c_eyeshadow = st.selectbox("Eye Shadow", ["None", "Neutral", "Smokey Eye", "Winged Liner", "Cat Eye", "Colorful", "Glitter", "Cut Crease"])
                     c_blush = st.selectbox("Blush/Bronzer", ["None", "Subtle", "Natural", "Bronzed", "Heavy Contour"])
 
-            with st.expander("Body Composition", expanded=False):
+            with st.expander("Body Composition", expanded=True):
                 st.caption("Customize physique details (0-100)")
                 c_body = st.slider("General Physique", 0, 100, 50, help="0: Skinny | 50: Athletic | 100: Heavy/Curvy")
                 c_muscle = st.slider("Muscle Mass", 0, 100, 20, help="0: Soft | 100: Ripped Bodybuilder")
@@ -618,6 +618,7 @@ def render_character_studio(characters_data, get_user_out_dir_func, campaign_mgr
                     if likeness == 80:
                         likeness = celeb_obj.get("likeness_hint", 85)
 
+                has_ref = bool(ref_imgs) or (ref_identity != "None" and bool(st.session_state.get("lock_identity_path")))
                 attrs = {
                    "gender": c_gender,
                    "ethnicity": c_ethnicity,
@@ -655,6 +656,7 @@ def render_character_studio(characters_data, get_user_out_dir_func, campaign_mgr
                    "bracelets": c_bracelets,
                    "piercings": c_piercings,
                    "description": extra_description,
+                   "has_reference": has_ref,
                    "likeness": likeness
                 }
                 st.session_state['char_last_attrs'] = attrs 
