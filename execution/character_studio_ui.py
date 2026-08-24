@@ -126,15 +126,18 @@ def render_character_studio(characters_data, get_user_out_dir_func, campaign_mgr
         # 1.5 Model Engine Selection
         st.markdown("**Image Engine**")
         model_opt = st.selectbox("Select Model", [
-            "Nano (SDXL Fine-Tuned)",
+            "ByteDance Seedream 5.0 (Extreme Photorealism)",
+            "Nano Banana 2 (Google Photoreal)",
             "Wan 2.7 (High Fidelity)",
-            "GPT Image 2.0 (DALL-E 3)"
+            "OpenAI GPT Image 2 (Reasoning & Text)"
         ], index=0)
         
-        model_key = "nano"
-        if "Wan" in model_opt:
+        model_key = "seedream"
+        if "Nano" in model_opt:
+            model_key = "nano"
+        elif "Wan" in model_opt:
             model_key = "wan"
-        elif "GPT" in model_opt:
+        elif "GPT" in model_opt or "OpenAI" in model_opt:
             model_key = "gpt"
             
         # 2. Output Mode (Outside Form for Instant Reactivity)
