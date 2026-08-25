@@ -354,10 +354,10 @@ def get_user_out_dir(category="General"):
     os.makedirs(path, exist_ok=True)
     return path
 
-# --- HELPER: WAN & SEEDANCE ASSET MAPPING RIG ---
+# --- HELPER: VIDEO CREATION ASSET MAPPING RIG ---
 def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
     """
-    Renders the visual Environment, Character & Outfit Mapping Rig for Wan & Seedance Studio.
+    Renders the visual Environment, Character & Outfit Mapping Rig for Video Creation.
     Returns dict:
       {
         "primary_image_path": str or None,
@@ -366,7 +366,7 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
         "outfit_name": str or None,
         "env_name": str or None,
         "mapping_tags": list of str,
-        "ref_audio_paths": list of str   # character voice samples (Seedance 2.5)
+        "ref_audio_paths": list of str   # character voice samples
       }
     """
     rig_results = {
@@ -380,7 +380,7 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
     }
     
     with st.expander("🎭 Environment, Character & Outfit Mapping Rig", expanded=True):
-        st.markdown("Build your scene environment first (or choose from existing locations), then select your character and their pre-mapped outfit. The rig automatically maps thumbnails and injects reference tags (`Image1`, `Image2`, `Image3`, `Image4`) into Wan 2.7 & Seedance 2.0.")
+        st.markdown("Build your scene environment first (or choose from existing locations), then select your character and their pre-mapped outfit. The rig automatically maps thumbnails and injects reference tags (`Image1`, `Image2`, `Image3`, `Image4`) into Wan 3.0, Seedance 2.5, and MiniMax H3.")
         
         c_tab_env, c_tab_char = st.tabs(["🏞️ 1. Environment & Location", "👤 2. Character & Outfit"])
         
@@ -1199,7 +1199,7 @@ nav_options = [
     "Campaign Queue",
     "Art Director",
     "Video Studio",
-    "Wan & Seedance Studio",
+    "Video Creation",
     "Character Studio",
     "Multi-Shot Generator"
 ]
@@ -1461,7 +1461,7 @@ if selection == "Video Vault":
                 vids = [v for v in vids if search_query.lower() in v["name"].lower()]
                 
             if not vids:
-                st.info("ℹ️ No videos found in your Video Vault history yet. Generate a video in **Mini Series** or **Wan & Seedance Studio** to automatically save it here!")
+                st.info("ℹ️ No videos found in your Video Vault history yet. Generate a video in **Mini Series** or **Video Creation** to automatically save it here!")
             else:
                 if "vv_page" not in st.session_state:
                     st.session_state.vv_page = 0
@@ -1536,7 +1536,7 @@ if selection == "Video Vault":
                                 with c_act2:
                                     if st.button("🎬 Edit in Studio", key=f"vv_edit_{vid['name']}_{current_page}_{i}_{c_idx}", use_container_width=True):
                                         st.session_state.wan_edit_image = vid_src
-                                        st.session_state.active_tab = "Wan & Seedance Studio"
+                                        st.session_state.active_tab = "Video Creation"
                                         st.rerun()
 
                 if total_pages > 1:
@@ -1765,16 +1765,16 @@ if selection == "My Gallery":
                         # Identify the best local path if available
                         target_shortcut_path = item.get("local_path", item["src"]) if is_local else item["src"]
                         with c_wan_edit:
-                            if st.button("✏️ Edit", key=f"wan_edit_btn_{idx}", use_container_width=True, help="Edit this image using Wan 2.7 Image-to-Image"):
+                            if st.button("✏️ Edit", key=f"wan_edit_btn_{idx}", use_container_width=True, help="Edit this image in Video Creation Studio"):
                                 st.session_state.wan_edit_image = target_shortcut_path
                                 st.session_state.wan_studio_subtab_radio = "Image-to-Image (Scene Editor)"
-                                st.session_state.active_tab = "Wan & Seedance Studio"
+                                st.session_state.active_tab = "Video Creation"
                                 st.rerun()
                         with c_wan_anim:
-                            if st.button("🎬 Animate", key=f"wan_anim_btn_{idx}", use_container_width=True, help="Animate this image using Wan 2.7 Image-to-Video"):
+                            if st.button("🎬 Animate", key=f"wan_anim_btn_{idx}", use_container_width=True, help="Animate this image in Video Creation Studio"):
                                 st.session_state.wan_animate_image = target_shortcut_path
                                 st.session_state.wan_studio_subtab_radio = "Image-to-Video (Motion)"
-                                st.session_state.active_tab = "Wan & Seedance Studio"
+                                st.session_state.active_tab = "Video Creation"
                                 st.rerun()
 
 # ==========================================
@@ -4589,12 +4589,12 @@ if selection == "Video Studio":
 
 
 # ==========================================
-# TAB: WAN & SEEDANCE STUDIO (Atlas Cloud API)
+# TAB: VIDEO CREATION STUDIO (Atlas Cloud API)
 # ==========================================
-if selection == "Wan & Seedance Studio":
+if selection == "Video Creation":
     with st.container():
-        st.markdown("### Wan & Seedance Studio (Atlas Cloud API)")
-        st.info("Edit your scene images and animate them using the latest Wan 2.7 & Seedance 2.0 models on Atlas Cloud.")
+        st.markdown("### Video Creation Studio (Atlas Cloud API)")
+        st.info("Edit your scene images and animate them using the latest Wan 3.0, Wan 2.7, ByteDance Seedance 2.5, and MiniMax H3 models on Atlas Cloud.")
 
     # Check for authentication
     username = st.session_state.current_user.get("username") if st.session_state.get("authenticated") else "guest"
@@ -4724,7 +4724,7 @@ if selection == "Wan & Seedance Studio":
                                 st.write(res.get("logs", []))
 
     else:
-        st.markdown("#### Wan & Seedance Video Motion Generator")
+        st.markdown("#### Video Motion Generator")
         st.write("Animate your edited scene image or generate cinematic video clips from scratch.")
         
         # 🎭 CHARACTER, OUTFIT & ENVIRONMENT MAPPING RIG
@@ -4842,13 +4842,19 @@ if selection == "Wan & Seedance Studio":
         wan_model_flavor = st.selectbox(
             "Model Variant",
             [
+                "Wan 3.0 (Image-to-Video)",
+                "Wan 3.0 (Reference-to-Video)",
+                "Wan 3.0 (Text-to-Video)",
+                "MiniMax H3 (Image-to-Video)",
+                "MiniMax H3 (Text-to-Video)",
+                "MiniMax H3 / Hailuo 02 (Pro Video)",
+                "Seedance 2.5 (Reference-to-Video - Up to 50 Refs)",
+                "Seedance 2.5 (Image-to-Video)",
+                "Seedance 2.5 (Text-to-Video)",
                 "Wan 2.7 Standard (Image-to-Video)", 
                 "Wan 2.7 Spicy (Image-to-Video)",
                 "Wan 2.7 Standard (Reference-to-Video)",
                 "Wan 2.7 Spicy (Reference-to-Video)",
-                "Seedance 2.5 (Reference-to-Video - Up to 50 Refs)",
-                "Seedance 2.5 (Image-to-Video)",
-                "Seedance 2.5 (Text-to-Video)",
                 "Seedance 2.0 (Reference-to-Video)",
                 "Seedance 2.0 Mini (Reference-to-Video)",
                 "Seedance 2.0 (Image-to-Video)",
@@ -4858,7 +4864,11 @@ if selection == "Wan & Seedance Studio":
             key="wan_studio_flavor_select"
         )
         
-        if "2.5" in wan_model_flavor:
+        if "Wan 3.0" in wan_model_flavor:
+            st.info("⚡ **Alibaba Wan 3.0 Active**: High-fidelity video generation suite with native 1080p, audio-visual sync, and omni-multimodal referencing. Uses **10 Credits**.")
+        elif "MiniMax" in wan_model_flavor or "H3" in wan_model_flavor:
+            st.info("⚡ **MiniMax H3 / Hailuo Active**: Multimodal video engine with native stereo sound, rapid motion dynamics, and film-grade coherence. Uses **10 Credits**.")
+        elif "2.5" in wan_model_flavor:
             st.info("⚡ **Seedance 2.5 Active**: Supports up to **50 Multimodal References** (`Image1`..`Image50`), native 30s clips & 4K resolution. Atlas Cloud API rate: **$0.134/sec** (Cost Forecast: ~$0.67 for 5s | ~$1.34 for 10s | ~$4.02 for 30s). Uses **10 Credits**.")
         
         ref_video_url = None
@@ -5020,13 +5030,25 @@ if selection == "Wan & Seedance Studio":
                 st.error("Please describe the motion you want in the Motion Prompt area.")
             else:
                 user = st.session_state.current_user.get("username")
-                req_credits = 10 if "2.5" in wan_model_flavor else 5
+                req_credits = 10 if ("2.5" in wan_model_flavor or "3.0" in wan_model_flavor or "MiniMax" in wan_model_flavor or "H3" in wan_model_flavor) else 5
                 if not auth_mgr.deduct_credits(user, req_credits):
                     st.error(f"❌ Need {req_credits} Credits for {wan_model_flavor}!")
                 else:
                     with st.status("⚡ Submitting motion job to Atlas Cloud API...", expanded=True) as status:
-                        target_engine = "alibaba/wan-2.7/image-to-video"
-                        if "Seedance 2.5" in wan_model_flavor and "Reference" in wan_model_flavor:
+                        target_engine = "alibaba/wan-3.0/image-to-video"
+                        if "Wan 3.0" in wan_model_flavor and "Reference" in wan_model_flavor:
+                            target_engine = "alibaba/wan-3.0/reference-to-video"
+                        elif "Wan 3.0" in wan_model_flavor and "Text" in wan_model_flavor:
+                            target_engine = "alibaba/wan-3.0/text-to-video"
+                        elif "Wan 3.0" in wan_model_flavor and "Image" in wan_model_flavor:
+                            target_engine = "alibaba/wan-3.0/image-to-video"
+                        elif "MiniMax" in wan_model_flavor and "Text" in wan_model_flavor:
+                            target_engine = "minimax/h3/text-to-video"
+                        elif "Hailuo 02" in wan_model_flavor or "Pro Video" in wan_model_flavor:
+                            target_engine = "minimax/hailuo-02/t2v-pro"
+                        elif "MiniMax" in wan_model_flavor or "H3" in wan_model_flavor:
+                            target_engine = "minimax/h3/image-to-video"
+                        elif "Seedance 2.5" in wan_model_flavor and "Reference" in wan_model_flavor:
                             target_engine = "bytedance/seedance-2.5/reference-to-video"
                         elif "Seedance 2.5" in wan_model_flavor and "Image" in wan_model_flavor:
                             target_engine = "bytedance/seedance-2.5/image-to-video"
@@ -5042,6 +5064,8 @@ if selection == "Wan & Seedance Studio":
                             target_engine = "bytedance/seedance-2.0/text-to-video"
                         elif "Reference-to-Video" in wan_model_flavor:
                             target_engine = "alibaba/wan-2.7/reference-to-video"
+                        elif "Wan 2.7" in wan_model_flavor:
+                            target_engine = "alibaba/wan-2.7/image-to-video"
                             
                         st.write(f"🚀 Running **{target_engine}** model...")
                         if extra_imgs:

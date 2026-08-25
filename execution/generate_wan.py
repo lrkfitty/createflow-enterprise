@@ -288,15 +288,25 @@ def generate_wan_image(prompt, image_path, size="2K", output_folder="output", ex
 
 def generate_wan_video(prompt, image_path, resolution="1080P", duration=5, aspect_ratio="16:9", ref_video_path=None, ref_audio_path=None, extra_images=None, extra_videos=None, extra_audio_paths=None, model="alibaba/wan-2.7/image-to-video", output_folder="output", status_callback=None):
     """
-    Animates an image using Seedance 2.5 / 2.0 or Wan 2.7 models via Atlas Cloud API.
-    Supports multi-subject image references (up to 50), video references, and audio/voiceover references.
+    Animates an image using Seedance 2.5 / 2.0, Wan 3.0 / 2.7, or MiniMax H3 models via Atlas Cloud API.
+    Supports multi-subject image references, video references, and audio/voiceover references.
 
     extra_audio_paths: additional audio references beyond ref_audio_path — used to
-    pass one voice sample per cast member so Seedance 2.5 keeps each character's
-    voice consistent. Capped at the model's documented 10 audio references.
+    pass one voice sample per cast member so models keep each character's
+    voice consistent.
     """
-    brand_name = "Seedance" if "seedance" in model.lower() else "Wan 2.7"
-    file_prefix = "seedance_video" if "seedance" in model.lower() else "wan27_video"
+    if "minimax" in model.lower() or "hailuo" in model.lower() or "h3" in model.lower():
+        brand_name = "MiniMax H3"
+        file_prefix = "minimax_h3_video"
+    elif "wan-3" in model.lower():
+        brand_name = "Wan 3.0"
+        file_prefix = "wan30_video"
+    elif "seedance" in model.lower():
+        brand_name = "Seedance 2.5" if "2.5" in model else "Seedance 2.0"
+        file_prefix = "seedance_video"
+    else:
+        brand_name = "Wan 2.7"
+        file_prefix = "wan27_video"
     
     logs = [f"--- Starting {brand_name} Video ({model}) ---"]
     
@@ -566,6 +576,11 @@ def generate_wan_video(prompt, image_path, resolution="1080P", duration=5, aspec
                             
              payload["images"] = images_payload
              payload["videos"] = videos_payload
+        elif "minimax" in model.lower() or "hailuo" in model.lower() or "h3" in model.lower():
+             if img_uri:
+                 payload["image"] = img_uri
+                 payload["images"] = [img_uri]
+             payload["enable_prompt_expansion"] = True
         elif "text-to-video" in model:
              payload["prompt_extend"] = True
         else:

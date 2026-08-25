@@ -970,6 +970,9 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
                             v_engine = st.selectbox(
                                 "Video Engine", 
                                 [
+                                    "Wan 3.0 (Image-to-Video)",
+                                    "Wan 3.0 (Reference-to-Video)",
+                                    "MiniMax H3 (Image-to-Video)",
                                     "Seedance 2.5 (Reference-to-Video - Up to 50 Refs)",
                                     "Seedance 2.5 (Image-to-Video)",
                                     "Seedance 2.0 (Reference-to-Video)",
@@ -1188,7 +1191,13 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
                                             with open(temp_a_path, "wb") as f_a:
                                                 f_a.write(up_aref.getbuffer())
 
-                                        if "2.5" in v_engine and "Reference" in v_engine:
+                                        if "Wan 3.0" in v_engine and "Reference" in v_engine:
+                                            target_model = "alibaba/wan-3.0/reference-to-video"
+                                        elif "Wan 3.0" in v_engine:
+                                            target_model = "alibaba/wan-3.0/image-to-video"
+                                        elif "MiniMax" in v_engine or "H3" in v_engine:
+                                            target_model = "minimax/h3/image-to-video"
+                                        elif "2.5" in v_engine and "Reference" in v_engine:
                                             target_model = "bytedance/seedance-2.5/reference-to-video"
                                         elif "2.5" in v_engine and "Image" in v_engine:
                                             target_model = "bytedance/seedance-2.5/image-to-video"
