@@ -372,8 +372,8 @@ def generate_wan_video(prompt, image_path, resolution="1080P", duration=5, aspec
             
         logs.append(f"Payload Config -> Model: {model} | Resolution: {norm_res} | Aspect Ratio: {norm_ar} | Duration: {duration}s")
         
-        if "seedance" in model.lower() and "reference-to-video" in model.lower():
-             # Seedance 2.0 Reference-to-Video (Up to 6 Images + Videos + Audios)
+        if "reference-to-video" in model.lower() or (extra_images and len(extra_images) > 0):
+             # Universal Reference-to-Video (Multi-Image + Optional Videos + Optional Audios)
              images_payload = []
              seen_paths = set()
              
@@ -390,7 +390,7 @@ def generate_wan_video(prompt, image_path, resolution="1080P", duration=5, aspec
                          continue
                      seen_paths.add(img_p)
                      if len(images_payload) >= 50:
-                         logs.append("⚠️ Reached max of 50 reference images for Seedance 2.5.")
+                         logs.append("⚠️ Reached max of 50 reference images.")
                          break
                      try:
                          extra_res = image_to_base64_data_uri(img_p) or img_p
@@ -402,7 +402,7 @@ def generate_wan_video(prompt, image_path, resolution="1080P", duration=5, aspec
                          images_payload.append(img_p)
                          logs.append(f"⚠️ Image encoding fallback for image #{len(images_payload)}: {img_err}")
              
-             # Reference Videos & Cascading Video Frame Extraction
+             # Reference Videos (Optional)
              videos_payload = []
              
              def process_vid_ref(vid_path):
@@ -433,16 +433,19 @@ def generate_wan_video(prompt, image_path, resolution="1080P", duration=5, aspec
                       v_res = process_vid_ref(v_item)
                       if v_res and v_res not in videos_payload: videos_payload.append(v_res)
                       
-             if not images_payload:
-                 return {"status": "failed", "error": "Seedance 2.0 requires at least 1 valid reference image (Keyframe Still or Environment Master).", "logs": logs}
+             if not images_payload and not videos_payload:
+                 return {"status": "failed", "error": f"{brand_name} requires at least 1 valid reference image or reference video.", "logs": logs}
                  
-             payload["reference_images"] = images_payload
+             if images_payload:
+                 payload["reference_images"] = images_payload
+                 payload["images"] = images_payload
              if videos_payload:
                  payload["reference_videos"] = videos_payload
+                 payload["videos"] = videos_payload
                  
              # Reference Audios / Voiceover (primary + per-character voice samples)
              def process_audio_ref(a_path):
-                 """Returns an MP3/WAV URL Seedance can fetch, auto-converting M4A/other formats if needed."""
+                 """Returns an MP3/WAV URL that models can fetch, auto-converting M4A/other formats if needed."""
                  if not a_path:
                      return None
                  
@@ -471,7 +474,7 @@ def generate_wan_video(prompt, image_path, resolution="1080P", duration=5, aspec
                                      with open(mp3_out, "rb") as f_mp3:
                                          s3_url = upload_file_obj(f_mp3, object_name=f"ref_audios/{base_name}")
                                      if s3_url:
-                                         logs.append(f"🔄 Converted audio from {ext} to MP3 format for Seedance 2.5 compliance: {base_name}")
+                                         logs.append(f"🔄 Converted audio from {ext} to MP3 format: {base_name}")
                                          return s3_url
                      except Exception as conv_err:
                          logs.append(f"⚠️ Audio conversion notice: {conv_err}")
@@ -505,7 +508,7 @@ def generate_wan_video(prompt, image_path, resolution="1080P", duration=5, aspec
                  a_res = process_audio_ref(a_item)
                  if a_res and a_res not in audios_payload:
                      if len(audios_payload) >= 10:
-                         logs.append("⚠️ Reached max of 10 audio references for Seedance 2.5.")
+                         logs.append("⚠️ Reached max of 10 audio references.")
                          break
                      audios_payload.append(a_res)
                      logs.append(f"Encoded audio reference #{len(audios_payload)}: {os.path.basename(str(a_item))}")
@@ -513,69 +516,6 @@ def generate_wan_video(prompt, image_path, resolution="1080P", duration=5, aspec
              if audios_payload:
                  payload["reference_audios"] = audios_payload
                  
-        elif "reference-to-video" in model:
-             if not ref_video_path:
-                  return {"status": "failed", "error": "Missing reference video for Wan Reference-to-Video model.", "logs": logs}
-             
-             # Primary reference video
-             ref_video_url = ref_video_path
-             if not ref_video_path.startswith(("http://", "https://")) and os.path.exists(ref_video_path):
-                 logs.append("Uploading primary reference video to S3...")
-                 try:
-                     from execution.s3_uploader import upload_file_obj
-                     filename = os.path.basename(ref_video_path)
-                     s3_key = f"ref_videos/{filename}"
-                     with open(ref_video_path, "rb") as f_ref:
-                         s3_url = upload_file_obj(f_ref, object_name=s3_key)
-                     if s3_url:
-                         ref_video_url = s3_url
-                         logs.append(f"Primary reference video uploaded to S3: {s3_url}")
-                     else:
-                         raise ValueError("S3 upload returned empty URL")
-                 except Exception as s3_err:
-                     return {"status": "failed", "error": f"Failed to upload primary reference video to S3: {s3_err}", "logs": logs}
-             
-             videos_payload = [ref_video_url]
-             
-             # Extra reference videos
-             if extra_videos:
-                  for idx, v_path in enumerate(extra_videos):
-                       if not v_path: continue
-                       v_url = v_path
-                       if not v_path.startswith(("http://", "https://")) and os.path.exists(v_path):
-                            logs.append(f"Uploading extra reference video {idx+2} to S3...")
-                            try:
-                                from execution.s3_uploader import upload_file_obj
-                                filename = os.path.basename(v_path)
-                                s3_key = f"ref_videos/extra_{idx}_{filename}"
-                                with open(v_path, "rb") as f_ref:
-                                    s3_url = upload_file_obj(f_ref, object_name=s3_key)
-                                if s3_url:
-                                    v_url = s3_url
-                                    logs.append(f"Extra reference video {idx+2} uploaded to S3: {s3_url}")
-                                else:
-                                    raise ValueError("S3 upload returned empty URL")
-                            except Exception as s3_err:
-                                logs.append(f"⚠️ S3 Upload Warning for video {idx+2}: {s3_err}")
-                                continue
-                       videos_payload.append(v_url)
-             
-             # Primary reference image
-             images_payload = [img_uri]
-             
-             # Extra reference images
-             if extra_images:
-                  for idx, img_p in enumerate(extra_images):
-                       if not img_p: continue
-                       try:
-                            extra_uri = image_to_base64_data_uri(img_p)
-                            images_payload.append(extra_uri)
-                            logs.append(f"Encoded extra image reference {idx+2}")
-                       except Exception as img_err:
-                            logs.append(f"⚠️ Image encoding warning for image {idx+2}: {img_err}")
-                            
-             payload["images"] = images_payload
-             payload["videos"] = videos_payload
         elif "minimax" in model.lower() or "hailuo" in model.lower() or "h3" in model.lower():
              if img_uri:
                  payload["image"] = img_uri
