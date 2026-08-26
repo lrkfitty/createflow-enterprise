@@ -4842,9 +4842,12 @@ if selection == "Video Creation":
         wan_model_flavor = st.selectbox(
             "Model Variant",
             [
-                "Wan 3.0 (Image-to-Video)",
-                "Wan 3.0 (Reference-to-Video)",
-                "Wan 3.0 (Text-to-Video)",
+                "Wan 3.0 Prime (Reference-to-Video - Ultra Fast)",
+                "Wan 3.0 Prime (Image-to-Video - Ultra Fast)",
+                "Wan 3.0 Prime (Text-to-Video - Ultra Fast)",
+                "Wan 3.0 Standard (Reference-to-Video)",
+                "Wan 3.0 Standard (Image-to-Video)",
+                "Wan 3.0 Standard (Text-to-Video)",
                 "MiniMax H3 (Image-to-Video)",
                 "MiniMax H3 (Text-to-Video)",
                 "MiniMax H3 / Hailuo 02 (Pro Video)",
@@ -4864,8 +4867,10 @@ if selection == "Video Creation":
             key="wan_studio_flavor_select"
         )
         
-        if "Wan 3.0" in wan_model_flavor:
-            st.info("⚡ **Alibaba Wan 3.0 Active**: High-fidelity video generation suite with native 1080p, audio-visual sync, and omni-multimodal referencing. Uses **10 Credits**.")
+        if "Prime" in wan_model_flavor:
+            st.info("⚡ **Alibaba Wan 3.0 Prime Active**: Ultra-fast accelerated inference tier with native 1080p, audio-visual sync, and zero queue delay. Premium high-speed generation. Uses **12 Credits**.")
+        elif "Wan 3.0" in wan_model_flavor:
+            st.info("⚡ **Alibaba Wan 3.0 Standard Active**: High-fidelity video generation suite with native 1080p, audio-visual sync, and omni-multimodal referencing. Uses **10 Credits**.")
         elif "MiniMax" in wan_model_flavor or "H3" in wan_model_flavor:
             st.info("⚡ **MiniMax H3 / Hailuo Active**: Multimodal video engine with native stereo sound, rapid motion dynamics, and film-grade coherence. Uses **10 Credits**.")
         elif "2.5" in wan_model_flavor:
@@ -5030,13 +5035,19 @@ if selection == "Video Creation":
                 st.error("Please describe the motion you want in the Motion Prompt area.")
             else:
                 user = st.session_state.current_user.get("username")
-                req_credits = 10 if ("2.5" in wan_model_flavor or "3.0" in wan_model_flavor or "MiniMax" in wan_model_flavor or "H3" in wan_model_flavor) else 5
+                req_credits = 12 if "Prime" in wan_model_flavor else (10 if ("2.5" in wan_model_flavor or "3.0" in wan_model_flavor or "MiniMax" in wan_model_flavor or "H3" in wan_model_flavor) else 5)
                 if not auth_mgr.deduct_credits(user, req_credits):
                     st.error(f"❌ Need {req_credits} Credits for {wan_model_flavor}!")
                 else:
                     with st.status("⚡ Submitting motion job to Atlas Cloud API...", expanded=True) as status:
-                        target_engine = "alibaba/wan-3.0/image-to-video"
-                        if "Wan 3.0" in wan_model_flavor and "Reference" in wan_model_flavor:
+                        target_engine = "alibaba/wan-3.0-prime/reference-to-video"
+                        if "Wan 3.0 Prime" in wan_model_flavor and "Reference" in wan_model_flavor:
+                            target_engine = "alibaba/wan-3.0-prime/reference-to-video"
+                        elif "Wan 3.0 Prime" in wan_model_flavor and "Text" in wan_model_flavor:
+                            target_engine = "alibaba/wan-3.0-prime/text-to-video"
+                        elif "Wan 3.0 Prime" in wan_model_flavor and "Image" in wan_model_flavor:
+                            target_engine = "alibaba/wan-3.0-prime/image-to-video"
+                        elif "Wan 3.0" in wan_model_flavor and "Reference" in wan_model_flavor:
                             target_engine = "alibaba/wan-3.0/reference-to-video"
                         elif "Wan 3.0" in wan_model_flavor and "Text" in wan_model_flavor:
                             target_engine = "alibaba/wan-3.0/text-to-video"

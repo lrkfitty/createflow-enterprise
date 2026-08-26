@@ -298,6 +298,9 @@ def generate_wan_video(prompt, image_path, resolution="1080P", duration=5, aspec
     if "minimax" in model.lower() or "hailuo" in model.lower() or "h3" in model.lower():
         brand_name = "MiniMax H3"
         file_prefix = "minimax_h3_video"
+    elif "prime" in model.lower() and "wan" in model.lower():
+        brand_name = "Wan 3.0 Prime"
+        file_prefix = "wan30_prime_video"
     elif "wan-3" in model.lower():
         brand_name = "Wan 3.0"
         file_prefix = "wan30_video"

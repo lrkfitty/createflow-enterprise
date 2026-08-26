@@ -970,6 +970,8 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
                             v_engine = st.selectbox(
                                 "Video Engine", 
                                 [
+                                    "Wan 3.0 Prime (Reference-to-Video - Ultra Fast)",
+                                    "Wan 3.0 Prime (Image-to-Video - Ultra Fast)",
                                     "Wan 3.0 (Image-to-Video)",
                                     "Wan 3.0 (Reference-to-Video)",
                                     "MiniMax H3 (Image-to-Video)",
@@ -1191,7 +1193,11 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
                                             with open(temp_a_path, "wb") as f_a:
                                                 f_a.write(up_aref.getbuffer())
 
-                                        if "Wan 3.0" in v_engine and "Reference" in v_engine:
+                                        if "Wan 3.0 Prime" in v_engine and "Reference" in v_engine:
+                                            target_model = "alibaba/wan-3.0-prime/reference-to-video"
+                                        elif "Wan 3.0 Prime" in v_engine:
+                                            target_model = "alibaba/wan-3.0-prime/image-to-video"
+                                        elif "Wan 3.0" in v_engine and "Reference" in v_engine:
                                             target_model = "alibaba/wan-3.0/reference-to-video"
                                         elif "Wan 3.0" in v_engine:
                                             target_model = "alibaba/wan-3.0/image-to-video"
