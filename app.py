@@ -5074,12 +5074,30 @@ if selection == "Video Creation":
                             st.write(f"📹 Loaded **{len(extra_vids)} reference videos**.")
 
                         final_wan_prompt = clean_anim_prompt
+                        
+                        # Auto-Inject Mapping Rig Reference Tags if not already present in the prompt
+                        if rig_anim_res.get("mapping_tags"):
+                            has_tags = any(f"Image{i}" in clean_anim_prompt or f"@Image{i}" in clean_anim_prompt for i in range(1, 20))
+                            if not has_tags:
+                                header_lines = [f"@{t}" if not t.startswith("@") else t for t in rig_anim_res["mapping_tags"]]
+                                bindings = []
+                                if rig_anim_res.get("char_name"):
+                                    bindings.append("Lock character facial likeness, bone structure, and identity strictly to character reference image(s).")
+                                if rig_anim_res.get("outfit_name"):
+                                    bindings.append("Lock wardrobe, fabric, and styling strictly to outfit reference image(s).")
+                                if rig_anim_res.get("env_name"):
+                                    bindings.append("Set location, architecture, and lighting strictly to environment reference image(s).")
+                                    
+                                header_block = "\n".join(header_lines)
+                                binding_block = " ".join(bindings)
+                                final_wan_prompt = f"{header_block}\n{binding_block}\n\nAction & Motion: {clean_anim_prompt}"
+                                
                         if wan_char_swap:
                              final_wan_prompt = (
                                   "Strict Character Swap: Lock character identity to Image1. "
                                   "Transfer all environment details, lighting, physics, frame timing, and motion strictly from Video1. "
                                   "Keep the actions identical to Video1, but swap the character with Image1. "
-                                  f"Context: {clean_anim_prompt}"
+                                  f"Context: {final_wan_prompt}"
                              )
                         
                         out_dir = get_user_out_dir("Videos")
