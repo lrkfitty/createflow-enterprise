@@ -443,12 +443,10 @@ def generate_wan_video(prompt, image_path, resolution="1080P", duration=5, aspec
                   payload["reference_images"] = images_payload
                   payload["images"] = images_payload
                   payload["imageUrls"] = images_payload
-                  payload["image"] = images_payload[0]
              if videos_payload:
                   payload["reference_videos"] = videos_payload
                   payload["videos"] = videos_payload
                   payload["videoUrls"] = videos_payload
-                  payload["video"] = videos_payload[0]
                  
              # Reference Audios / Voiceover (primary + per-character voice samples)
              def process_audio_ref(a_path):
