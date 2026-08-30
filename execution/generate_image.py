@@ -96,6 +96,8 @@ def generate_image_nano(prompt_data, output_folder, reference_image_path, outfit
             model_type = "gpt"
         elif "wan" in str(requested_model).lower() or "alibaba" in str(requested_model).lower():
             model_type = "wan"
+        elif "seedream" in str(requested_model).lower() or "bytedance" in str(requested_model).lower():
+            model_type = "seedream"
         else:
             model_type = "nano"
             
@@ -375,6 +377,27 @@ def generate_image_nano(prompt_data, output_folder, reference_image_path, outfit
                     "enable_sync_mode": False,
                     "enable_base64_output": False
                 }
+        elif model_type == "seedream":
+            if has_images:
+                model_name = "bytedance/seedream-v5.0-pro/edit"
+                payload = {
+                    "model": model_name,
+                    "prompt": positive_prompt,
+                    "images": input_images,
+                    "size": "2048*2048" if res_val in ["2k", "4k"] else "1024*1024",
+                    "enable_sync_mode": False,
+                    "enable_base64_output": False
+                }
+            else:
+                model_name = "bytedance/seedream-v5.0-pro/text-to-image"
+                payload = {
+                    "model": model_name,
+                    "prompt": positive_prompt,
+                    "aspect_ratio": ar_val,
+                    "size": "2048*2048" if res_val in ["2k", "4k"] else "1024*1024",
+                    "enable_sync_mode": False,
+                    "enable_base64_output": False
+                }
         else: # nano (google/nano-banana-2)
             if has_images:
                 model_name = "google/nano-banana-2/reference-to-image-developer"
@@ -530,6 +553,7 @@ def generate_image_nano(prompt_data, output_folder, reference_image_path, outfit
         return {
             "status": "failed",
             "image_path": None,
-            "model_used": "alibaba/wan-2.7/image-edit",
+            "error": str(e),
+            "model_used": requested_model or "google/nano-banana-2",
             "logs": "\n".join(logs)
         }

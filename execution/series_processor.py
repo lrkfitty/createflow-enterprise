@@ -85,14 +85,14 @@ def generate_environment_master_prompt(location_name, genre="General", tone="Neu
                 "model": "google/gemini-2.5-flash",
                 "messages": [{"role": "user", "content": prompt_req}]
             }
-            r = requests.post("https://api.atlascloud.ai/v1/chat/completions", headers=headers, json=payload, timeout=30)
+            r = requests.post("https://api.atlascloud.ai/v1/chat/completions", headers=headers, json=payload, timeout=5)
             if r.status_code == 200:
                 raw = r.json()['choices'][0]['message']['content']
                 if "```json" in raw: raw = raw.split("```json")[1].split("```")[0].strip()
                 elif "{" in raw: raw = raw[raw.find("{"):raw.rfind("}")+1]
                 return json.loads(raw)
         except Exception as e:
-            print(f"Environment prompt generation error: {e}")
+            pass
             
     default_prompt = f"PURE EMPTY SET STILL (NO PEOPLE, NO CHARACTERS, NO HUMAN FIGURES). Cinematic 35mm motion picture film still of {location_name}. {shot_angle_type}, 3-layer depth composition with weathered foreground architectural details, midground main space, and deep background layers. Natural 35mm film grain, ISO 400, unpolished physical surfaces with realistic dust and patina, 5600K daylight balance, natural unretouched shadow falloff, optical lens depth of field, RAW photography, zero CGI, zero people."
     if prior_still_index > 0:

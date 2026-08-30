@@ -614,7 +614,7 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
                     if not env_name_input.strip():
                         st.error("Please enter a location name.")
                     else:
-                        with st.spinner(f"⚡ Generating {env_still_count} cascading environment stills for '{env_name_input}' using {env_model_choice.split(' ')[0]}..."):
+                        with st.status(f"⚡ Generating {env_still_count} Cascading Environment Stills for '{env_name_input}'...", expanded=True) as env_status:
                             from execution.series_processor import generate_environment_master_prompt
                             
                             angles = [
@@ -626,11 +626,7 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
                             
                             gen_stills = []
 
-                            # An uploaded anchor photo becomes still #1. The
-                            # continuity-lock block below already treats
-                            # gen_stills[0] as the spatial source of truth for
-                            # every later angle, so seeding it here makes the
-                            # generated angles match a REAL location.
+                            # An uploaded anchor photo becomes still #1.
                             if env_seed_image is not None:
                                 seed_path = os.path.join(
                                     "output", f"temp_env_seed_{prefix_key}{os.path.splitext(env_seed_image.name)[1] or '.png'}"
@@ -639,10 +635,13 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
                                 with open(seed_path, "wb") as f_seed:
                                     f_seed.write(env_seed_image.getbuffer())
                                 gen_stills.append(seed_path)
-                                st.caption(f"📸 Anchored to uploaded photo — generating {max(env_still_count - 1, 0)} matching angle(s).")
+                                env_status.write(f"📸 Anchored to uploaded photo: `{os.path.basename(seed_path)}`")
 
+                            failed_step = False
                             for idx in range(len(gen_stills), env_still_count):
                                 angle_lbl = angles[idx] if idx < len(angles) else f"Alternate Perspective #{idx+1}"
+                                env_status.write(f"📐 **[Still {idx+1}/{env_still_count}]** Framing angle: `{angle_lbl}`...")
+                                
                                 env_prompt_data = generate_environment_master_prompt(
                                     location_name=f"{env_name_input}. {env_notes}" if env_notes else env_name_input,
                                     genre="Cinematic",
@@ -680,6 +679,7 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
                                     "aspect_ratio": "16:9",
                                     "image_size": "2K"
                                 }
+                                env_status.write(f"🎨 Submitting image rendering job to **{env_model_choice.split(' ')[0]}**...")
                                 res_env = generate_image_from_prompt(
                                     p_data, 
                                     output_folder=get_user_out_dir("World/Environments"),
@@ -687,14 +687,28 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
                                 )
                                 if res_env.get("status") == "success":
                                     gen_stills.append(res_env["image_path"])
+                                    env_status.write(f"✅ Still #{idx+1} generated: `{os.path.basename(res_env['image_path'])}`")
                                 else:
+                                    failed_step = True
+                                    err_msg = res_env.get("error") or "Image generation returned failure."
+                                    env_status.update(label=f"Generation Failed on Still #{idx+1}", state="error")
+                                    st.error(f"❌ Error generating Still #{idx+1}: {err_msg}")
+                                    if res_env.get("logs"):
+                                        with st.expander(f"Error Logs (Still #{idx+1})", expanded=True):
+                                            st.write(res_env.get("logs"))
                                     break
                                     
-                            if gen_stills:
+                            if gen_stills and not failed_step:
+                                env_status.update(label=f"✅ Generated {len(gen_stills)} Environment Stills!", state="complete")
                                 st.session_state["selected_env_stills"] = list(gen_stills)
                                 st.session_state["primary_env_img"] = gen_stills[0]
                                 st.toast(f"✅ Generated {len(gen_stills)} Environment Stills!")
                                 st.rerun()
+                            elif gen_stills:
+                                # Partial success
+                                st.session_state["selected_env_stills"] = list(gen_stills)
+                                st.session_state["primary_env_img"] = gen_stills[0]
+                                st.toast(f"⚠️ Generated {len(gen_stills)} of {env_still_count} Stills.")
                                 
                 # Show generated stills if present with selection checkboxes and Save to Asset Library button
                 active_gen_stills = st.session_state.get("selected_env_stills", [])
