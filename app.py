@@ -574,12 +574,20 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
                     key=f"{prefix_key}_gen_env_name"
                 )
 
+                env_scene_details = st.text_area(
+                    "📝 Scene & Environment Prompt Details (Custom Description)",
+                    placeholder="Describe specific architectural details, furniture, props, materials, window views, time of day, lighting setup, and camera mood...",
+                    height=110,
+                    key=f"{prefix_key}_gen_env_details",
+                    help="All details typed here will be directly prioritized and incorporated into the image generation prompt."
+                )
+
                 # Optional real photo to anchor the profile. When present it becomes
                 # still #1 and every generated angle is continuity-locked to it,
                 # instead of the location being invented from text alone.
                 env_seed_image = st.file_uploader(
-                    "📸 Anchor Photo (Optional) — generate additional angles OF THIS location",
-                    type=['png', 'jpg', 'jpeg'],
+                    "📸 Anchor Photo / Reference Image (Optional) — generate additional angles OF THIS location",
+                    type=['png', 'jpg', 'jpeg', 'webp'],
                     accept_multiple_files=False,
                     key=f"{prefix_key}_env_seed_img",
                     help="Upload a real photo of the location. It becomes reference #1 and the generated angles match its architecture, materials and lighting."
@@ -635,21 +643,27 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
                                 with open(seed_path, "wb") as f_seed:
                                     f_seed.write(env_seed_image.getbuffer())
                                 gen_stills.append(seed_path)
-                                env_status.write(f"📸 Anchored to uploaded photo: `{os.path.basename(seed_path)}`")
+                                env_status.write(f"📸 Anchored to uploaded reference photo: `{os.path.basename(seed_path)}`")
 
                             failed_step = False
                             for idx in range(len(gen_stills), env_still_count):
                                 angle_lbl = angles[idx] if idx < len(angles) else f"Alternate Perspective #{idx+1}"
                                 env_status.write(f"📐 **[Still {idx+1}/{env_still_count}]** Framing angle: `{angle_lbl}`...")
                                 
-                                env_prompt_data = generate_environment_master_prompt(
-                                    location_name=f"{env_name_input}. {env_notes}" if env_notes else env_name_input,
-                                    genre="Cinematic",
-                                    tone="35mm Film Still",
-                                    shot_angle_type=angle_lbl,
-                                    prior_still_index=idx
-                                )
-                                env_p = env_prompt_data.get("environment_prompt")
+                                # Build rich comprehensive prompt combining name, user's custom scene details, lighting cues, and optical angle
+                                prompt_parts = []
+                                prompt_parts.append("PURE EMPTY SET STILL (NO PEOPLE, NO CHARACTERS, NO HUMAN FIGURES).")
+                                prompt_parts.append(f"Cinematic 35mm motion picture film still of {env_name_input.strip()}.")
+                                
+                                if env_scene_details and env_scene_details.strip():
+                                    prompt_parts.append(f"Scene Details & Atmosphere: {env_scene_details.strip()}.")
+                                    
+                                if env_notes and env_notes.strip():
+                                    prompt_parts.append(f"Textures & Lighting: {env_notes.strip()}.")
+                                    
+                                prompt_parts.append(f"Camera Framing: {angle_lbl}. 3-layer spatial depth composition with tangible foreground props/occlusion, midground main architectural space, and deep background layers. Natural 35mm film grain, ISO 400, unpolished physical surfaces with realistic dust and patina, 5600K daylight balance, natural unretouched shadow falloff, optical lens depth of field, RAW photography, zero CGI, zero people.")
+                                
+                                base_env_prompt = " ".join(prompt_parts)
                                 
                                 payload_assets = []
                                 for p_idx, prev_s in enumerate(gen_stills):
@@ -663,13 +677,13 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
                                 
                                 if idx > 0 and gen_stills:
                                     continuity_preamble = (
-                                        f"SYSTEM INSTRUCTION: SPATIAL ENVIRONMENT CONTINUITY LOCK. "
-                                        f"Inspect attached Master Reference Still #1. "
+                                        f"SPATIAL ENVIRONMENT CONTINUITY LOCK: Inspect attached Master Environment Reference Still #1. "
                                         f"Render camera angle '{angle_lbl}' INSIDE the EXACT SAME architectural location ({env_name_input}). "
-                                        f"Match wall textures, ceiling structures, window layout, flooring, and lighting setup from Reference Still #1. \n\n"
+                                        f"Match wall textures, ceiling structures, window layout, flooring, materials, and lighting setup from Reference Still #1. \n\n"
                                     )
-                                    if "SYSTEM INSTRUCTION" not in env_p:
-                                        env_p = continuity_preamble + env_p
+                                    env_p = continuity_preamble + base_env_prompt
+                                else:
+                                    env_p = base_env_prompt
                                         
                                 p_data = {
                                     "positive_prompt": env_p,

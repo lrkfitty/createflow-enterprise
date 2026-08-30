@@ -56,9 +56,9 @@ def generate_image_nano(prompt_data, output_folder, reference_image_path, outfit
     if aspect_ratio and aspect_ratio.lower() != "auto":
         positive_prompt = f"IMAGE ASPECT RATIO: {aspect_ratio}. " + positive_prompt
 
-    # --- UNPACK ASSETS ---
     all_cast_members = []  # List of {path, label}
     all_outfits = []  # List of {path, label}
+    all_env_refs = []  # List of {path, label}
     location_ref = None
     
     if "assets" in prompt_data:
@@ -70,7 +70,8 @@ def generate_image_nano(prompt_data, output_folder, reference_image_path, outfit
                 all_cast_members.append({"path": p, "label": l})
             elif "Outfit" in l:
                 all_outfits.append({"path": p, "label": l})
-            elif "Vibe" in l or "Location" in l or "Style" in l:
+            elif "Vibe" in l or "Location" in l or "Style" in l or "Environment" in l or "Anchor" in l or "Master" in l:
+                all_env_refs.append({"path": p, "label": l})
                 location_ref = p
     
     if reference_image_path and not all_cast_members:
@@ -79,6 +80,7 @@ def generate_image_nano(prompt_data, output_folder, reference_image_path, outfit
         all_outfits.append({"path": outfit_path, "label": "Outfit: Primary"})
     if vibe_path and not location_ref:
         location_ref = vibe_path
+        all_env_refs.append({"path": vibe_path, "label": "Scene Location/Vibe Anchor"})
 
     if len(all_cast_members) >= 2:
         import re as _re
@@ -239,7 +241,10 @@ def generate_image_nano(prompt_data, output_folder, reference_image_path, outfit
         assets_to_process = []
         for c in all_cast_members: assets_to_process.append(c)
         for o in all_outfits: assets_to_process.append(o)
-        if location_ref: assets_to_process.append({"path": location_ref, "label": "Scene Location/Vibe"})
+        for e in all_env_refs:
+            if e not in assets_to_process: assets_to_process.append(e)
+        if location_ref and not any(e.get("path") == location_ref for e in all_env_refs):
+            assets_to_process.append({"path": location_ref, "label": "Scene Location/Vibe"})
         
         import concurrent.futures
         processed_assets_map = {}
@@ -308,10 +313,20 @@ def generate_image_nano(prompt_data, output_folder, reference_image_path, outfit
                 elif outfit_label:
                     prompt_injections.append(f"⚠️ CRITICAL: The character ({char_name}) MUST wear this outfit: {outfit_label.strip()}")
                     
-        if location_ref:
+        if all_env_refs:
+            for e_item in all_env_refs:
+                e_path = e_item.get("path")
+                e_lbl = e_item.get("label", "Environment Reference")
+                e_uri, _, e_logs = processed_assets_map.get(e_path, (None, None, []))
+                all_asset_logs.extend(e_logs)
+                if e_uri and e_uri not in input_images:
+                    input_images.append(e_uri)
+                    prompt_injections.append(f"Image {image_index}: Base Environment Master Reference ({e_lbl}). Match architectural layout, walls, materials, and lighting.")
+                    image_index += 1
+        elif location_ref:
             loc_uri, loc_label, loc_logs = processed_assets_map.get(location_ref, (None, None, []))
             all_asset_logs.extend(loc_logs)
-            if loc_uri:
+            if loc_uri and loc_uri not in input_images:
                 input_images.append(loc_uri)
                 prompt_injections.append(f"Image {image_index}: Vibe/Location reference image. Use this scene environment/background.")
                 image_index += 1
