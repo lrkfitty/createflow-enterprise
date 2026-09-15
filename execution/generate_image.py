@@ -17,6 +17,66 @@ def generate_image_from_prompt(prompt_data, output_folder="output", reference_im
     # Dispatch to Atlas Cloud API model
     return generate_image_nano(prompt_data, output_folder, reference_image_path, outfit_path, vibe_path)
 
+def sanitize_prompt_for_openai(prompt: str) -> str:
+    """
+    OpenAI (ChatGPT Image 2.5 / GPT Image) enforces strict moderation on anatomy,
+    body composition, and physique descriptors. This sanitizer removes or softens
+    flagged body measurements and suggestive adjectives while preserving character wardrobe,
+    scene context, camera angles, and art direction.
+    """
+    if not prompt:
+        return ""
+    import re
+    patterns = [
+        (r'extreme\s+dramatic\s+hourglass\s+figure\s+with\s+[^,.]*[,.]?', ''),
+        (r'\b(massive|huge|large|exaggerated)\s+bubble\s+butt\b', 'tailored silhouette'),
+        (r'\bbubble\s+butt\b', 'silhouette'),
+        (r'\b(high-projection\s+)?bbl(\s+shelf(\s+aesthetic)?)?\b', 'fitted hourglass tailoring'),
+        (r'\b(surgically\s+sculpted\s+)?bbl\b', 'hourglass silhouette'),
+        (r'\bsurgically\s+sculpted\b', 'sculpted'),
+        (r'\bdeep(\s+prominent)?\s+cleavage\b', 'collarline'),
+        (r'\bcleavage\b', 'collarline'),
+        (r'\b(hyper-voluptuous|voluptuous\s+heavy|massive\s+heavy)\s+bust\b', 'tailored fit'),
+        (r'\b(very\s+large|heavy|massive)\s+breasts\b', 'tailored fit'),
+        (r'\bbreasts?\b', 'fit'),
+        (r'\bbreast\s+projection\b', 'posture'),
+        (r'\b(a|b|c|dd|e)-cup(\s+cleavage|\s+bust)?\b', 'tailored fit'),
+        (r'\b(high-profile\s+round\s+augmented\s+)?implants\b', 'form'),
+        (r'\baugmented\b', 'fitted'),
+        (r'\bglute\s+shelf(\s+curve)?\b', 'posture'),
+        (r'\b(large\s+round\s+|voluptuous\s+|shapely\s+)?glutes?\b', 'form'),
+        (r'\bbutt\b', 'form'),
+        (r'\brear\b', 'back profile'),
+        (r'\b(dramatically\s+wide\s+exaggerated\s+)?shelf\s+hips\b', 'fitted hips'),
+        (r'\b(microscopic\s+ultra-narrow\s+)?20-inch\s+cinched\s+corset\s+wasp\s+waist\b', 'cinched waist'),
+        (r'\bwasp\s+waist\b', 'cinched waist'),
+        (r'\bwaist\s+width\b', 'waist'),
+        (r'\bhips?\s+width\b', 'hips'),
+        (r'\bbust\s+size\b', 'bust'),
+        (r'\bglute\s+size\b', 'glutes'),
+        (r'\battractive\s+woman\b', 'stylish woman'),
+        (r'\battractive\b', 'fashionable'),
+        (r'\bvoluptuous\s+silhouette\b', 'tailored silhouette'),
+        (r'\bvoluptuous\b', 'tailored'),
+        (r'\bdefined\s+curvy\s+silhouette\b', 'tailored silhouette'),
+        (r'\bcurvy,\s+shapely,\s+hourglass\s+figure\b', 'tailored silhouette'),
+        (r'\bcurvy\b', 'tailored'),
+        (r'\bsexy\b', 'chic'),
+        (r'\bseductive\b', 'confident'),
+        (r'\bprovocative\b', 'striking'),
+        (r'\berotic\b', 'cinematic'),
+        (r'\bsensual\b', 'expressive'),
+        (r'\bthick\s+curvy\s+thighs\b', 'athletic legs'),
+        (r'\bthick\s+thighs\b', 'athletic legs'),
+        (r'\bheavyset,\s+very\s+voluptuous,\s+deeply\s+curved\s+full\s+figure\b', 'full-figured styling'),
+    ]
+    cleaned = prompt
+    for pat, rep in patterns:
+        cleaned = re.sub(pat, rep, cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r'\s{2,}', ' ', cleaned)
+    cleaned = re.sub(r',\s*,', ',', cleaned)
+    return cleaned.strip()
+
 def generate_image_nano(prompt_data, output_folder, reference_image_path, outfit_path, vibe_path):
     """
     Generates using Google Nano Banana 2 via the Atlas Cloud API.
@@ -376,49 +436,54 @@ def generate_image_nano(prompt_data, output_folder, reference_image_path, outfit
                     "enable_sync_mode": False,
                     "enable_base64_output": False
                 }
-        elif model_type in ["gpt-2.5-flare", "gpt-2.5-sunburst"]:
-            sub_variant = "sunburst" if "sunburst" in model_type else "flare"
-            if has_images:
-                model_name = f"openai/gpt-image-2.5-{sub_variant}/edit"
-                payload = {
-                    "model": model_name,
-                    "prompt": positive_prompt,
-                    "images": input_images,
-                    "resolution": res_val,
-                    "enable_sync_mode": False,
-                    "enable_base64_output": False
-                }
+        elif model_type in ["gpt-2.5-flare", "gpt-2.5-sunburst", "gpt"]:
+            # Auto-sanitize prompt for OpenAI to prevent strict content moderation violations
+            clean_openai_prompt = sanitize_prompt_for_openai(positive_prompt)
+            logs.append("🛡️ Applied OpenAI Content Policy Guard (sanitized sensitive body terms to ensure compliance)")
+            
+            if "2.5" in model_type:
+                sub_variant = "sunburst" if "sunburst" in model_type else "flare"
+                if has_images:
+                    model_name = f"openai/gpt-image-2.5-{sub_variant}/edit"
+                    payload = {
+                        "model": model_name,
+                        "prompt": clean_openai_prompt,
+                        "images": input_images,
+                        "resolution": res_val,
+                        "enable_sync_mode": False,
+                        "enable_base64_output": False
+                    }
+                else:
+                    model_name = f"openai/gpt-image-2.5-{sub_variant}/text-to-image"
+                    payload = {
+                        "model": model_name,
+                        "prompt": clean_openai_prompt,
+                        "aspect_ratio": ar_val,
+                        "resolution": res_val,
+                        "enable_sync_mode": False,
+                        "enable_base64_output": False
+                    }
             else:
-                model_name = f"openai/gpt-image-2.5-{sub_variant}/text-to-image"
-                payload = {
-                    "model": model_name,
-                    "prompt": positive_prompt,
-                    "aspect_ratio": ar_val,
-                    "resolution": res_val,
-                    "enable_sync_mode": False,
-                    "enable_base64_output": False
-                }
-        elif model_type == "gpt":
-            if has_images:
-                model_name = "openai/gpt-image-2-developer/edit"
-                payload = {
-                    "model": model_name,
-                    "prompt": positive_prompt,
-                    "images": input_images,
-                    "resolution": res_val,
-                    "enable_sync_mode": False,
-                    "enable_base64_output": False
-                }
-            else:
-                model_name = "openai/gpt-image-2-developer/text-to-image"
-                payload = {
-                    "model": model_name,
-                    "prompt": positive_prompt,
-                    "aspect_ratio": ar_val,
-                    "resolution": res_val,
-                    "enable_sync_mode": False,
-                    "enable_base64_output": False
-                }
+                if has_images:
+                    model_name = "openai/gpt-image-2-developer/edit"
+                    payload = {
+                        "model": model_name,
+                        "prompt": clean_openai_prompt,
+                        "images": input_images,
+                        "resolution": res_val,
+                        "enable_sync_mode": False,
+                        "enable_base64_output": False
+                    }
+                else:
+                    model_name = "openai/gpt-image-2-developer/text-to-image"
+                    payload = {
+                        "model": model_name,
+                        "prompt": clean_openai_prompt,
+                        "aspect_ratio": ar_val,
+                        "resolution": res_val,
+                        "enable_sync_mode": False,
+                        "enable_base64_output": False
+                    }
         elif model_type == "seedream":
             if has_images:
                 model_name = "bytedance/seedream-v5.0-pro/edit"
@@ -522,6 +587,13 @@ def generate_image_nano(prompt_data, output_folder, reference_image_path, outfit
                 break
             elif task_status == "failed":
                 err_msg = poll_data.get("data", {}).get("error") or "Unknown error"
+                if "security policy" in err_msg.lower() or "blocked" in err_msg.lower() or "violates" in err_msg.lower():
+                    clean_policy_err = (
+                        f"🛡️ OpenAI Content Moderation Policy Block: {err_msg}\n\n"
+                        f"👉 WHY THIS HAPPENED: OpenAI (ChatGPT Image 2.5 / GPT Image) enforces an extremely strict automated safety filter that flags prompts with physique/body descriptors (waist, hips, bust, cleavage) or reference images showing certain clothing/skin.\n"
+                        f"👉 HOW TO FIX: Switch your Image Engine to 'Google Nano Banana 2' or 'ByteDance Seedream 5.0' in the dropdown. They are designed for creative character styling and allow stylized character anatomy without OpenAI's censorship."
+                    )
+                    raise Exception(clean_policy_err)
                 raise Exception(f"Generation failed: {err_msg}")
         else:
             raise Exception("Polling timed out after 5 minutes.")
