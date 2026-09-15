@@ -599,6 +599,8 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
                         "Image Engine Model",
                         [
                             "Google Nano Banana 2 (Recommended / Multi-Ref)",
+                            "OpenAI ChatGPT Image 2.5 (Flare - Ultra Fast)",
+                            "OpenAI ChatGPT Image 2.5 (Sunburst - Studio Detail)",
                             "ByteDance Seedream 5.0 (Extreme Photorealism)",
                             "OpenAI GPT Image 2 (Reasoning & Text)"
                         ],
@@ -2129,13 +2131,34 @@ if selection == "Workflow Wizard":
             col_adv, col_count = st.columns([3, 1])
             
             with col_adv:
-                with st.expander("⚙️ Advanced Brain Settings"):
-                     st.caption("Brain: Gemini 2.0 Flash (Optimized for Cost)")
-                     prompt_engine = "gemini-2.0-flash" 
-                     render_engine = "nano" 
+                with st.expander("⚙️ Advanced Brain & Image Engine Settings"):
+                     st.caption("Prompt Brain: Gemini 2.0 Flash (Optimized for Cost)")
+                     prompt_engine = "gemini-2.0-flash"
+                     render_engine_choice = st.selectbox(
+                         "Rendering Image Engine",
+                         [
+                             "Google Nano Banana 2 (Recommended / Multi-Ref)",
+                             "OpenAI ChatGPT Image 2.5 (Flare - Ultra Fast)",
+                             "OpenAI ChatGPT Image 2.5 (Sunburst - Studio Detail)",
+                             "ByteDance Seedream 5.0 (Extreme Photorealism)",
+                             "OpenAI GPT Image 2.0",
+                             "Alibaba Wan 2.7 Pro"
+                         ],
+                         index=0,
+                         key="wiz_render_engine_select"
+                     )
+                     render_engine = "nano"
+                     if "Sunburst" in render_engine_choice:
+                         render_engine = "gpt-2.5-sunburst"
+                     elif "2.5" in render_engine_choice:
+                         render_engine = "gpt-2.5-flare"
+                     elif "GPT" in render_engine_choice or "ChatGPT" in render_engine_choice:
+                         render_engine = "gpt"
+                     elif "Seedream" in render_engine_choice:
+                         render_engine = "seedream"
+                     elif "Wan" in render_engine_choice:
+                         render_engine = "wan"
                      likeness = 0.5
-                     st.sidebar.success("✅ Running in Low-Cost Mode (Flash 2.0)")
-                     # selected_checkpoint removed
                      
             with col_count:
                 num_images = st.slider("Generate Count", 1, 4, 1, key="wiz_test_count")
@@ -3321,6 +3344,20 @@ Write an immersive, detailed prompt now:"""
             final_prompt_val = st.text_area("Final Prompt (Editable)", key="wb_manual_prompt", height=200)
             final_prompt = final_prompt_val
             
+            wb_model_choice = st.selectbox(
+                "Image Engine Model",
+                [
+                    "Google Nano Banana 2 (Recommended / Multi-Ref)",
+                    "OpenAI ChatGPT Image 2.5 (Flare - Ultra Fast)",
+                    "OpenAI ChatGPT Image 2.5 (Sunburst - Studio Detail)",
+                    "ByteDance Seedream 5.0 (Extreme Photorealism)",
+                    "OpenAI GPT Image 2.0",
+                    "Alibaba Wan 2.7 Pro"
+                ],
+                index=0,
+                key="wb_model_select"
+            )
+            
             st.markdown("<br>", unsafe_allow_html=True)
             wb_queue = st.checkbox("Add to Campaign Queue", key="wb_queue_check")
             # FORM SUBMIT BUTTON (Generate)
@@ -3351,7 +3388,7 @@ Write an immersive, detailed prompt now:"""
                         "positive_prompt": final_prompt,
                         "aspect_ratio": sel_ar,
                         "image_size": sel_res,
-                        "model_type": "nano",
+                        "model_type": st.session_state.get("wb_model_select", "nano"),
                         "assets": assets_to_inject
                     },
                     settings={"batch_count": 1},
@@ -3383,7 +3420,7 @@ Write an immersive, detailed prompt now:"""
                          "positive_prompt": final_prompt,
                          "aspect_ratio": sel_ar, 
                          "image_size": sel_res,
-                         "model_type": "nano", 
+                         "model_type": st.session_state.get("wb_model_select", "nano"), 
                          "assets": assets_to_inject
                      }
                      res = generate_image_from_prompt(wb_payload, get_user_out_dir("World"))
@@ -3496,7 +3533,7 @@ Write an immersive, detailed prompt now:"""
                                     "positive_prompt": active_p, 
                                     "aspect_ratio": sel_ar,
                                     "image_size": sel_res,
-                                    "model_type": "nano",
+                                    "model_type": st.session_state.get("wb_model_select", "nano"),
                                     "assets": assets_to_inject
                                 },
                                 settings={"batch_count": 1},
@@ -3524,7 +3561,7 @@ Write an immersive, detailed prompt now:"""
                                          "positive_prompt": active_p, # Use active text
                                          "aspect_ratio": sel_ar, 
                                          "image_size": sel_res,
-                                         "model_type": "nano", 
+                                         "model_type": st.session_state.get("wb_model_select", "nano"), 
                                          "assets": assets_to_inject
                                      }
                                  res = generate_image_from_prompt(wb_payload, get_user_out_dir("Storyboard"))
@@ -3565,7 +3602,7 @@ Write an immersive, detailed prompt now:"""
                                          "positive_prompt": val, # Use edited text
                                          "aspect_ratio": sel_ar, 
                                          "image_size": sel_res,
-                                         "model_type": "nano", 
+                                         "model_type": st.session_state.get("wb_model_select", "nano"), 
                                          "assets": assets_to_inject
                                      }
                                     res = generate_image_from_prompt(wb_payload, get_user_out_dir("Storyboard"))
@@ -3607,7 +3644,7 @@ Write an immersive, detailed prompt now:"""
                             "positive_prompt": p + f", {final_prompt}",
                             "aspect_ratio": sel_ar,
                             "image_size": sel_res,
-                            "model_type": "nano",
+                            "model_type": st.session_state.get("wb_model_select", "nano"),
                             "assets": current_assets
                         }
                         

@@ -128,15 +128,24 @@ def render_character_studio(characters_data, get_user_out_dir_func, campaign_mgr
             st.markdown("**Image Engine**")
             model_opt = st.selectbox("Select Model", [
                 "Google Nano Banana 2",
+                "OpenAI ChatGPT Image 2.5 (Flare - Ultra Fast)",
+                "OpenAI ChatGPT Image 2.5 (Sunburst - Studio Detail)",
                 "OpenAI GPT Image 2.0",
+                "ByteDance Seedream 5.0 (Extreme Photorealism)",
                 "Alibaba Wan 2.7 Pro"
             ], index=0)
             
             model_key = "nano"
             if "Wan" in model_opt:
                 model_key = "wan"
-            elif "GPT" in model_opt:
+            elif "Sunburst" in model_opt:
+                model_key = "gpt-2.5-sunburst"
+            elif "2.5" in model_opt:
+                model_key = "gpt-2.5-flare"
+            elif "GPT" in model_opt or "chatgpt" in model_opt.lower():
                 model_key = "gpt"
+            elif "Seedream" in model_opt:
+                model_key = "seedream"
                 
         with col_m2:
             st.markdown("**Resolution**")

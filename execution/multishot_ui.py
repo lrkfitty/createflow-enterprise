@@ -99,6 +99,8 @@ def render_multishot_ui(get_user_out_dir_func):
             "Atlas Image Engine",
             [
                 "Google Nano Banana 2 (Recommended / Multi-Ref)",
+                "OpenAI ChatGPT Image 2.5 (Flare - Ultra Fast)",
+                "OpenAI ChatGPT Image 2.5 (Sunburst - Studio Detail)",
                 "ByteDance Seedream 5.0 (Extreme Photorealism)",
                 "OpenAI GPT Image 2 (Reasoning & Text)",
                 "Flux 1.1 Pro (Cinematic Lighting)",

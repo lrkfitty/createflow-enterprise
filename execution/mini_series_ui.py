@@ -133,7 +133,7 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
                             "negative_prompt": "blurry, low quality, distortion, ugly face",
                             "num_images": 1,
                             "guidance_scale": 7.5,
-                            "model_type": "nano",
+                            "model_type": st.session_state.get('series_model', 'Google Nano Banana 2'),
                             "aspect_ratio": st.session_state.get('series_ar', '16:9'),
                             "image_size": st.session_state.get('series_res', '1K'),
                             "assets": assets_payload
@@ -256,7 +256,21 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
                  ]
                  s_movie_style = st.selectbox("Style Reference", style_opts, key="s_movie_style")
             
-            c_ar_col, c_res_col = st.columns(2)
+            c_model_col, c_ar_col, c_res_col = st.columns([1.5, 1, 1])
+            with c_model_col:
+                 s_series_model = st.selectbox(
+                     "Shot Image Engine",
+                     [
+                         "Google Nano Banana 2 (Recommended / Multi-Ref)",
+                         "OpenAI ChatGPT Image 2.5 (Flare - Ultra Fast)",
+                         "OpenAI ChatGPT Image 2.5 (Sunburst - Studio Detail)",
+                         "ByteDance Seedream 5.0 (Extreme Photorealism)",
+                         "OpenAI GPT Image 2.0",
+                         "Alibaba Wan 2.7 Pro"
+                     ],
+                     index=0,
+                     key="series_model"
+                 )
             with c_ar_col:
                  s_aspect_ratio = st.selectbox("Aspect Ratio", ["16:9", "9:16", "4:5", "1:1"], index=0, key="series_ar")
             with c_res_col:
@@ -401,10 +415,12 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
                 "Image Model Engine",
                 [
                     "Google Nano Banana 2 (Recommended / Multi-Ref)",
+                    "OpenAI ChatGPT Image 2.5 (Flare - Ultra Fast)",
+                    "OpenAI ChatGPT Image 2.5 (Sunburst - Studio Detail)",
                     "SeaDream 5.0 (ByteDance / Ultra Photorealistic)",
+                    "DALL-E 3 / GPT Image 2.0",
                     "Flux 1.1 Pro (Black Forest Labs)",
-                    "Ideogram 2.0 (High Contrast)",
-                    "DALL-E 3 / GPT Image 2.0"
+                    "Ideogram 2.0 (High Contrast)"
                 ],
                 key="env_model_choice"
             )
@@ -844,7 +860,9 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
                         shot_prompt = st.text_area("Master Director Script & Visual Prompt", value=master_script_block, height=220, key=f"p_{key_base}", label_visibility="collapsed", help="Edit character dialogue lines, physical action cues, or 35mm camera directions here.")
                         st.caption(f"Length: {len(shot_prompt) if shot_prompt else 0} chars (Target: 800+)")
                         
-                        if st.button(f"📸 Generate Shot {shot_idx+1} Still (Nano Banana 2)", key=f"btn_{key_base}", use_container_width=True):
+                        active_model_name = st.session_state.get('series_model', 'Google Nano Banana 2')
+                        short_model = active_model_name.split(' ')[0] if 'ChatGPT' not in active_model_name else 'ChatGPT 2.5'
+                        if st.button(f"📸 Generate Shot {shot_idx+1} Still ({short_model})", key=f"btn_{key_base}", use_container_width=True):
                             user = st.session_state.current_user.get("username")
                             if not auth_mgr.deduct_credits(user, 1):
                                 st.error("❌ No Credits!")
@@ -929,7 +947,7 @@ def mini_series_ui(user_asset_path, outfits_data, vibes_data, assets, knowledge_
                                     
                                     p_data = {
                                          "positive_prompt": final_shot_prompt,
-                                         "model_type": "nano", 
+                                         "model_type": st.session_state.get('series_model', 'Google Nano Banana 2'), 
                                          "assets": final_assets_payload,
                                          "aspect_ratio": st.session_state.get('series_ar', '16:9'),
                                          "image_size": st.session_state.get('series_res', '1K')

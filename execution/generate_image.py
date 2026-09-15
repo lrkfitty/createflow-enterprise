@@ -94,11 +94,16 @@ def generate_image_nano(prompt_data, output_folder, reference_image_path, outfit
 
     try:
         requested_model = prompt_data.get("model_type") or prompt_data.get("model") or ""
-        if "gpt" in str(requested_model).lower() or "openai" in str(requested_model).lower() or "dalle" in str(requested_model).lower():
+        req_lower = str(requested_model).lower()
+        if "2.5" in req_lower and ("sunburst" in req_lower or "detail" in req_lower or "studio" in req_lower):
+            model_type = "gpt-2.5-sunburst"
+        elif "2.5" in req_lower:
+            model_type = "gpt-2.5-flare"
+        elif "gpt" in req_lower or "openai" in req_lower or "dalle" in req_lower or "chatgpt" in req_lower:
             model_type = "gpt"
-        elif "wan" in str(requested_model).lower() or "alibaba" in str(requested_model).lower():
+        elif "wan" in req_lower or "alibaba" in req_lower:
             model_type = "wan"
-        elif "seedream" in str(requested_model).lower() or "bytedance" in str(requested_model).lower():
+        elif "seedream" in req_lower or "bytedance" in req_lower:
             model_type = "seedream"
         else:
             model_type = "nano"
@@ -371,6 +376,28 @@ def generate_image_nano(prompt_data, output_folder, reference_image_path, outfit
                     "enable_sync_mode": False,
                     "enable_base64_output": False
                 }
+        elif model_type in ["gpt-2.5-flare", "gpt-2.5-sunburst"]:
+            sub_variant = "sunburst" if "sunburst" in model_type else "flare"
+            if has_images:
+                model_name = f"openai/gpt-image-2.5-{sub_variant}/edit"
+                payload = {
+                    "model": model_name,
+                    "prompt": positive_prompt,
+                    "images": input_images,
+                    "resolution": res_val,
+                    "enable_sync_mode": False,
+                    "enable_base64_output": False
+                }
+            else:
+                model_name = f"openai/gpt-image-2.5-{sub_variant}/text-to-image"
+                payload = {
+                    "model": model_name,
+                    "prompt": positive_prompt,
+                    "aspect_ratio": ar_val,
+                    "resolution": res_val,
+                    "enable_sync_mode": False,
+                    "enable_base64_output": False
+                }
         elif model_type == "gpt":
             if has_images:
                 model_name = "openai/gpt-image-2-developer/edit"
@@ -504,8 +531,12 @@ def generate_image_nano(prompt_data, output_folder, reference_image_path, outfit
         prefix = "gen_nano2"
         if model_type == "wan":
             prefix = "wan27"
+        elif "gpt-2.5" in model_type:
+            prefix = "chatgpt25"
         elif model_type == "gpt":
             prefix = "gptimg2"
+        elif model_type == "seedream":
+            prefix = "seedream"
         filename = f"{prefix}_{int(time.time())}_{str(uuid.uuid4())[:8]}.jpg"
         filepath = os.path.join(output_folder, filename)
         
