@@ -1030,6 +1030,10 @@ def render_wan_asset_mapping_rig(prefix_key, prompt_target_key=None):
                         st.caption(f"`{item_n}`")
                     
             # Build API Outputs
+            rig_results["reference_labels"] = {str(path): label for _, path, label in rig_imgs}
+            for entry in selected_characters:
+                if entry.get("voice_path"):
+                    rig_results["reference_labels"][str(entry["voice_path"])] = f"Voice for {entry['name']}"
             rig_results["primary_image_path"] = rig_imgs[0][1]
             for _, img_p, _ in rig_imgs[1:]:
                 rig_results["extra_ref_paths"].append(img_p)
@@ -4902,10 +4906,12 @@ if selection == "Video Creation":
         elif "MiniMax" in wan_model_flavor or "H3" in wan_model_flavor:
             st.info("⚡ **MiniMax H3 / Hailuo Active**: Multimodal video engine with native stereo sound, rapid motion dynamics, and film-grade coherence. Uses **10 Credits**.")
         elif "2.5" in wan_model_flavor:
-            st.info("⚡ **Seedance 2.5 Active**: Supports up to **50 Multimodal References** (`Image1`..`Image50`), native 30s clips & 4K resolution. Atlas Cloud API rate: **$0.134/sec** (Cost Forecast: ~$0.67 for 5s | ~$1.34 for 10s | ~$4.02 for 30s). Uses **10 Credits**.")
+            st.info("⚡ **Seedance 2.5 Active**: Supports up to **30 images, 10 videos and 10 audio references**, with clips up to 30 seconds. Atlas Cloud API rate: **$0.134/sec** (Cost Forecast: ~$0.67 for 5s | ~$1.34 for 10s | ~$4.02 for 30s). Uses **10 Credits**.")
         
         ref_video_url = None
         wan_char_swap = False
+        previz_mode = False
+        previz_blocking = ""
         if "Reference-to-Video" in wan_model_flavor:
             st.markdown("**Video Driven Motion (Reference)**")
             
@@ -4913,8 +4919,15 @@ if selection == "Video Creation":
             wan_char_swap = st.checkbox(
                 "🔄 Keep Video Motion (Character Swap)", 
                 value=False, 
-                help="If enabled, this will strictly preserve the motion, background, and physics from the reference video, and swap the character identity with the input image. (Requires reference video to be named Video1 and input image to be named Image1 in your prompt)."
+                help="Uses the actual character slot in the rig and the primary video. For multiple actors or clay previz, use Blender guidance."
             )
+
+            if "Seedance 2.5" in wan_model_flavor:
+                previz_mode = st.checkbox("Use Blender camera and blocking guidance", key="wan_previz_mode")
+                if previz_mode:
+                    wan_char_swap = False
+                    st.caption("The rig supplies finished characters, outfits and setting. The video supplies camera movement and timing.")
+                    previz_blocking = st.text_area("Who is each proxy in the Blender video?", placeholder="Describe each character by seat, action or position in the first frame.", key="wan_previz_blocking")
             
             m_tab1, m_tab2 = st.tabs(["URL Input", "Upload Video"])
             
@@ -4930,22 +4943,27 @@ if selection == "Video Creation":
                           st.error(f"File too large ({uploaded_vid.size / 1024 / 1024:.1f}MB). Max 100MB.")
                      else:
                           with st.spinner("Uploading to S3..."):
-                               if 'last_uploaded_vid_name' not in st.session_state or st.session_state['last_uploaded_vid_name'] != uploaded_vid.name:
-                                    s3_url = upload_file_obj(uploaded_vid, f"user_uploads/{uploaded_vid.name}")
+                               import hashlib
+                               video_digest = hashlib.sha256(uploaded_vid.getvalue()).hexdigest()
+                               if st.session_state.get('wan_motion_video_digest') != video_digest:
+                                    uploaded_vid.seek(0)
+                                    s3_url = upload_file_obj(uploaded_vid, f"user_uploads/{video_digest}{os.path.splitext(uploaded_vid.name)[1]}")
+                                    st.session_state.pop('wan_motion_video_url', None)
+                                    st.session_state.pop('wan_motion_video_digest', None)
                                     if s3_url:
-                                         st.session_state['last_uploaded_vid_url'] = s3_url
-                                         st.session_state['last_uploaded_vid_name'] = uploaded_vid.name
-                                         st.success("✅ Uploaded!")
+                                         st.session_state['wan_motion_video_url'] = s3_url
+                                         st.session_state['wan_motion_video_digest'] = video_digest
                                     else:
-                                         st.error("Upload failed.")
+                                         st.error("Upload failed. Please upload the video again.")
+                                         st.stop()
+                               ref_video_url = st.session_state.get('wan_motion_video_url')
+                               if url_input:
+                                    st.error("Choose one primary video: clear the URL or remove the uploaded file.")
+                                    st.stop()
                                
-                               if 'last_uploaded_vid_url' in st.session_state:
-                                    ref_video_url = st.session_state['last_uploaded_vid_url']
-                                    st.caption(f"Using: `{ref_video_url}`")
-                                    
-            ref_limit_label = "50 Reference Images & 10 Videos" if "2.5" in wan_model_flavor else "9 Reference Images & 4 Videos"
+            ref_limit_label = "30 Reference Images & 10 Videos" if "2.5" in wan_model_flavor else "9 Reference Images & 4 Videos"
             with st.expander(f"📸 Seedance Multi-Subject Reference Lock (Up to {ref_limit_label})", expanded=True):
-                 st.markdown("Reference these subjects in your prompt as `Image1`, `Image2`, `Image3` ... `Image50`, and `Video1`, `Video2`, `Video3` ... `Video10`.")
+                 st.markdown("Use Review before generating to see the actual image and video tags. In Blender guidance mode, use character names in your scene text; the rig adds reference tags.")
                  
                  # Option A: Quick Bulk Upload
                  st.file_uploader(
@@ -4956,26 +4974,26 @@ if selection == "Video Creation":
                      help="Select multiple images from your computer at once."
                  )
                  
-                 st.markdown("--- **or Upload / Assign Slots Individually (Image 2 through Image 9)** ---")
+                 st.markdown("--- **or Add Individual Images (final tags appear in Review)** ---")
                  c_img_a, c_img_b = st.columns(2)
                  with c_img_a:
-                     st.file_uploader("Upload Image 2 (Image2)", type=["png", "jpg", "jpeg", "webp"], key="studio_wan_extra_img2")
-                     st.file_uploader("Upload Image 3 (Image3)", type=["png", "jpg", "jpeg", "webp"], key="studio_wan_extra_img3")
-                     st.file_uploader("Upload Image 4 (Image4)", type=["png", "jpg", "jpeg", "webp"], key="studio_wan_extra_img4")
-                     st.file_uploader("Upload Image 5 (Image5)", type=["png", "jpg", "jpeg", "webp"], key="studio_wan_extra_img5")
+                     st.file_uploader("Additional image upload 1 (see review for tag)", type=["png", "jpg", "jpeg", "webp"], key="studio_wan_extra_img2")
+                     st.file_uploader("Additional image upload 2 (see review for tag)", type=["png", "jpg", "jpeg", "webp"], key="studio_wan_extra_img3")
+                     st.file_uploader("Additional image upload 3 (see review for tag)", type=["png", "jpg", "jpeg", "webp"], key="studio_wan_extra_img4")
+                     st.file_uploader("Additional image upload 4 (see review for tag)", type=["png", "jpg", "jpeg", "webp"], key="studio_wan_extra_img5")
                  with c_img_b:
-                     st.file_uploader("Upload Image 6 (Image6)", type=["png", "jpg", "jpeg", "webp"], key="studio_wan_extra_img6")
-                     st.file_uploader("Upload Image 7 (Image7)", type=["png", "jpg", "jpeg", "webp"], key="studio_wan_extra_img7")
-                     st.file_uploader("Upload Image 8 (Image8)", type=["png", "jpg", "jpeg", "webp"], key="studio_wan_extra_img8")
-                     st.file_uploader("Upload Image 9 (Image9)", type=["png", "jpg", "jpeg", "webp"], key="studio_wan_extra_img9")
+                     st.file_uploader("Additional image upload 5 (see review for tag)", type=["png", "jpg", "jpeg", "webp"], key="studio_wan_extra_img6")
+                     st.file_uploader("Additional image upload 6 (see review for tag)", type=["png", "jpg", "jpeg", "webp"], key="studio_wan_extra_img7")
+                     st.file_uploader("Additional image upload 7 (see review for tag)", type=["png", "jpg", "jpeg", "webp"], key="studio_wan_extra_img8")
+                     st.file_uploader("Additional image upload 8 (see review for tag)", type=["png", "jpg", "jpeg", "webp"], key="studio_wan_extra_img9")
                      
-                 st.markdown("--- **Video Motion / Camera Choreography References (Video 2 through Video 4)** ---")
+                 st.markdown("--- **Additional Motion / Camera Videos (final tags appear in Review)** ---")
                  c_vid_a, c_vid_b = st.columns(2)
                  with c_vid_a:
-                     st.file_uploader("Upload Video 2 (Video2)", type=["mp4", "mov"], key="studio_wan_extra_vid2")
-                     st.file_uploader("Upload Video 3 (Video3)", type=["mp4", "mov"], key="studio_wan_extra_vid3")
+                     st.file_uploader("Additional video upload 1 (see review for tag)", type=["mp4", "mov"], key="studio_wan_extra_vid2")
+                     st.file_uploader("Additional video upload 2 (see review for tag)", type=["mp4", "mov"], key="studio_wan_extra_vid3")
                  with c_vid_b:
-                     st.file_uploader("Upload Video 4 (Video4)", type=["mp4", "mov"], key="studio_wan_extra_vid4")
+                     st.file_uploader("Additional video upload 3 (see review for tag)", type=["mp4", "mov"], key="studio_wan_extra_vid4")
         
         anim_prompt = st.text_area("Motion Prompt", placeholder="e.g. The character turns her head to look at the camera and smiles, wind blowing hair, realistic physics and textures, 35mm lens.", key="wan_anim_prompt")
         
@@ -4987,47 +5005,40 @@ if selection == "Video Creation":
         with c_dur:
             anim_dur = st.slider("Duration (seconds)", 2, 30, 5, key="wan_anim_dur")
             
+        review_anim_btn = st.button("Review before generating", key="wan_review_anim")
         run_anim_btn = st.button("Generate Video Motion", type="primary", key="wan_run_anim")
         
-        if run_anim_btn:
+        if review_anim_btn or run_anim_btn:
             # 1. Gather all reference images and videos upfront FIRST!
+            import hashlib
             extra_imgs = list(rig_anim_res["extra_ref_paths"])
             extra_vids = []
 
-            max_extra_allowed = 49 if "2.5" in wan_model_flavor else 8
+            max_extra_allowed = 29 if "2.5" in wan_model_flavor else 8
 
-            # Profiles can contribute many refs (env angles + per-character
-            # angles). Older models accept far fewer, so trim before sending.
-            if len(extra_imgs) > max_extra_allowed:
-                st.warning(
-                    f"⚠️ {len(extra_imgs)} reference images mapped but "
-                    f"{wan_model_flavor} accepts {max_extra_allowed} — using the first {max_extra_allowed}. "
-                    f"Switch to a Seedance 2.5 variant to use the full set."
-                )
-                extra_imgs = extra_imgs[:max_extra_allowed]
             if "Reference-to-Video" in wan_model_flavor or "Seedance" in wan_model_flavor:
                 bulk_uploads_st = st.session_state.get("studio_wan_extra_imgs_bulk", [])
                 if bulk_uploads_st:
-                    for idx, b_file in enumerate(bulk_uploads_st[:max_extra_allowed]):
-                        b_path = os.path.join("output", f"temp_wan_studio_bulk_ex_img_{idx+2}.png")
+                    for idx, b_file in enumerate(bulk_uploads_st):
+                        b_path = os.path.join("output", f"ref_{hashlib.sha256(b_file.getvalue()).hexdigest()}{os.path.splitext(b_file.name)[1]}")
                         with open(b_path, "wb") as f:
                             f.write(b_file.getbuffer())
-                        if b_path not in extra_imgs and len(extra_imgs) < max_extra_allowed:
+                        if b_path not in extra_imgs:
                             extra_imgs.append(b_path)
 
                 for slot_idx in range(2, 10):
                     w_slot_file = st.session_state.get(f"studio_wan_extra_img{slot_idx}")
                     if w_slot_file:
-                        slot_path = os.path.join("output", f"temp_wan_studio_ex_img{slot_idx}.png")
+                        slot_path = os.path.join("output", f"ref_{hashlib.sha256(w_slot_file.getvalue()).hexdigest()}{os.path.splitext(w_slot_file.name)[1]}")
                         with open(slot_path, "wb") as f:
                             f.write(w_slot_file.getbuffer())
-                        if slot_path not in extra_imgs and len(extra_imgs) < max_extra_allowed:
+                        if slot_path not in extra_imgs:
                             extra_imgs.append(slot_path)
                             
                 for slot_v_idx in range(2, 5):
                     w_vid_file = st.session_state.get(f"studio_wan_extra_vid{slot_v_idx}")
                     if w_vid_file:
-                        v_slot_path = os.path.join("output", f"temp_wan_studio_ex_vid{slot_v_idx}.mp4")
+                        v_slot_path = os.path.join("output", f"ref_{hashlib.sha256(w_vid_file.getvalue()).hexdigest()}{os.path.splitext(w_vid_file.name)[1]}")
                         with open(v_slot_path, "wb") as f:
                             f.write(w_vid_file.getbuffer())
                         if v_slot_path not in extra_vids and len(extra_vids) < 3:
@@ -5035,7 +5046,7 @@ if selection == "Video Creation":
 
             # If anim_image_path is missing but extra_imgs has images, use extra_imgs[0] as primary image!
             if not anim_image_path and extra_imgs:
-                anim_image_path = extra_imgs[0]
+                anim_image_path = extra_imgs.pop(0)
 
             # 2. JSON Prompt Auto-Extraction if raw JSON was pasted
             clean_anim_prompt = anim_prompt.strip() if anim_prompt else ""
@@ -5064,85 +5075,92 @@ if selection == "Video Creation":
             else:
                 user = st.session_state.current_user.get("username")
                 req_credits = 12 if "Prime" in wan_model_flavor else (10 if ("2.5" in wan_model_flavor or "3.0" in wan_model_flavor or "MiniMax" in wan_model_flavor or "H3" in wan_model_flavor) else 5)
+                from execution.reference_review import build_review, fingerprint
+                target_engine = "alibaba/wan-3.0-prime/reference-to-video"
+                if "Wan 3.0 Prime" in wan_model_flavor and "Reference" in wan_model_flavor:
+                    target_engine = "alibaba/wan-3.0-prime/reference-to-video"
+                elif "Wan 3.0 Prime" in wan_model_flavor and "Text" in wan_model_flavor:
+                    target_engine = "alibaba/wan-3.0-prime/text-to-video"
+                elif "Wan 3.0 Prime" in wan_model_flavor and "Image" in wan_model_flavor:
+                    target_engine = "alibaba/wan-3.0-prime/image-to-video"
+                elif "Wan 3.0" in wan_model_flavor and "Reference" in wan_model_flavor:
+                    target_engine = "alibaba/wan-3.0/reference-to-video"
+                elif "Wan 3.0" in wan_model_flavor and "Text" in wan_model_flavor:
+                    target_engine = "alibaba/wan-3.0/text-to-video"
+                elif "Wan 3.0" in wan_model_flavor and "Image" in wan_model_flavor:
+                    target_engine = "alibaba/wan-3.0/image-to-video"
+                elif "MiniMax" in wan_model_flavor and "Text" in wan_model_flavor:
+                    target_engine = "minimax/h3/text-to-video"
+                elif "Hailuo 02" in wan_model_flavor or "Pro Video" in wan_model_flavor:
+                    target_engine = "minimax/hailuo-02/t2v-pro"
+                elif "MiniMax" in wan_model_flavor or "H3" in wan_model_flavor:
+                    target_engine = "minimax/h3/image-to-video"
+                elif "Seedance 2.5" in wan_model_flavor and "Reference" in wan_model_flavor:
+                    target_engine = "bytedance/seedance-2.5/reference-to-video"
+                elif "Seedance 2.5" in wan_model_flavor and "Image" in wan_model_flavor:
+                    target_engine = "bytedance/seedance-2.5/image-to-video"
+                elif "Seedance 2.5" in wan_model_flavor and "Text" in wan_model_flavor:
+                    target_engine = "bytedance/seedance-2.5/text-to-video"
+                elif "Mini" in wan_model_flavor:
+                    target_engine = "bytedance/seedance-2.0-mini/reference-to-video"
+                elif "Seedance" in wan_model_flavor and "Reference" in wan_model_flavor:
+                    target_engine = "bytedance/seedance-2.0/reference-to-video"
+                elif "Seedance" in wan_model_flavor and "Image" in wan_model_flavor:
+                    target_engine = "bytedance/seedance-2.0/image-to-video"
+                elif "Seedance" in wan_model_flavor and "Text" in wan_model_flavor:
+                    target_engine = "bytedance/seedance-2.0/text-to-video"
+                elif "Reference-to-Video" in wan_model_flavor:
+                    target_engine = "alibaba/wan-2.7/reference-to-video"
+                elif "Wan 2.7" in wan_model_flavor:
+                    target_engine = "alibaba/wan-2.7/image-to-video"
+
+                rig_audios = list(rig_anim_res.get("ref_audio_paths") or [])
+                image_refs = ([anim_image_path] if anim_image_path else []) + extra_imgs
+                video_refs = ([ref_video_url] if ref_video_url else []) + extra_vids
+                try:
+                    if len(extra_imgs) > max_extra_allowed:
+                        raise ValueError(f"Too many images for this model. Maximum: {max_extra_allowed + 1}.")
+                    labels = rig_anim_res.get("reference_labels", {})
+                    if rig_anim_res.get("primary_image_path") and anim_image_path != rig_anim_res["primary_image_path"]:
+                        raise ValueError("Select Shortcut (from Mapping Rig) to keep the rig and reference numbers aligned.")
+                    rows, final_wan_prompt = build_review(clean_anim_prompt, image_refs, video_refs, rig_audios, labels, previz_mode, previz_blocking, anim_dur if "Seedance 2.5" in wan_model_flavor else max(4, anim_dur))
+                    if wan_char_swap:
+                        character_tags = [r["Reference"] for r in rows if r["Role"].startswith("Character:") and "(Ref " not in r["Role"]]
+                        if len(character_tags) != 1 or not video_refs:
+                            raise ValueError("Character Swap requires exactly one character reference and a video. For multiple actors, use Blender guidance.")
+                        final_wan_prompt += f"\nUse {character_tags[0]} for character identity and @Video1 for action and camera movement."
+                    from execution.generate_wan import sanitize_prompt_for_provider
+                    final_wan_prompt = sanitize_prompt_for_provider(final_wan_prompt)
+                    selected_ratio = anim_ar.split(" ")[0]
+                    if selected_ratio == "9:16":
+                        final_wan_prompt = final_wan_prompt.replace("16:9 widescreen", "9:16 vertical orientation").replace("16:9", "9:16")
+                    elif selected_ratio == "1:1":
+                        final_wan_prompt = final_wan_prompt.replace("16:9 widescreen", "1:1 square framing").replace("16:9", "1:1")
+                    review_id = fingerprint([rows, final_wan_prompt, target_engine, anim_res, anim_ar, anim_dur])
+                    st.dataframe([{k: v for k, v in row.items() if k != "identity"} for row in rows], use_container_width=True)
+                    st.text_area("Final reference prompt", final_wan_prompt, height=250, disabled=True)
+                    if review_anim_btn:
+                        st.session_state["wan_review_id"] = review_id
+                        st.success("References checked. Review the assignments above, then click Generate Video Motion. No generation credits spent.")
+                        st.stop()
+                    if st.session_state.get("wan_review_id") != review_id:
+                        raise ValueError("The references or settings changed. Click Review before generating first.")
+                    prepared = generate_wan_video(prompt=final_wan_prompt, image_path=anim_image_path, resolution=anim_res, duration=anim_dur, aspect_ratio=anim_ar.split(" ")[0], ref_video_path=ref_video_url, ref_audio_path=rig_audios[0] if rig_audios else None, extra_audio_paths=rig_audios[1:], extra_images=extra_imgs, extra_videos=extra_vids, model=target_engine, dry_run=True)
+                    if prepared.get("status") != "prepared":
+                        raise ValueError(prepared.get("error", "Reference preparation failed."))
+                except ValueError as error:
+                    st.error(str(error))
+                    st.stop()
                 if not auth_mgr.deduct_credits(user, req_credits):
                     st.error(f"❌ Need {req_credits} Credits for {wan_model_flavor}!")
                 else:
+                    st.session_state.pop("wan_review_id", None)
                     with st.status("⚡ Submitting motion job to Atlas Cloud API...", expanded=True) as status:
-                        target_engine = "alibaba/wan-3.0-prime/reference-to-video"
-                        if "Wan 3.0 Prime" in wan_model_flavor and "Reference" in wan_model_flavor:
-                            target_engine = "alibaba/wan-3.0-prime/reference-to-video"
-                        elif "Wan 3.0 Prime" in wan_model_flavor and "Text" in wan_model_flavor:
-                            target_engine = "alibaba/wan-3.0-prime/text-to-video"
-                        elif "Wan 3.0 Prime" in wan_model_flavor and "Image" in wan_model_flavor:
-                            target_engine = "alibaba/wan-3.0-prime/image-to-video"
-                        elif "Wan 3.0" in wan_model_flavor and "Reference" in wan_model_flavor:
-                            target_engine = "alibaba/wan-3.0/reference-to-video"
-                        elif "Wan 3.0" in wan_model_flavor and "Text" in wan_model_flavor:
-                            target_engine = "alibaba/wan-3.0/text-to-video"
-                        elif "Wan 3.0" in wan_model_flavor and "Image" in wan_model_flavor:
-                            target_engine = "alibaba/wan-3.0/image-to-video"
-                        elif "MiniMax" in wan_model_flavor and "Text" in wan_model_flavor:
-                            target_engine = "minimax/h3/text-to-video"
-                        elif "Hailuo 02" in wan_model_flavor or "Pro Video" in wan_model_flavor:
-                            target_engine = "minimax/hailuo-02/t2v-pro"
-                        elif "MiniMax" in wan_model_flavor or "H3" in wan_model_flavor:
-                            target_engine = "minimax/h3/image-to-video"
-                        elif "Seedance 2.5" in wan_model_flavor and "Reference" in wan_model_flavor:
-                            target_engine = "bytedance/seedance-2.5/reference-to-video"
-                        elif "Seedance 2.5" in wan_model_flavor and "Image" in wan_model_flavor:
-                            target_engine = "bytedance/seedance-2.5/image-to-video"
-                        elif "Seedance 2.5" in wan_model_flavor and "Text" in wan_model_flavor:
-                            target_engine = "bytedance/seedance-2.5/text-to-video"
-                        elif "Mini" in wan_model_flavor:
-                            target_engine = "bytedance/seedance-2.0-mini/reference-to-video"
-                        elif "Seedance" in wan_model_flavor and "Reference" in wan_model_flavor:
-                            target_engine = "bytedance/seedance-2.0/reference-to-video"
-                        elif "Seedance" in wan_model_flavor and "Image" in wan_model_flavor:
-                            target_engine = "bytedance/seedance-2.0/image-to-video"
-                        elif "Seedance" in wan_model_flavor and "Text" in wan_model_flavor:
-                            target_engine = "bytedance/seedance-2.0/text-to-video"
-                        elif "Reference-to-Video" in wan_model_flavor:
-                            target_engine = "alibaba/wan-2.7/reference-to-video"
-                        elif "Wan 2.7" in wan_model_flavor:
-                            target_engine = "alibaba/wan-2.7/image-to-video"
-                            
-                        st.write(f"🚀 Running **{target_engine}** model...")
-                        if extra_imgs:
-                            st.write(f"📸 Loaded **{len(extra_imgs)} reference images**.")
-                        if extra_vids:
-                            st.write(f"📹 Loaded **{len(extra_vids)} reference videos**.")
-
-                        final_wan_prompt = clean_anim_prompt
-                        
-                        # Auto-Inject Mapping Rig Reference Tags if not already present in the prompt
-                        if rig_anim_res.get("mapping_tags"):
-                            has_tags = any(f"Image{i}" in clean_anim_prompt or f"@Image{i}" in clean_anim_prompt for i in range(1, 20))
-                            if not has_tags:
-                                header_lines = [f"@{t}" if not t.startswith("@") else t for t in rig_anim_res["mapping_tags"]]
-                                bindings = []
-                                if rig_anim_res.get("char_name"):
-                                    bindings.append("Lock character facial likeness, bone structure, and identity strictly to character reference image(s).")
-                                if rig_anim_res.get("outfit_name"):
-                                    bindings.append("Lock wardrobe, fabric, and styling strictly to outfit reference image(s).")
-                                if rig_anim_res.get("env_name"):
-                                    bindings.append("Set location, architecture, and lighting strictly to environment reference image(s).")
-                                    
-                                header_block = "\n".join(header_lines)
-                                binding_block = " ".join(bindings)
-                                final_wan_prompt = f"{header_block}\n{binding_block}\n\nAction & Motion: {clean_anim_prompt}"
-                                
-                        if wan_char_swap:
-                             final_wan_prompt = (
-                                  "Strict Character Swap: Lock character identity to Image1. "
-                                  "Transfer all environment details, lighting, physics, frame timing, and motion strictly from Video1. "
-                                  "Keep the actions identical to Video1, but swap the character with Image1. "
-                                  f"Context: {final_wan_prompt}"
-                             )
-                        
                         out_dir = get_user_out_dir("Videos")
                         # Character Profile voice samples -> Seedance audio refs
                         rig_audios = list(rig_anim_res.get("ref_audio_paths") or [])
                         res = generate_wan_video(
+                            prepared_payload=prepared["payload"],
                             prompt=final_wan_prompt,
                             image_path=anim_image_path,
                             resolution=anim_res,

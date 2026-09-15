@@ -286,7 +286,7 @@ def generate_wan_image(prompt, image_path, size="2K", output_folder="output", ex
     except Exception as e:
         return {"status": "failed", "error": str(e), "logs": logs}
 
-def generate_wan_video(prompt, image_path, resolution="1080P", duration=5, aspect_ratio="16:9", ref_video_path=None, ref_audio_path=None, extra_images=None, extra_videos=None, extra_audio_paths=None, model="alibaba/wan-2.7/image-to-video", output_folder="output", status_callback=None):
+def generate_wan_video(prompt, image_path, resolution="1080P", duration=5, aspect_ratio="16:9", ref_video_path=None, ref_audio_path=None, extra_images=None, extra_videos=None, extra_audio_paths=None, model="alibaba/wan-2.7/image-to-video", output_folder="output", status_callback=None, dry_run=False, prepared_payload=None):
     """
     Animates an image using Seedance 2.5 / 2.0, Wan 3.0 / 2.7, or MiniMax H3 models via Atlas Cloud API.
     Supports multi-subject image references, video references, and audio/voiceover references.
@@ -331,234 +331,233 @@ def generate_wan_video(prompt, image_path, resolution="1080P", duration=5, aspec
         os.makedirs(output_folder)
         
     try:
-        log_msg("Processing input image & reference slots...")
-        img_uri = image_to_base64_data_uri(image_path) if image_path else None
-        logs.append(f"Source image processed (length: {len(img_uri) if img_uri else 0})")
-        
         generate_url = "https://api.atlascloud.ai/api/v1/model/generateVideo"
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {api_key}"
-        }
-        
-        res_raw = str(resolution).upper().strip()
-        if "720" in res_raw:
-            norm_res = "720p"
-        elif "4K" in res_raw:
-            norm_res = "4k"
+        headers = {"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"}
+        if prepared_payload is not None:
+            payload = prepared_payload
         else:
-            norm_res = "1080p"
+            log_msg("Processing input image & reference slots...")
+            img_uri = image_to_base64_data_uri(image_path) if image_path else None
+            logs.append(f"Source image processed (length: {len(img_uri) if img_uri else 0})")
 
-        raw_ar = str(aspect_ratio).strip() if aspect_ratio else "16:9"
-        if "9:16" in raw_ar:
-            norm_ar = "9:16"
-        elif "1:1" in raw_ar:
-            norm_ar = "1:1"
-        else:
-            norm_ar = "16:9"
-            
-        clean_prompt = sanitize_prompt_for_provider(prompt)
-        if norm_ar == "9:16":
-            clean_prompt = clean_prompt.replace("16:9 widescreen", "9:16 vertical orientation").replace("16:9", "9:16")
-        elif norm_ar == "1:1":
-            clean_prompt = clean_prompt.replace("16:9 widescreen", "1:1 square framing").replace("16:9", "1:1")
+            generate_url = "https://api.atlascloud.ai/api/v1/model/generateVideo"
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {api_key}"
+            }
 
-        payload = {
-            "model": model,
-            "prompt": clean_prompt,
-            "resolution": norm_res,
-            "aspect_ratio": norm_ar,
-            "ratio": norm_ar,
-            "duration": duration,
-            "seed": -1
-        }
+            res_raw = str(resolution).upper().strip()
+            if "720" in res_raw:
+                norm_res = "720p"
+            elif "4K" in res_raw:
+                norm_res = "4k"
+            else:
+                norm_res = "1080p"
+
+            raw_ar = str(aspect_ratio).strip() if aspect_ratio else "16:9"
+            if "9:16" in raw_ar:
+                norm_ar = "9:16"
+            elif "1:1" in raw_ar:
+                norm_ar = "1:1"
+            else:
+                norm_ar = "16:9"
             
-        logs.append(f"Payload Config -> Model: {model} | Resolution: {norm_res} | Aspect Ratio: {norm_ar} | Duration: {duration}s")
+            clean_prompt = sanitize_prompt_for_provider(prompt)
+            if norm_ar == "9:16":
+                clean_prompt = clean_prompt.replace("16:9 widescreen", "9:16 vertical orientation").replace("16:9", "9:16")
+            elif norm_ar == "1:1":
+                clean_prompt = clean_prompt.replace("16:9 widescreen", "1:1 square framing").replace("16:9", "1:1")
+
+            payload = {
+                "model": model,
+                "prompt": clean_prompt,
+                "resolution": norm_res,
+                "aspect_ratio": norm_ar,
+                "ratio": norm_ar,
+                "duration": duration,
+                "seed": -1
+            }
+            
+            logs.append(f"Payload Config -> Model: {model} | Resolution: {norm_res} | Aspect Ratio: {norm_ar} | Duration: {duration}s")
         
-        if "reference-to-video" in model.lower() or (extra_images and len(extra_images) > 0):
-             # Universal Reference-to-Video (Multi-Image + Optional Videos + Optional Audios)
-             images_payload = []
-             seen_paths = set()
+            if "reference-to-video" in model.lower() or (extra_images and len(extra_images) > 0):
+                 # Universal Reference-to-Video (Multi-Image + Optional Videos + Optional Audios)
+                 images_payload = []
+                 seen_paths = set()
              
-             if image_path:
-                 seen_paths.add(image_path)
-                 primary_res = img_uri or image_to_base64_data_uri(image_path) or image_path
-                 if primary_res:
-                     images_payload.append(primary_res)
-                     logs.append(f"Encoded primary reference image #1: {os.path.basename(str(image_path))}")
+                 if image_path:
+                     seen_paths.add(image_path)
+                     primary_res = img_uri or image_to_base64_data_uri(image_path) or image_path
+                     if primary_res:
+                         images_payload.append(primary_res)
+                         logs.append(f"Encoded primary reference image #1: {os.path.basename(str(image_path))}")
                      
-             if extra_images:
-                 for idx, img_p in enumerate(extra_images):
-                     if not img_p or img_p in seen_paths:
-                         continue
-                     seen_paths.add(img_p)
-                     if len(images_payload) >= 50:
-                         logs.append("⚠️ Reached max of 50 reference images.")
-                         break
-                     try:
-                         extra_res = image_to_base64_data_uri(img_p) or img_p
-                         if extra_res:
-                             images_payload.append(extra_res)
-                             logs.append(f"Encoded reference image #{len(images_payload)}: {os.path.basename(str(img_p))}")
-                     except Exception as img_err:
-                         # Fallback to direct string path/URL if base64 fails
-                         images_payload.append(img_p)
-                         logs.append(f"⚠️ Image encoding fallback for image #{len(images_payload)}: {img_err}")
+                 if extra_images:
+                     for idx, img_p in enumerate(extra_images):
+                         if not img_p:
+                             continue
+                         seen_paths.add(img_p)
+                         if len(images_payload) >= 30:
+                             raise ValueError("Too many reference images; no references were submitted.")
+                         try:
+                             extra_res = image_to_base64_data_uri(img_p) or img_p
+                             if extra_res:
+                                 images_payload.append(extra_res)
+                                 logs.append(f"Encoded reference image #{len(images_payload)}: {os.path.basename(str(img_p))}")
+                         except Exception as img_err:
+                             # Fallback to direct string path/URL if base64 fails
+                             images_payload.append(img_p)
+                             logs.append(f"⚠️ Image encoding fallback for image #{len(images_payload)}: {img_err}")
              
-             # Reference Videos (Optional)
-             videos_payload = []
+                 # Reference Videos (Optional)
+                 videos_payload = []
              
-             def process_vid_ref(vid_path):
-                  if not vid_path: return None
-                  if vid_path.startswith(("http://", "https://")):
-                      return vid_path
-                  if os.path.exists(vid_path):
-                      try:
-                          from execution.s3_uploader import upload_file_obj
-                          with open(vid_path, "rb") as f_ref:
-                              s3_url = upload_file_obj(f_ref, object_name=f"ref_videos/{os.path.basename(vid_path)}")
-                          if s3_url and s3_url.startswith(("http://", "https://")):
-                              return s3_url
-                      except Exception as s3_e:
-                          logs.append(f"⚠️ Video S3 Upload warning: {s3_e}")
+                 def process_vid_ref(vid_path):
+                      if not vid_path: return None
+                      if vid_path.startswith(("http://", "https://")):
+                          return vid_path
+                      if os.path.exists(vid_path):
+                          try:
+                              from execution.s3_uploader import upload_file_obj
+                              with open(vid_path, "rb") as f_ref:
+                                  s3_url = upload_file_obj(f_ref, object_name=f"ref_videos/{os.path.basename(vid_path)}")
+                              if s3_url and s3_url.startswith(("http://", "https://")):
+                                  return s3_url
+                          except Exception as s3_e:
+                              logs.append(f"⚠️ Video S3 Upload warning: {s3_e}")
                           
-                      # Local video path fallback for video reference
-                      logs.append(f"📹 Passing local reference video: {os.path.basename(vid_path)}")
-                      return vid_path
-                  return None
+                          # Local video path fallback for video reference
+                          logs.append(f"📹 Passing local reference video: {os.path.basename(vid_path)}")
+                          raise ValueError("Video upload failed; no job was submitted.")
+                      raise ValueError("Reference video is missing.")
 
-             if ref_video_path:
-                  v_res = process_vid_ref(ref_video_path)
-                  if v_res: videos_payload.append(v_res)
+                 if ref_video_path:
+                      v_res = process_vid_ref(ref_video_path)
+                      if v_res: videos_payload.append(v_res)
                   
-             if extra_videos:
-                  for v_item in extra_videos:
-                      v_res = process_vid_ref(v_item)
-                      if v_res and v_res not in videos_payload: videos_payload.append(v_res)
+                 if extra_videos:
+                      for v_item in extra_videos:
+                          v_res = process_vid_ref(v_item)
+                          if v_res: videos_payload.append(v_res)
                       
-             if not images_payload and not videos_payload:
-                 return {"status": "failed", "error": f"{brand_name} requires at least 1 valid reference image or reference video.", "logs": logs}
+                 if not images_payload and not videos_payload:
+                     return {"status": "failed", "error": f"{brand_name} requires at least 1 valid reference image or reference video.", "logs": logs}
                  
-             if images_payload:
-                  payload["reference_images"] = images_payload
-                  payload["images"] = images_payload
-                  payload["imageUrls"] = images_payload
-             if videos_payload:
-                  payload["reference_videos"] = videos_payload
-                  payload["videos"] = videos_payload
-                  payload["videoUrls"] = videos_payload
+                 if images_payload:
+                      payload["reference_images"] = images_payload
+                      payload["images"] = images_payload
+                      payload["imageUrls"] = images_payload
+                 if videos_payload:
+                      payload["reference_videos"] = videos_payload
+                      payload["videos"] = videos_payload
+                      payload["videoUrls"] = videos_payload
                  
-             # Reference Audios / Voiceover (primary + per-character voice samples)
-             def process_audio_ref(a_path):
-                 """Returns an MP3/WAV URL that models can fetch, auto-converting M4A/other formats if needed."""
-                 if not a_path:
+                 # Reference Audios / Voiceover (primary + per-character voice samples)
+                 def process_audio_ref(a_path):
+                     """Returns an MP3/WAV URL that models can fetch, auto-converting M4A/other formats if needed."""
+                     if not a_path:
+                         return None
+
+                     clean_a = str(a_path).split("?")[0].lower()
+                     # If format is m4a, mov, ogg, or other non-mp3/wav, convert to MP3
+                     if not clean_a.endswith((".mp3", ".wav")):
+                         try:
+                             import urllib.request, tempfile, subprocess
+                             ext = os.path.splitext(clean_a)[1] or ".m4a"
+                             with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as tmp_in:
+                                 if a_path.startswith(("http://", "https://")):
+                                     urllib.request.urlretrieve(a_path, tmp_in.name)
+                                 elif os.path.exists(a_path):
+                                     import shutil
+                                     shutil.copyfile(a_path, tmp_in.name)
+                                 else:
+                                     tmp_in = None
+
+                                 if tmp_in and os.path.exists(tmp_in.name):
+                                     mp3_out = tmp_in.name.rsplit(".", 1)[0] + ".mp3"
+                                     res = subprocess.run(["ffmpeg", "-y", "-i", tmp_in.name, "-vn", "-ar", "44100", "-ac", "2", "-b:a", "192k", mp3_out],
+                                                          stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                                     if res.returncode == 0 and os.path.exists(mp3_out) and os.path.getsize(mp3_out) > 0:
+                                         from execution.s3_uploader import upload_file_obj
+                                         base_name = os.path.splitext(os.path.basename(clean_a))[0] + ".mp3"
+                                         with open(mp3_out, "rb") as f_mp3:
+                                             s3_url = upload_file_obj(f_mp3, object_name=f"ref_audios/{base_name}")
+                                         if s3_url:
+                                             logs.append(f"🔄 Converted audio from {ext} to MP3 format: {base_name}")
+                                             return s3_url
+                         except Exception as conv_err:
+                             logs.append(f"⚠️ Audio conversion notice: {conv_err}")
+
+                     if a_path.startswith(("http://", "https://")):
+                         return a_path
+                     if os.path.exists(a_path):
+                         try:
+                             from execution.s3_uploader import upload_file_obj
+                             with open(a_path, "rb") as f_ref:
+                                 s3_url = upload_file_obj(f_ref, object_name=f"ref_audios/{os.path.basename(a_path)}")
+                             if s3_url and s3_url.startswith(("http://", "https://")):
+                                 return s3_url
+                         except Exception as s3_e:
+                             logs.append(f"⚠️ Audio S3 Upload warning: {s3_e}")
+
+                         try:
+                             with open(a_path, "rb") as f_aud:
+                                 aud_b64 = base64.b64encode(f_aud.read()).decode('utf-8')
+                                 ext = os.path.splitext(a_path)[1].lower().replace('.', '')
+                                 if ext == 'mp3': mime = 'audio/mpeg'
+                                 elif ext == 'wav': mime = 'audio/wav'
+                                 else: mime = f'audio/{ext}'
+                                 return f"data:{mime};base64,{aud_b64}"
+                         except Exception as b64_e:
+                             logs.append(f"⚠️ Audio Base64 encoding warning: {b64_e}")
                      return None
                  
-                 clean_a = str(a_path).split("?")[0].lower()
-                 # If format is m4a, mov, ogg, or other non-mp3/wav, convert to MP3
-                 if not clean_a.endswith((".mp3", ".wav")):
-                     try:
-                         import urllib.request, tempfile, subprocess
-                         ext = os.path.splitext(clean_a)[1] or ".m4a"
-                         with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as tmp_in:
-                             if a_path.startswith(("http://", "https://")):
-                                 urllib.request.urlretrieve(a_path, tmp_in.name)
-                             elif os.path.exists(a_path):
-                                 import shutil
-                                 shutil.copyfile(a_path, tmp_in.name)
-                             else:
-                                 tmp_in = None
-                             
-                             if tmp_in and os.path.exists(tmp_in.name):
-                                 mp3_out = tmp_in.name.rsplit(".", 1)[0] + ".mp3"
-                                 res = subprocess.run(["ffmpeg", "-y", "-i", tmp_in.name, "-vn", "-ar", "44100", "-ac", "2", "-b:a", "192k", mp3_out],
-                                                      stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                                 if res.returncode == 0 and os.path.exists(mp3_out) and os.path.getsize(mp3_out) > 0:
-                                     from execution.s3_uploader import upload_file_obj
-                                     base_name = os.path.splitext(os.path.basename(clean_a))[0] + ".mp3"
-                                     with open(mp3_out, "rb") as f_mp3:
-                                         s3_url = upload_file_obj(f_mp3, object_name=f"ref_audios/{base_name}")
-                                     if s3_url:
-                                         logs.append(f"🔄 Converted audio from {ext} to MP3 format: {base_name}")
-                                         return s3_url
-                     except Exception as conv_err:
-                         logs.append(f"⚠️ Audio conversion notice: {conv_err}")
+                 audios_payload = []
+                 for a_item in [ref_audio_path] + list(extra_audio_paths or []):
+                     a_res = process_audio_ref(a_item)
+                     if a_item and not a_res:
+                         raise ValueError("Audio reference preparation failed.")
+                     if a_res:
+                         if len(audios_payload) >= 10:
+                             logs.append("⚠️ Reached max of 10 audio references.")
+                             break
+                         audios_payload.append(a_res)
+                         logs.append(f"Encoded audio reference #{len(audios_payload)}: {os.path.basename(str(a_item))}")
 
-                 if a_path.startswith(("http://", "https://")):
-                     return a_path
-                 if os.path.exists(a_path):
-                     try:
-                         from execution.s3_uploader import upload_file_obj
-                         with open(a_path, "rb") as f_ref:
-                             s3_url = upload_file_obj(f_ref, object_name=f"ref_audios/{os.path.basename(a_path)}")
-                         if s3_url and s3_url.startswith(("http://", "https://")):
-                             return s3_url
-                     except Exception as s3_e:
-                         logs.append(f"⚠️ Audio S3 Upload warning: {s3_e}")
-                         
-                     try:
-                         with open(a_path, "rb") as f_aud:
-                             aud_b64 = base64.b64encode(f_aud.read()).decode('utf-8')
-                             ext = os.path.splitext(a_path)[1].lower().replace('.', '')
-                             if ext == 'mp3': mime = 'audio/mpeg'
-                             elif ext == 'wav': mime = 'audio/wav'
-                             else: mime = f'audio/{ext}'
-                             return f"data:{mime};base64,{aud_b64}"
-                     except Exception as b64_e:
-                         logs.append(f"⚠️ Audio Base64 encoding warning: {b64_e}")
-                 return None
+                 if audios_payload:
+                     payload["reference_audios"] = audios_payload
 
-             audios_payload = []
-             for a_item in [ref_audio_path] + list(extra_audio_paths or []):
-                 a_res = process_audio_ref(a_item)
-                 if a_res and a_res not in audios_payload:
-                     if len(audios_payload) >= 10:
-                         logs.append("⚠️ Reached max of 10 audio references.")
-                         break
-                     audios_payload.append(a_res)
-                     logs.append(f"Encoded audio reference #{len(audios_payload)}: {os.path.basename(str(a_item))}")
-
-             if audios_payload:
-                 payload["reference_audios"] = audios_payload
-                 
-        elif "minimax" in model.lower() or "hailuo" in model.lower() or "h3" in model.lower():
-             if img_uri:
+            elif "minimax" in model.lower() or "hailuo" in model.lower() or "h3" in model.lower():
+                 if img_uri:
+                     payload["image"] = img_uri
+                     payload["images"] = [img_uri]
+                 payload["enable_prompt_expansion"] = True
+            elif "text-to-video" in model:
+                 payload["prompt_extend"] = True
+            else:
                  payload["image"] = img_uri
-                 payload["images"] = [img_uri]
-             payload["enable_prompt_expansion"] = True
-        elif "text-to-video" in model:
-             payload["prompt_extend"] = True
-        else:
-             payload["image"] = img_uri
-             payload["prompt_extend"] = True
-        
+                 payload["prompt_extend"] = True
+
+        if "seedance-2.5/reference-to-video" in model:
+            payload["omni_reference_task_type"] = "reference"
+            if payload.get("resolution") == "4k":
+                payload["resolution"] = "4k-esr"
+        # Reject unresolved local references and preserve the reviewed slot order.
+        for field in ("reference_images", "reference_videos", "reference_audios"):
+            for asset in payload.get(field, []):
+                if not str(asset).startswith(("https://", "http://", "data:")):
+                    raise ValueError(f"Unable to prepare {field}; no generation was submitted.")
+        if dry_run:
+            return {"status": "prepared", "payload": payload}
         logs.append(f"Submitting job to Atlas API for {model}...")
         
-        response = None
-        last_net_err = None
-        for attempt in range(1, 6):
-            try:
-                logs.append(f"Sending request to Atlas Cloud (Attempt {attempt}/5)...")
-                response = requests.post(generate_url, headers=headers, json=payload, timeout=(30, 120))
-                if response.status_code == 200:
-                    break
-                elif response.status_code in [500, 502, 503, 504, 429]:
-                    logs.append(f"⚠️ Atlas Cloud returned transient HTTP {response.status_code}. Retrying in {attempt * 2} seconds...")
-                    time.sleep(attempt * 2)
-                else:
-                    break
-            except Exception as req_err:
-                last_net_err = str(req_err)
-                logs.append(f"⚠️ Connection attempt {attempt}/5 failed: {req_err}. Retrying socket in {attempt * 2}s...")
-                time.sleep(attempt * 2)
-                
-        if not response or response.status_code != 200:
-            raw_err = response.text if response else (last_net_err or "No response from server")
-            if "<html" in raw_err.lower() or (response and response.status_code in [502, 503, 504]):
-                clean_err = "Atlas Cloud API temporary Gateway Timeout (HTTP 502). The backend server experienced a brief connection spike. Please click 'Animate Shot with Seedance' again to retry."
-            else:
-                clean_err = f"API Request Failed: HTTP {response.status_code if response else 'ERR'} - {raw_err[:250]}"
-            return {"status": "failed", "error": clean_err, "logs": logs}
+        # A timed-out POST may already have created a paid job. Never replay it.
+        try:
+            response = requests.post(generate_url, headers=headers, json=payload, timeout=(30, 120))
+        except requests.RequestException:
+            return {"status": "failed", "error": "Submission could not be confirmed. Check provider job history before retrying; the request was not automatically repeated.", "logs": logs}
+        if response.status_code != 200:
+            return {"status": "failed", "error": f"Provider returned HTTP {response.status_code}. Check provider job history before retrying.", "logs": logs}
             
         result_json = response.json()
         if "data" not in result_json or "id" not in result_json["data"]:
