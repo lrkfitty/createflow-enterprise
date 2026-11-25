@@ -1,0 +1,485 @@
+<title>Little Ty Questionnaire</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Figtree:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap">
+<style>
+/* Layout: compact title-card hero, sticky tape-label toolbar, single reading column of question cards */
+:root{
+  --bg:#F2F0F7; --surface:#FFFFFF; --ink:#1C1929; --muted:#5E5A72; --line:#D9D5E6;
+  --teal:#0B7F80; --magenta:#C92A62; --sun:#F2B705; --chip:#ECE8F6; --chip-on:#0B7F80; --chip-on-ink:#FFFFFF;
+  --display:"Bungee","Arial Black",Impact,sans-serif;
+  --body:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"Space Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#14121C; --surface:#1E1B2A; --ink:#EEEBF6; --muted:#A7A2BD; --line:#36314A;
+  --teal:#38C6C1; --magenta:#FF6E9C; --sun:#F7CF45; --chip:#2A2639; --chip-on:#38C6C1; --chip-on-ink:#10131A; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#14121C; --surface:#1E1B2A; --ink:#EEEBF6; --muted:#A7A2BD; --line:#36314A;
+  --teal:#38C6C1; --magenta:#FF6E9C; --sun:#F7CF45; --chip:#2A2639; --chip-on:#38C6C1; --chip-on-ink:#10131A; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.55}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+.wrap{max-width:760px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.hero{padding-block:2.2rem 1.4rem}
+.eyebrow{font-family:var(--mono);font-size:.75rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--display);font-weight:400;font-size:clamp(2.6rem,11vw,4.6rem);line-height:.95;margin:.35rem 0 .6rem;color:var(--ink);
+  text-shadow:3px 3px 0 var(--teal),6px 6px 0 var(--magenta);letter-spacing:.01em}
+.lede{max-width:62ch;color:var(--ink);margin:0}
+.tips{display:grid;gap:.4rem;margin:1rem 0 0;padding:0;list-style:none;color:var(--muted);font-size:.95rem}
+.tips li{padding-left:1.1rem;position:relative}
+.tips li::before{content:"";position:absolute;left:0;top:.62em;width:.45rem;height:.45rem;background:var(--sun);border-radius:2px}
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border-bottom:1px solid var(--line)}
+.bar-in{display:flex;flex-direction:column;gap:.5rem;padding-block:.6rem}
+.bar-row{display:flex;align-items:center;gap:.75rem;flex-wrap:wrap}
+.progress{flex:1 1 160px;min-width:0;height:8px;background:var(--chip);border-radius:99px;overflow:hidden}
+.progress span{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--teal),var(--magenta));transition:width .3s}
+.count{font-family:var(--mono);font-size:.78rem;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.status{font-family:var(--mono);font-size:.78rem;white-space:nowrap;color:var(--muted)}
+.status[data-s="saved"]{color:var(--teal)} .status[data-s="error"]{color:var(--magenta)}
+.btn{font:600 .85rem var(--body);border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:8px;padding:.4rem .7rem;cursor:pointer}
+.btn:hover{border-color:var(--teal)}
+.nav{display:flex;gap:.4rem;overflow-x:auto;padding-bottom:.15rem;scrollbar-width:thin}
+.nav a{flex:0 0 auto;font:600 .8rem var(--body);text-decoration:none;color:var(--ink);background:var(--chip);padding:.3rem .65rem;border-radius:99px;white-space:nowrap}
+.nav a .n{font-family:var(--mono);color:var(--muted);margin-left:.3rem;font-weight:400}
+.nav a.done{background:var(--chip-on);color:var(--chip-on-ink)} .nav a.done .n{color:inherit;opacity:.8}
+main{padding-block:1.2rem 4rem;display:flex;flex-direction:column;gap:2.4rem}
+section{scroll-margin-top:7.5rem}
+.sec-head{display:flex;flex-direction:column;gap:.25rem;margin-bottom:1rem;padding-bottom:.6rem;border-bottom:3px solid var(--ink)}
+.tape{font-family:var(--mono);font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--magenta)}
+h2{font-family:var(--display);font-weight:400;font-size:clamp(1.5rem,5.5vw,2rem);line-height:1.05;margin:0;text-wrap:balance}
+.sec-intro{color:var(--muted);margin:0;max-width:62ch}
+h3{font:700 .8rem var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--teal);margin:1.6rem 0 .2rem}
+.qs{display:flex;flex-direction:column;gap:1.1rem}
+.q{display:flex;flex-direction:column;gap:.35rem;min-width:0}
+.q label,.q .qlabel{font-weight:700;font-size:1rem;text-wrap:pretty}
+.hint{color:var(--muted);font-size:.9rem;margin-top:-.15rem}
+.field{position:relative;display:flex;gap:.5rem;align-items:flex-start}
+textarea,input[type=text]{flex:1;min-width:0;width:100%;font:400 1rem/1.5 var(--body);color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:.6rem .75rem;resize:none}
+textarea{min-height:3.2rem;overflow:hidden}
+textarea:focus,input:focus{outline:2px solid var(--teal);outline-offset:1px;border-color:transparent}
+.mic{flex:0 0 auto;width:2.6rem;height:2.6rem;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;display:grid;place-items:center}
+.mic svg{width:1.1rem;height:1.1rem}
+.mic[aria-pressed="true"]{background:var(--magenta);border-color:var(--magenta);color:#fff;animation:pulse 1.2s infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 6px color-mix(in srgb,var(--magenta) 25%,transparent)}}
+@media (prefers-reduced-motion:reduce){.mic[aria-pressed="true"]{animation:none}.progress span{transition:none}}
+.partial{font-style:italic;color:var(--muted);font-size:.9rem;min-height:0}
+.choices{display:flex;flex-wrap:wrap;gap:.45rem}
+.choice{position:relative}
+.choice input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
+.choice span{display:inline-block;font-size:.92rem;padding:.38rem .75rem;border-radius:99px;background:var(--chip);border:1px solid transparent;cursor:pointer;user-select:none}
+.choice input:checked + span{background:var(--chip-on);color:var(--chip-on-ink)}
+.choice input:focus-visible + span{outline:2px solid var(--magenta);outline-offset:2px}
+.note{font-size:.9rem;color:var(--muted);background:var(--chip);border-radius:10px;padding:.6rem .8rem}
+.note[hidden]{display:none}
+footer{padding-block:0 3rem;color:var(--muted);font-size:.9rem}
+</style>
+
+<header class="hero wrap">
+  <div class="eyebrow">Series bible intake · 90s · animated comedy</div>
+  <h1>Little Ty</h1>
+  <p class="lede">Everything I need to write the show: the people, the house, the sayings, the beatings you almost got, and the stories that have to be episodes. The more specific and petty the details, the funnier the scripts.</p>
+  <ul class="tips">
+    <li>Skip anything. Come back anytime. Every answer saves on its own.</li>
+    <li>Talk instead of typing: tap the mic next to a question (on a computer in Chrome). On your phone, use the mic on your keyboard.</li>
+    <li>Give me the exact words people said. "Boy, don't let me get up" is gold. "She was strict" is not.</li>
+    <li>Rough is fine. Run-on sentences are fine. I'll clean it up.</li>
+  </ul>
+</header>
+
+<div class="bar">
+  <div class="wrap bar-in">
+    <div class="bar-row">
+      <div class="progress" aria-hidden="true"><span id="prog"></span></div>
+      <span class="count" id="count">0 answered</span>
+      <span class="status" id="status" data-s="idle">Loading…</span>
+      <button class="btn" id="copyAll" type="button">Copy all answers</button>
+    </div>
+    <nav class="nav" id="nav" aria-label="Sections"></nav>
+  </div>
+</div>
+
+<main class="wrap" id="main">
+  <p class="note" id="offlineNote" hidden>Answers are only being saved in this browser right now, so I can't read them yet. Open this page in claude.ai while signed in, or tap "Copy all answers" and paste them into our chat.</p>
+</main>
+
+<footer class="wrap">When you're done, tell me in the chat. I'll read your answers and turn them into the Little Ty series bible.</footer>
+
+<script>
+const SECTIONS = [
+ {id:"show", title:"The Show", intro:"The world, the vibe, and how raw we're going.", qs:[
+  {id:"city", l:"What city did you grow up in? Use the real name, or should we make one up?"},
+  {id:"years", l:"What years should the show cover, and how old is Little Ty?", h:"Example: 1994 to 1997, Ty is 8 to 11. Your mom remarried when you were 10, so that could be the end of season 1."},
+  {id:"house", l:"Walk me through the house you grew up in.", h:"Every room. The couch. The kitchen. The room nobody was allowed in. What it smelled like on Sunday."},
+  {id:"neighborhood", l:"What was your side of the tracks like?", h:"The street, the neighbors, the kids on the block, the corner store, what made it 'the good side'."},
+  {id:"hood", l:"What was the other side of town like, where the cousins lived?", h:"Streets, landmarks, the corner store, the park, the people everybody knew."},
+  {id:"school", l:"What was your school like?", h:"Name, how many Black kids, what it felt like walking in, the vibe of the teachers."},
+  {id:"logline", l:"In your own words, what is Little Ty about?", h:"Something like: the kid who's good at everything, in a family that won't let him forget where he's from."},
+  {id:"influences", l:"Besides Everybody Hates Chris and Malcolm in the Middle, what other shows or movies should it feel like?", h:"Martin, Fresh Prince, The Boondocks, Bernie Mac, Friday, The Proud Family, Fat Albert… what do you love about each?"},
+  {id:"rating", l:"How raw should the language be?", t:"choice", single:true, o:["Clean, family friendly","PG-13, bleeped cussing","Grown, real cussing"]},
+  {id:"narrator", l:"Should grown-up Ty narrate the show, like Chris Rock in Everybody Hates Chris?", t:"choice", single:true, o:["Yes, grown Ty narrates","Little Ty talks to the camera, like Malcolm","Both","Neither"]},
+  {id:"audience", l:"Who is this for?", h:"People who grew up in the 90s? Kids now? Everybody? Where will it live first: Instagram, TikTok, YouTube?"}
+ ]},
+ {id:"ty", title:"Little Ty", intro:"You. The talented kid who never got to feel too good about it.", qs:[
+  {id:"talents", l:"List everything you were good at as a kid.", h:"Sports, school, drawing, music, dancing, talking, fixing things, getting out of trouble. All of it."},
+  {id:"bad_at", l:"What were you terrible at that everybody clowned you for?"},
+  {id:"roasts", l:"How did your family roast you for being good at stuff? Give me the exact lines.", h:"Who said it, what they said, what you did after."},
+  {id:"grounded", l:"Name a time being good at something backfired on you."},
+  {id:"look", l:"What did Little Ty look like?", h:"Hair (fade, waves, braids, the bad haircut), clothes, shoes, a signature item like a jacket, chain or backpack."},
+  {id:"want", l:"What did you want more than anything when you were 9 or 10?"},
+  {id:"fears", l:"What were you scared of?", h:"The dark, the basement, a certain dog, a certain auntie, the whooping, church ghosts…"},
+  {id:"schemes", l:"What hustles or schemes did you run as a kid?", h:"Selling candy, betting on games, forging signatures, hiding report cards."},
+  {id:"caught", l:"What did you do when you got caught? Your face, your excuses, your lies."},
+  {id:"crush", l:"Who were your crushes, and how bad did it go?"},
+  {id:"inner", l:"What did you think in your head that you could never say out loud?", h:"This is what the narrator will say. Example: 'In my house, crying was a privilege you had to earn.'"},
+  {id:"personality", l:"Describe Little Ty in three words, then tell me what your family would say instead."}
+ ]},
+ {id:"mom", title:"Mom", intro:"The hairstylist everybody knew.", qs:[
+  {id:"name", l:"What's her name, and what did everybody call her?"},
+  {id:"salon", l:"Tell me about the salon.", h:"Name, where it was, what it looked like, what was always playing, the smell of the hot comb, the chairs, the dryers."},
+  {id:"styles", l:"What styles was she famous for?", h:"Finger waves, the quick weave, the Halle Berry cut, the tall '90s pin-ups…"},
+  {id:"regulars", l:"Who were the salon regulars? Give me characters.", h:"The gossip queen, the lady who never paid, the dude selling bootleg tapes, the church mother, the one who always came in late."},
+  {id:"you_at_salon", l:"What did you do at the salon? Were you sweeping hair, doing homework under a dryer, hearing grown folks' business?"},
+  {id:"sayings", l:"What did she always say? Write them word for word."},
+  {id:"discipline", l:"How did she discipline you?", h:"The look, the countdown, the belt, the shoe, the extension cord, 'wait till we get home', calling your full name."},
+  {id:"strict", l:"What was she strict about, and what did she let slide?"},
+  {id:"brag", l:"How did she act about your talents? Did she brag to clients, or keep you humble too?"},
+  {id:"dating", l:"Who did she date before your stepdad, and which ones did you hate?"},
+  {id:"single", l:"What was single-mom life like?", h:"Her work hours, who watched you, the money tricks, the times things got tight."},
+  {id:"look", l:"What did she look like? Her style, her hair that week, her car."}
+ ]},
+ {id:"dad", title:"Dad", intro:"Well known in the city, never around for you. This one can be funny and heavy at the same time.", qs:[
+  {id:"known_for", l:"What was your dad known for in the city?"},
+  {id:"why_gone", l:"Why was he never around? What did he always have going on?"},
+  {id:"excuses", l:"What excuses did he give? Exact words if you remember them."},
+  {id:"promises", l:"What did he promise and not deliver?", h:"This could be a running gag: the Dad who's always about to show up."},
+  {id:"showed_up", l:"Tell me about the times he actually did show up."},
+  {id:"reputation", l:"How did people treat you when they found out who your dad was?"},
+  {id:"tone", l:"How heavy should his storyline be?", t:"choice", single:true, o:["Mostly jokes","Jokes with real moments","Serious when it's him"]},
+  {id:"feel", l:"What do you want the audience to feel about him by the end?"}
+ ]},
+ {id:"stepdad", title:"The Stepdad", intro:"The ex-con who became a preacher and married your mom.", qs:[
+  {id:"name", l:"What's his name, and what did you call him?"},
+  {id:"met", l:"How did he and your mom meet, and how fast did they get married?"},
+  {id:"past", l:"What did he do time for, and for how long? Share only what you're comfortable with."},
+  {id:"god", l:"How did he find God? What's his story?"},
+  {id:"first", l:"What did you think of him the first time you met him?"},
+  {id:"rules", l:"What new rules did he bring into the house?"},
+  {id:"jail_habits", l:"What prison habits never left him?", h:"Eating fast, guarding his plate, push-ups at 5am, the way he folds clothes, his slang, never sitting with his back to the door."},
+  {id:"church", l:"Tell me about his church and how he preached.", h:"Church name, the members, his sermon catchphrases, how long service ran."},
+  {id:"tough", l:"Was he tough on you? How did you two get along over time?"},
+  {id:"clash", l:"What was the funniest fight or clash between you two?"}
+ ]},
+ {id:"grand", title:"Grandpa & Grandma", intro:"Grandpa had an attitude with everybody but you. Grandma was sweet and always had a lesson.", qs:[
+  {id:"gp_head", t:"head", l:"Grandpa"},
+  {id:"gp_name", l:"What's his name, and what did you call him?"},
+  {id:"gp_mad", l:"What was he always mad about?"},
+  {id:"gp_stuff", l:"What was his? His chair, his remote, his car, his shows, the stuff nobody could touch."},
+  {id:"gp_sayings", l:"What were his insults and sayings? Word for word."},
+  {id:"gp_fav", l:"How did he show you were his favorite, and how did the cousins react?"},
+  {id:"gp_stories", l:"What was his past, and what stories did he tell?", h:"Real or exaggerated. The war, the job, the fights he 'won'."},
+  {id:"gp_look", l:"What did he look like? How did he dress?"},
+  {id:"gm_head", t:"head", l:"Grandma"},
+  {id:"gm_name", l:"What's her name, and what did you call her?"},
+  {id:"gm_food", l:"What did she cook? Her signature dishes, what holidays looked like."},
+  {id:"gm_lessons", l:"What lessons did she teach you? Give me the best one word for word."},
+  {id:"gm_discipline", l:"How did she discipline? Sweet but deadly?"},
+  {id:"gm_church", l:"What was her church-lady side like?"},
+  {id:"house", l:"What was their house like?", h:"The candy dish, plastic on the couch, the room with the good furniture, the pictures on the wall."},
+  {id:"together", l:"How did Grandpa and Grandma act together?"}
+ ]},
+ {id:"uncles", title:"The Uncles", intro:"Uncle Steven the athlete, and the uncle who was in and out of the streets.", qs:[
+  {id:"st_head", t:"head", l:"Uncle Steven"},
+  {id:"st_sport", l:"What sport did he play, and how far did he get?"},
+  {id:"st_friend", l:"His best friend became a famous pro. What fictional name should we give that character?", h:"We'll make him a made-up player so we don't use a real celebrity's name or face."},
+  {id:"st_million", l:"Tell me the Arizona and $1 million story from start to finish."},
+  {id:"st_taught", l:"What did Uncle Steven teach you?"},
+  {id:"st_vibe", l:"What was his personality, look, and car?"},
+  {id:"un_head", t:"head", l:"The other uncle"},
+  {id:"un_name", l:"What's his name or nickname?"},
+  {id:"un_street", l:"What was he into? Share only what you're comfortable with."},
+  {id:"un_showup", l:"How did he show up?", h:"Popping up at random, borrowing money, selling stuff out his trunk, the VCR that went missing…"},
+  {id:"un_fun", l:"Was he the fun uncle? What was funny about him?"},
+  {id:"un_realize", l:"When did you realize what was really going on with him?"},
+  {id:"un_family", l:"How did the family handle him?"},
+  {id:"un_tone", l:"How serious should his storyline be?", t:"choice", single:true, o:["Mostly jokes","Jokes with real moments","Serious when it's him"]},
+  {id:"others", l:"Are there any other aunts, uncles, or family friends who need to be in the show? One line each."}
+ ]},
+ {id:"cousins", title:"Tub & Monty", intro:"The older cousins who terrorized you and still brought you everywhere, because you were cool enough.", qs:[
+  {id:"ages", l:"How old were Tub and Monty compared to you?"},
+  {id:"names", l:"How did they get the names Tub and Monty?"},
+  {id:"tub", l:"Describe Tub: personality, look, his role in the duo.", h:"The muscle? The mouth? The one who laughs first?"},
+  {id:"monty", l:"Describe Monty: personality, look, his role in the duo."},
+  {id:"worst", l:"What were the worst things they did to you?", h:"Turning off the lights, the fake beat-ups, scary movies, locking you outside, the 'test'…"},
+  {id:"tests", l:"What did you have to do to stay cool enough to come along?"},
+  {id:"why_you", l:"What were you good at that made them keep bringing you?"},
+  {id:"lessons", l:"What lessons did they teach you without meaning to?"},
+  {id:"home", l:"What was their house like? Their mom, their friends, their block."},
+  {id:"had_back", l:"When did they actually have your back?"},
+  {id:"other_cousins", l:"List the other cousins with one line each."}
+ ]},
+ {id:"sibs", title:"Little Brother & Sister", intro:"You were the oldest of three in the house.", qs:[
+  {id:"brother", l:"What's your little brother's name, and what was he like?", h:"He's 2 years younger than you."},
+  {id:"sister", l:"What's your little sister's name, and what was she like?", h:"She's 3 years younger than you."},
+  {id:"snitch", l:"How did they get you in trouble? What did they snitch about?"},
+  {id:"oldest", l:"What did being the oldest mean?", h:"Babysitting, walking them to school, getting blamed for everything, 'you're supposed to know better'."},
+  {id:"favorite", l:"Who was the favorite, and how could you tell?"},
+  {id:"talents", l:"What did they think about you being good at everything?"}
+ ]},
+ {id:"worlds", title:"Two Worlds", intro:"The white school by day, the cousins' side of town on the weekend.", qs:[
+  {id:"friends", l:"Who were your best friends at school? Names and personalities."},
+  {id:"awkward", l:"What were the most awkward moments at school?", h:"Hair touching, 'can I say it', sleepovers, their parents, the food at their house, Black History Month."},
+  {id:"teachers", l:"Which teacher was your favorite, and which one doubted you?"},
+  {id:"other_black", l:"Was there one other Black kid? What was that like?"},
+  {id:"code", l:"How did you talk at school compared to at home? Give me examples."},
+  {id:"talk_white", l:"What did the cousins say about your school, the way you talked, and your friends?"},
+  {id:"collide", l:"Was there a time the two worlds collided?", h:"A white friend at a family cookout, cousins at a school event, your mom at a parent-teacher conference."},
+  {id:"had", l:"What did the white kids have that you didn't, and what did you have that they didn't?"}
+ ]},
+ {id:"tropes", title:"The '90s Black Household", intro:"Tap every one that happened in your house. Then tell me the best stories.", qs:[
+  {id:"checked", l:"What happened in your house?", t:"choice", o:[
+   "We got food at home","The look in church","Plastic on the couch","Butter cookie tin full of sewing stuff","Hold on, I'm on the phone",
+   "Don't touch the thermostat","Lights off and phone down during a storm","Go outside, be back when the streetlights come on","Whooping with a belt","Go pick your own switch",
+   "I'll give you something to cry about","Vaseline on your face before you leave","Getting hair pressed or braided while sitting on the floor","Church all day Sunday","Sunday dinner at Grandma's",
+   "Kool-Aid with too much sugar","The good plates nobody uses","Washing out and reusing plastic bags","Cool Whip tub full of leftovers","Hand-me-down clothes",
+   "Off-brand cereal in the big bag","Cookout uncle on the grill","Spades and dominoes trash talk","Saturday morning cartoons","Blockbuster on Friday",
+   "New Jordans drama","Starter jacket","Tell them I'm not here","Calling collect","Pagers and pay phones",
+   "Ice cream truck","The candy lady","Ashy knees check","Ask your mother","Children are seen, not heard",
+   "Your full name being yelled","Don't let me get up","Free lunch or reduced lunch","Recording songs off the radio","Sega vs Nintendo fights"
+  ]},
+  {id:"stories", l:"Tell me the three best stories from the ones you checked."},
+  {id:"missing", l:"Which tropes from your house aren't on this list?"}
+ ]},
+ {id:"episodes", title:"Memories & Episodes", intro:"The real moments that have to be on screen. For each: what happened, who was there, what went wrong, how it ended, and the lesson.", qs:[
+  {id:"pilot", l:"Where should the very first episode start?", h:"The day that best shows who Little Ty is and what his family is like."},
+  {id:"m1", l:"Memory 1"},
+  {id:"m2", l:"Memory 2"},
+  {id:"m3", l:"Memory 3"},
+  {id:"m4", l:"Memory 4"},
+  {id:"m5", l:"Memory 5"},
+  {id:"finale", l:"What moment should end season 1?", h:"Your mom marrying your stepdad when you were 10 is a strong option."},
+  {id:"holidays", l:"What happened on holidays, birthdays, and family reunions?"}
+ ]},
+ {id:"gags", title:"Running Gags & The Era", intro:"The stuff that repeats every episode, and the soundtrack of those years.", qs:[
+  {id:"catchphrases", l:"What were your family's catchphrases?"},
+  {id:"gags", l:"What would make good running gags?", h:"Dad never showing up, Grandpa's chair, Tub and Monty's 'tests', the salon gossip report."},
+  {id:"music", l:"What music defined those years in your house and in your car?"},
+  {id:"tv_games", l:"What TV shows, games, toys, and snacks did you grow up on?"},
+  {id:"slang", l:"What slang did you use back then in your city?"}
+ ]},
+ {id:"voices", title:"Voices", intro:"You'll perform every character and change the voice in ElevenLabs. Tell me how each one sounds: pitch, speed, accent, attitude, and a signature laugh or noise.", qs:[
+  {id:"v_grown", l:"Grown-up Ty (the narrator)"},
+  {id:"v_ty", l:"Little Ty"},
+  {id:"v_mom", l:"Mom"},
+  {id:"v_dad", l:"Dad"},
+  {id:"v_stepdad", l:"Stepdad"},
+  {id:"v_gp", l:"Grandpa"},
+  {id:"v_gm", l:"Grandma"},
+  {id:"v_steven", l:"Uncle Steven"},
+  {id:"v_uncle", l:"The other uncle"},
+  {id:"v_tub", l:"Tub"},
+  {id:"v_monty", l:"Monty"},
+  {id:"v_bro", l:"Little brother"},
+  {id:"v_sis", l:"Little sister"}
+ ]},
+ {id:"limits", title:"Boundaries", intro:"So the show stays funny without starting a family war.", qs:[
+  {id:"real_names", l:"Which people keep their real names, and which ones get changed?"},
+  {id:"off_limits", l:"What's off limits? Topics, people, or stories."},
+  {id:"approval", l:"Is there anyone you want to check with before something about them goes public?"},
+  {id:"anything", l:"Is there anything else I should know?"}
+ ]}
+];
+
+const MIC_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>';
+const LS_KEY="littleTyAnswers.v1";
+let state={}; // {secId: {qid: string|string[]}}
+let db=null, dict=null, dictTarget=null;
+const fields={}; // key "sec.q" -> element(s)
+const partials={};
+
+function lsLoad(){try{return JSON.parse(localStorage.getItem(LS_KEY)||"{}")}catch(e){return {}}}
+function lsSave(){try{localStorage.setItem(LS_KEY,JSON.stringify(state))}catch(e){}}
+
+function el(tag,attrs={},text){const e=document.createElement(tag);for(const k in attrs){if(k==="class")e.className=attrs[k];else e.setAttribute(k,attrs[k])}if(text!=null)e.textContent=text;return e}
+function grow(t){t.style.height="auto";t.style.height=(t.scrollHeight+2)+"px"}
+
+function build(){
+  const main=document.getElementById("main"), nav=document.getElementById("nav");
+  SECTIONS.forEach((s,i)=>{
+    const a=el("a",{href:"#sec-"+s.id,"data-sec":s.id},s.title);a.appendChild(el("span",{class:"n"},""));nav.appendChild(a);
+    const sec=el("section",{id:"sec-"+s.id});
+    const head=el("div",{class:"sec-head"});
+    head.appendChild(el("div",{class:"tape"},"Tape "+(i+1)+" of "+SECTIONS.length));
+    head.appendChild(el("h2",{},s.title));
+    head.appendChild(el("p",{class:"sec-intro"},s.intro));
+    sec.appendChild(head);
+    const qs=el("div",{class:"qs"});
+    s.qs.forEach(q=>{
+      if(q.t==="head"){qs.appendChild(el("h3",{},q.l));return}
+      const key=s.id+"."+q.id, fid="f-"+s.id+"-"+q.id;
+      const wrap=el("div",{class:"q"});
+      if(q.t==="choice"){
+        const lab=el("div",{class:"qlabel",id:fid+"-l"},q.l);wrap.appendChild(lab);
+        if(q.h)wrap.appendChild(el("div",{class:"hint"},q.h));
+        const box=el("div",{class:"choices",role:q.single?"radiogroup":"group","aria-labelledby":fid+"-l"});
+        const inputs=[];
+        q.o.forEach((opt,j)=>{
+          const c=el("label",{class:"choice"});
+          const inp=el("input",{type:q.single?"radio":"checkbox",name:fid,id:fid+"-"+j,value:opt});
+          inp.addEventListener("change",()=>{
+            const vals=inputs.filter(x=>x.checked).map(x=>x.value);
+            setVal(s.id,q.id,q.single?(vals[0]||""):vals);
+          });
+          inputs.push(inp);c.appendChild(inp);c.appendChild(el("span",{},opt));box.appendChild(c);
+        });
+        fields[key]={type:"choice",inputs};
+        wrap.appendChild(box);
+      } else {
+        wrap.appendChild(el("label",{for:fid},q.l));
+        if(q.h)wrap.appendChild(el("div",{class:"hint"},q.h));
+        const f=el("div",{class:"field"});
+        const ta=el("textarea",{id:fid,rows:"2"});
+        ta.addEventListener("input",()=>{grow(ta);setVal(s.id,q.id,ta.value)});
+        f.appendChild(ta);
+        const mic=el("button",{class:"mic",type:"button","aria-label":"Dictate answer: "+q.l,"aria-pressed":"false",hidden:""});
+        mic.innerHTML=MIC_SVG;
+        mic.addEventListener("click",()=>micClick(key,ta,mic));
+        f.appendChild(mic);
+        wrap.appendChild(f);
+        const p=el("div",{class:"partial","aria-live":"polite"});wrap.appendChild(p);partials[key]=p;
+        fields[key]={type:"text",ta,mic};
+      }
+      qs.appendChild(wrap);
+    });
+    sec.appendChild(qs);main.appendChild(sec);
+  });
+}
+
+function fill(){
+  for(const s of SECTIONS)for(const q of s.qs){
+    const f=fields[s.id+"."+q.id];if(!f)continue;
+    const v=(state[s.id]||{})[q.id];
+    if(f.type==="text"){f.ta.value=typeof v==="string"?v:"";grow(f.ta)}
+    else{const arr=Array.isArray(v)?v:(v?[v]:[]);f.inputs.forEach(i=>i.checked=arr.includes(i.value))}
+  }
+  updateProgress();
+}
+
+function answered(v){return Array.isArray(v)?v.length>0:!!(v&&String(v).trim())}
+function updateProgress(){
+  let total=0,done=0;
+  SECTIONS.forEach(s=>{
+    let st=0,sd=0;
+    s.qs.forEach(q=>{if(q.t==="head")return;st++;if(answered((state[s.id]||{})[q.id]))sd++});
+    total+=st;done+=sd;
+    const a=document.querySelector('.nav a[data-sec="'+s.id+'"]');
+    a.querySelector(".n").textContent=sd+"/"+st;
+    a.classList.toggle("done",sd===st);
+  });
+  document.getElementById("prog").style.width=(total?done/total*100:0)+"%";
+  document.getElementById("count").textContent=done+" of "+total+" answered";
+}
+
+/* ---------- saving ---------- */
+const timers={},writing={},again={};
+function setStatus(s,t){const e=document.getElementById("status");e.dataset.s=s;e.textContent=t}
+function setVal(sec,q,v){
+  state[sec]=Object.assign({},state[sec]||{});state[sec][q]=v;
+  lsSave();updateProgress();
+  if(!db){setStatus("local","Saved in this browser");return}
+  setStatus("pending","Unsaved changes");
+  clearTimeout(timers[sec]);timers[sec]=setTimeout(()=>flush(sec),1200);
+}
+async function flush(sec){
+  if(!db)return;
+  if(writing[sec]){again[sec]=true;return}
+  writing[sec]=true;setStatus("saving","Saving…");
+  try{
+    await db.doc("answers/"+sec).set({answers:state[sec]||{},updatedAt:new Date().toISOString()});
+    setStatus("saved","All answers saved");
+  }catch(e){
+    setStatus("error","Couldn't save. Your answers are kept in this browser; try again in a minute.");
+  }
+  writing[sec]=false;
+  if(again[sec]){again[sec]=false;flush(sec)}
+}
+window.addEventListener("pagehide",()=>{for(const s in timers){if(timers[s]){clearTimeout(timers[s]);flush(s)}}});
+
+/* ---------- dictation ---------- */
+function setMic(key){for(const k in fields){const f=fields[k];if(f.mic)f.mic.setAttribute("aria-pressed",k===key?"true":"false")}}
+function micClick(key,ta,mic){
+  if(!dict)return;
+  if(dict.active()&&dictTarget&&dictTarget.key===key){dict.stop().catch(()=>{});return}
+  if(dictTarget&&partials[dictTarget.key])partials[dictTarget.key].textContent="";
+  dictTarget={key,ta};setMic(key);ta.focus();
+  dict.start().catch(err=>{
+    setMic(null);
+    if(err&&err.code==="not_granted"){hideMics();setStatus(document.getElementById("status").dataset.s,"Mic is off for this page. Type, or use your keyboard's mic.")}
+  });
+}
+function hideMics(){for(const k in fields){if(fields[k].mic)fields[k].mic.hidden=true}}
+function showMics(){for(const k in fields){if(fields[k].mic)fields[k].mic.hidden=false}}
+
+/* ---------- copy all ---------- */
+document.getElementById("copyAll").addEventListener("click",async()=>{
+  const lines=["LITTLE TY QUESTIONNAIRE",""];
+  SECTIONS.forEach(s=>{
+    lines.push("== "+s.title.toUpperCase()+" ==");
+    s.qs.forEach(q=>{
+      if(q.t==="head"){lines.push("-- "+q.l+" --");return}
+      const v=(state[s.id]||{})[q.id];
+      if(answered(v))lines.push("Q: "+q.l,"A: "+(Array.isArray(v)?v.join("; "):v),"");
+    });
+    lines.push("");
+  });
+  const text=lines.join("\n"),btn=document.getElementById("copyAll");
+  try{await navigator.clipboard.writeText(text);btn.textContent="Copied"}
+  catch(e){
+    const t=el("textarea");t.value=text;t.style.position="fixed";t.style.opacity="0";document.body.appendChild(t);t.select();
+    try{document.execCommand("copy");btn.textContent="Copied"}catch(_){btn.textContent="Copy failed"}
+    t.remove();
+  }
+  setTimeout(()=>btn.textContent="Copy all answers",2000);
+});
+
+/* ---------- boot ---------- */
+build();
+state=lsLoad();fill();
+setStatus("local","Saved in this browser");
+
+(async()=>{
+  const c=window.claude;
+  if(!c||!c.use){document.getElementById("offlineNote").hidden=false;return}
+  c.use("dictation").then(d=>{
+    if(!d)return;dict=d;showMics();
+    d.onFinal(({text})=>{
+      if(!dictTarget)return;const ta=dictTarget.ta;
+      ta.value=ta.value?ta.value+text:text.replace(/^\s+/,"");grow(ta);
+      const [sec,q]=dictTarget.key.split(".");setVal(sec,q,ta.value);
+    });
+    d.onPartial(({text})=>{if(dictTarget&&partials[dictTarget.key])partials[dictTarget.key].textContent=text});
+    d.onState(({state:st,reason})=>{
+      if(st==="idle"){setMic(null);if(dictTarget&&partials[dictTarget.key])partials[dictTarget.key].textContent="";
+        if(reason==="unavailable"||reason==="not_granted")hideMics();}
+    });
+  }).catch(()=>{});
+  let timedOut=false;
+  const timer=setTimeout(()=>{timedOut=true;document.getElementById("offlineNote").hidden=false;setStatus("local","Saved in this browser")},10000);
+  try{
+    const d=await c.use("db");
+    if(!d){clearTimeout(timer);document.getElementById("offlineNote").hidden=false;return}
+    const snap=await d.collection("answers").get();
+    clearTimeout(timer);
+    db=d;document.getElementById("offlineNote").hidden=true;
+    const remote={};snap.docs.forEach(doc=>{const b=doc.data();if(b&&b.answers)remote[doc.id]=b.answers});
+    const local=state;
+    // Server wins where it has a section; push any local-only sections up.
+    state=Object.assign({},local,remote);fill();lsSave();
+    setStatus("saved","All answers saved");
+    for(const sec in local){if(!remote[sec]&&local[sec]&&Object.keys(local[sec]).length)await flush(sec)}
+  }catch(e){
+    clearTimeout(timer);
+    if(!timedOut){document.getElementById("offlineNote").hidden=false;setStatus("error","Couldn't reach saved answers. Typing still saves in this browser.")}
+  }
+})();
+</script>
