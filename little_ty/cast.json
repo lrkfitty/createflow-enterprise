@@ -1,0 +1,67 @@
+{
+  "show": "Little Ty",
+  "notes": "Design bible for character sheets and locations. Original designs only: no real people, no existing cartoon characters. Edit the text here, then rerun execution/cartoon_sheet.py.",
+  "style": "Original 2D adult animated sitcom art style: bold thick black ink outlines with slight line-weight variation, flat cel-shaded colors with exactly one hard-edged shadow tone per color, no gradients, no painterly texture, saturated warm palette. Exaggerated caricature proportions: oversized heads, big expressive eyes with heavy half-closed lids and thick upper lash lines, wide expressive mouths, rounded noses, chunky hands. Black characters drawn with warm brown skin with red-orange undertones in varied shades. Clean flat 2D cartoon. Not 3D, not anime, not photorealistic, not a copy of any existing show or character.",
+  "era": "Early 2000s Midwest (Elkhart, Indiana, 2001).",
+  "sheet_layout": "Character model sheet on a plain flat light-gray background: full-body front view, three-quarter view, side profile and back view standing in a row at the same scale, plus a row of four head close-up expressions underneath. Same character, same outfit, same proportions in every view. No text, no labels, no watermark.",
+  "characters": [
+    {
+      "id": "little_ty",
+      "name": "Little Ty (Tyree), age 11",
+      "design": "11-year-old Black boy. Chubby with a soft round belly, short legs. His head is noticeably oversized even for a cartoon (his family jokes about his big head). Round wire-frame glasses. Short tapered little afro, neat edges. Thin gold rope chain. Oversized plain white tee, baggy light-wash denim jeans, fresh clean white high-top sneakers. Default face: unimpressed, matter-of-fact, half-lidded eyes, slight know-it-all smirk, too grown for his age.",
+      "expressions": "deadpan talking to camera; smug told-you-so smirk; terrified eyes wide with glasses crooked; eyes closed singing a big note"
+    },
+    {
+      "id": "mom_neicy",
+      "name": "Mom (Neicy), about 30",
+      "design": "Black woman about 30 years old, a busy hairstylist. Slim build, tired but put-together. Short sculpted pixie-length hairstyle with finger waves and a honey-blonde streak in the front. Long squared acrylic nails with a white tip. Big gold hoop earrings. Fitted baby-blue baby tee, denim mini skirt, platform flip-flops. Default face: calm, unbothered, one eyebrow slightly raised.",
+      "expressions": "flat bored 'mm-hm' with half-closed eyes; the look, narrowed eyes and pursed lips; yelling with mouth wide open; tired after a long shift rubbing her temple"
+    },
+    {
+      "id": "tony",
+      "name": "Tony, mid-30s",
+      "design": "Black man in his mid-30s. Tall, broad, thick muscular build from years of prison workouts. Short close-cropped hair, neat full goatee. A faded old tattoo on one forearm. Navy-blue factory work shirt with a small white name patch, dark work pants, scuffed tan work boots. A small pocket Bible in his shirt pocket. Default face: calm, serious, few words, trying to be the man of the house.",
+      "expressions": "eating fast hunched over his plate not looking up; dry serious one-liner face; confused squint; trying-to-be-fatherly small smile"
+    },
+    {
+      "id": "little_brother",
+      "name": "Little Brother (placeholder name: Dre), age 9",
+      "design": "9-year-old Black boy, skinny and wiry with long arms and knobby knees, all energy. Same family face as Ty but a much smaller head. Fresh cornrows straight back. Missing one front tooth. Oversized basketball jersey (plain red with a white number 3, no team logo) over a white tee, basketball shorts, tube socks pulled up, worn sneakers. A band-aid on one knee. Default face: mischievous grin, about to jump off something.",
+      "expressions": "mid-air jump with arms out like a dunk; sneaky grin; pointing at someone to blame them; scared wide eyes"
+    },
+    {
+      "id": "little_sister",
+      "name": "Little Sister (placeholder name: Kiki), age 8",
+      "design": "8-year-old Black girl with round chubby cheeks and big bright eyes. Hair in two big puffy ponytails with colorful plastic ball bobbles, plus butterfly clips along her edges. Pink velour tracksuit, light-up sneakers. A plastic charm bracelet. Default face: sweet and innocent on the surface, sassy underneath.",
+      "expressions": "sitting happily in a mess, big grin; hands on hips, sassy side-eye; slowly pointing at someone to blame them; fake innocent angel face"
+    }
+  ],
+  "locations": [
+    {
+      "id": "boys_room",
+      "name": "The boys' room",
+      "design": "Small bedroom with two twin beds a few feet apart with mismatched comforters (one with a basketball pattern). Posters on the walls of a made-up basketball player and a made-up R&B group. A small TV with a VCR and a game console on a dresser, tangled wires, a mini basketball hoop on the closet door, sneaker boxes stacked in the corner. Bedroom door open to the hallway."
+    },
+    {
+      "id": "sister_room",
+      "name": "Little Sister's messy room",
+      "design": "A little girl's bedroom painted pink. Not dirty, just stuff everywhere: dolls, clothes, hair bows, plush beanbag toys, a flattened kids' snack tray on the dresser. A small canopy bed, a boombox, butterfly decorations. An open space in the middle of the floor for her to sit."
+    },
+    {
+      "id": "bathroom",
+      "name": "Bathroom",
+      "design": "Small apartment bathroom with an old white sink and a mirror medicine cabinet, pink-and-mint tile, a fuzzy pink rug and matching toilet lid cover, a shower curtain with a fish pattern, a can of hair spray and a jar of hair grease on the sink. The bathroom door is on the side of the frame."
+    },
+    {
+      "id": "hallway",
+      "name": "Hallway and front door",
+      "design": "Narrow hallway in a Section 8 townhouse leading to the front door, beige carpet, framed school pictures of three kids on the wall, a coat rack, a small table with a cordless phone. The front door at the end of the hall. Early 2000s home decor that a stylish mom put together on a budget. Nighttime, warm lamp light."
+    },
+    {
+      "id": "kitchen_table",
+      "name": "Kitchen table",
+      "design": "Small eat-in kitchen with a round wooden table and four chairs, a plastic tablecloth, a plate of fried chicken and rice and a jug of red juice. Fridge covered in school papers and magnets, a wall calendar, an old wall phone with a long curly cord. Nighttime, overhead light."
+    }
+  ],
+  "location_layout": "Empty background plate for a 9:16 vertical cartoon, eye-level camera, no characters in frame, room left in the middle for characters to be added later. No text, no labels, no watermark."
+}
