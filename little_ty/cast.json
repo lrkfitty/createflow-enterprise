@@ -1,38 +1,38 @@
 {
   "show": "Little Ty",
   "notes": "Design bible for character sheets and locations. Original designs only: no real people, no existing cartoon characters. Edit the text here, then rerun execution/cartoon_sheet.py.",
-  "style": "Original 2D adult animated sitcom art style: bold thick black ink outlines with slight line-weight variation, flat cel-shaded colors with exactly one hard-edged shadow tone per color, no gradients, no painterly texture, saturated warm palette. Exaggerated caricature proportions: oversized heads, big expressive eyes with heavy half-closed lids and thick upper lash lines, wide expressive mouths, rounded noses, chunky hands. Black characters drawn with warm brown skin with red-orange undertones in varied shades. Clean flat 2D cartoon. Not 3D, not anime, not photorealistic, not a copy of any existing show or character.",
+  "style": "Realistic illustration style: polished semi-realistic comic-book illustration with confident clean black ink linework and crisp cel shading (two tones per color plus a highlight), natural believable human proportions and anatomy, detailed realistic faces with real facial structure, warm saturated colors. Looks like a high-end animated reenactment, not a doodle and not a photo. Black characters drawn with rich warm brown skin with natural highlights. Original design, not a copy of any existing show or character.",
   "era": "Early 2000s Midwest (Elkhart, Indiana, 2001).",
   "sheet_layout": "Character model sheet on a plain flat light-gray background: full-body front view, three-quarter view, side profile and back view standing in a row at the same scale, plus a row of four head close-up expressions underneath. Same character, same outfit, same proportions in every view. No text, no labels, no watermark.",
   "characters": [
     {
       "id": "little_ty",
-      "name": "Little Ty (Tyree), age 11",
-      "design": "11-year-old Black boy. Chubby with a soft round belly, short legs. His head is noticeably oversized even for a cartoon (his family jokes about his big head). Round wire-frame glasses. Short tapered little afro, neat edges. Thin gold rope chain. Oversized plain white tee, baggy light-wash denim jeans, fresh clean white high-top sneakers. Default face: unimpressed, matter-of-fact, half-lidded eyes, slight know-it-all smirk, too grown for his age.",
+      "name": "Little Ty (Tyree), age 10",
+      "design": "10-year-old Black boy. Chubby with a soft round belly, short legs. His head is noticeably oversized even for a cartoon (his family jokes about his big head). Round wire-frame glasses. Short tapered little afro, neat edges. Thin gold rope chain. Oversized plain white tee, baggy light-wash denim jeans, fresh clean white high-top sneakers. Default face: unimpressed, matter-of-fact, half-lidded eyes, slight know-it-all smirk, too grown for his age.",
       "expressions": "deadpan talking to camera; smug told-you-so smirk; terrified eyes wide with glasses crooked; eyes closed singing a big note"
     },
     {
       "id": "mom_neicy",
       "name": "Mom (Neicy), about 30",
-      "design": "Black woman about 30 years old, a busy hairstylist. Slim build, tired but put-together. Short sculpted pixie-length hairstyle with finger waves and a honey-blonde streak in the front. Long squared acrylic nails with a white tip. Big gold hoop earrings. Fitted baby-blue baby tee, denim mini skirt, platform flip-flops. Default face: calm, unbothered, one eyebrow slightly raised.",
+      "design": "Black woman about 30 years old, a busy hairstylist. Slim build, tired but put-together. Short sculpted pixie-length hairstyle with finger waves and a honey-blonde streak in the front. Long squared acrylic nails with a white tip. Big gold hoop earrings. Fitted baby-blue baby tee, denim mini skirt, platform flip-flops. Default face: calm, unbothered, one eyebrow slightly raised. Slim and slender with realistic adult-woman proportions and long legs, normal adult height (not short, not stocky, not chubby).",
       "expressions": "flat bored 'mm-hm' with half-closed eyes; the look, narrowed eyes and pursed lips; yelling with mouth wide open; tired after a long shift rubbing her temple"
     },
     {
       "id": "tony",
       "name": "Tony, mid-30s",
-      "design": "Black man in his mid-30s. Tall, broad, thick muscular build from years of prison workouts. Short close-cropped hair, neat full goatee. A faded old tattoo on one forearm. Navy-blue factory work shirt with a small white name patch, dark work pants, scuffed tan work boots. A small pocket Bible in his shirt pocket. Default face: calm, serious, few words, trying to be the man of the house.",
+      "design": "Black man in his mid-30s. Tall, broad, thick muscular build from years of prison workouts. Completely bald, smooth clean-shaven head with no hair at all, neat full goatee. A faded old tattoo on one forearm. Navy-blue factory work shirt with a small white name patch, dark work pants, scuffed tan work boots. A small pocket Bible in his shirt pocket. Default face: calm, serious, few words, trying to be the man of the house. He is TALL: a full-grown adult man with long legs and realistic adult proportions, towering over the kids (not short or squat). The name patch is a blank white rectangle with no lettering. The faded tattoo is clearly visible on his right forearm.",
       "expressions": "eating fast hunched over his plate not looking up; dry serious one-liner face; confused squint; trying-to-be-fatherly small smile"
     },
     {
       "id": "little_brother",
-      "name": "Little Brother (placeholder name: Dre), age 9",
-      "design": "9-year-old Black boy, skinny and wiry with long arms and knobby knees, all energy. Same family face as Ty but a much smaller head. Fresh cornrows straight back. Missing one front tooth. Oversized basketball jersey (plain red with a white number 3, no team logo) over a white tee, basketball shorts, tube socks pulled up, worn sneakers. A band-aid on one knee. Default face: mischievous grin, about to jump off something.",
+      "name": "Little Brother (placeholder name: Dre), age 8",
+      "design": "8-year-old Black boy, athletic and strong-looking for a kid: sturdy solid build, broad little shoulders, toned arms and legs, all energy. Same family face as Ty but a smaller head. Bald fade haircut: skin-bald on the sides and back, fading up into short neat hair on top. Missing one front tooth. Oversized basketball jersey (plain red with a white number 3, no team logo) over a white tee, basketball shorts, tube socks pulled up, worn sneakers. A band-aid on one knee. Default face: mischievous grin, about to jump off something.",
       "expressions": "mid-air jump with arms out like a dunk; sneaky grin; pointing at someone to blame them; scared wide eyes"
     },
     {
       "id": "little_sister",
-      "name": "Little Sister (placeholder name: Kiki), age 8",
-      "design": "8-year-old Black girl with round chubby cheeks and big bright eyes. Hair in two big puffy ponytails with colorful plastic ball bobbles, plus butterfly clips along her edges. Pink velour tracksuit, light-up sneakers. A plastic charm bracelet. Default face: sweet and innocent on the surface, sassy underneath.",
+      "name": "Little Sister (placeholder name: Kiki), age 7",
+      "design": "7-year-old Black girl, a school-age kid and NOT a toddler: real 7-year-old proportions with longer arms and legs, a slimmer face with round cheeks and big bright eyes, about a head shorter than her 8-year-old brother. Her skin is NOTICEABLY LIGHTER than the boy in the reference sheet: a light caramel / golden-tan brown complexion, clearly a few shades lighter than her brothers. Hair in two big puffy ponytails with colorful plastic ball bobbles, plus butterfly clips along her edges. Pink velour tracksuit, light-up sneakers. A plastic charm bracelet. Default face: sweet and innocent on the surface, sassy underneath.",
       "expressions": "sitting happily in a mess, big grin; hands on hips, sassy side-eye; slowly pointing at someone to blame them; fake innocent angel face"
     }
   ],
@@ -40,28 +40,106 @@
     {
       "id": "boys_room",
       "name": "The boys' room",
-      "design": "Small bedroom with two twin beds a few feet apart with mismatched comforters (one with a basketball pattern). Posters on the walls of a made-up basketball player and a made-up R&B group. A small TV with a VCR and a game console on a dresser, tangled wires, a mini basketball hoop on the closet door, sneaker boxes stacked in the corner. Bedroom door open to the hallway."
+      "design": "Small bedroom with two twin beds a few feet apart with mismatched comforters (one with a basketball pattern). Posters on the walls of a made-up basketball player and a made-up R&B group. A small TV with a VCR and a game console on a dresser, tangled wires, a mini basketball hoop on the closet door, sneaker boxes stacked in the corner. Bedroom door open to the hallway. Lived-in early-2000s details: a stack of VHS tapes and game cases, a box fan in the window, school backpacks dumped by the beds, a jersey hanging off the bedpost, a small trash can overflowing with snack wrappers.",
+      "focus": "the gap between the two twin beds (where Little Brother jumps from one bed to the other)"
     },
     {
       "id": "sister_room",
       "name": "Little Sister's messy room",
-      "design": "A little girl's bedroom painted pink. Not dirty, just stuff everywhere: dolls, clothes, hair bows, plush beanbag toys, a flattened kids' snack tray on the dresser. A small canopy bed, a boombox, butterfly decorations. An open space in the middle of the floor for her to sit."
+      "design": "A little girl's bedroom painted pink. Not dirty, just stuff everywhere: dolls, clothes, hair bows, plush beanbag toys, a flattened kids' snack tray on the dresser. A small canopy bed, a boombox, butterfly decorations. An open space in the middle of the floor for her to sit. Lived-in details: a pile of stuffed animals on the bed, hair bows and plastic barrettes spilled on the dresser, a jewelry box with a ballerina, a small TV with a kids' VHS, glow-in-the-dark stars on the ceiling.",
+      "focus": "the open spot on the floor in the middle of the mess, with the dresser behind it"
     },
     {
       "id": "bathroom",
       "name": "Bathroom",
-      "design": "Small apartment bathroom with an old white sink and a mirror medicine cabinet, pink-and-mint tile, a fuzzy pink rug and matching toilet lid cover, a shower curtain with a fish pattern, a can of hair spray and a jar of hair grease on the sink. The bathroom door is on the side of the frame."
+      "design": "Small apartment bathroom with an old white sink and a mirror medicine cabinet, pink-and-mint tile, a fuzzy pink rug and matching toilet lid cover, a shower curtain with a fish pattern, a can of hair spray and a jar of hair grease on the sink. The bathroom door is on the side of the frame. Lived-in details: an edge brush and a wide-tooth comb on the sink, a satin bonnet on a hook, foam hair rollers in a basket, a toothbrush cup with three kids' toothbrushes, a hand towel on a ring.",
+      "focus": "the sink and the mirror medicine cabinet (where Little Ty stands over the sink)"
     },
     {
       "id": "hallway",
       "name": "Hallway and front door",
-      "design": "Narrow hallway in a Section 8 townhouse leading to the front door, beige carpet, framed school pictures of three kids on the wall, a coat rack, a small table with a cordless phone. The front door at the end of the hall. Early 2000s home decor that a stylish mom put together on a budget. Nighttime, warm lamp light."
+      "design": "Narrow hallway in a Section 8 townhouse leading to the front door, beige carpet, framed school pictures of three kids on the wall, a coat rack, a small table with a cordless phone. The front door at the end of the hall. Early 2000s home decor that a stylish mom put together on a budget. Nighttime, warm lamp light. The framed school pictures on the wall are of the family's three Black kids: a chubby boy with round glasses, a skinny boy with cornrows, and a little girl with two puffy ponytails. Lived-in details: Mom's black salon smock hanging on the coat rack, a cardboard church hand fan on the little table next to the phone, a stack of mail, kids' shoes kicked by the door.",
+      "focus": "the front door at the end of the hall and the open floor in front of it (where one shoe will sit)",
+      "reverse_view": "the hallway seen from just inside the front door, looking back into the house: the beige carpet running away from camera, the three framed school photos of the kids on the wall, the little table with the cordless phone and lamp, the coat rack, bedroom doorways along the hall and warm kitchen light at the far end"
     },
     {
       "id": "kitchen_table",
       "name": "Kitchen table",
-      "design": "Small eat-in kitchen with a round wooden table and four chairs, a plastic tablecloth, a plate of fried chicken and rice and a jug of red juice. Fridge covered in school papers and magnets, a wall calendar, an old wall phone with a long curly cord. Nighttime, overhead light."
+      "design": "Small eat-in kitchen with a round wooden table and four chairs, a plastic tablecloth, a plate of fried chicken and rice and a jug of red juice. Fridge covered in school papers and magnets, a wall calendar, an old wall phone with a long curly cord. Nighttime, overhead light. Lived-in details: a pitcher of red Kool-Aid-style juice, a bottle of hot sauce on the table, a church program and report cards on the fridge, a metal lunch pail on the counter, dishes in the sink, a radio on the windowsill.",
+      "focus": "one seat at the kitchen table with a full plate in front of it (where Tony eats)"
+    },
+    {
+      "id": "beauty_shop",
+      "name": "The Shop (Mom's beauty salon)",
+      "design": "Mom's busy Black hair salon called 'The Shop' in 2001 Elkhart, Indiana. Three or four black styling chairs at mirror stations with snapshots and business cards tucked into the mirror frames, a row of hooded hair dryers with vinyl chairs, two shampoo bowls along the back wall, a small marcel stove heating pressing combs and curling irons, rolling carts full of clips, rollers and product bottles with plain unbranded labels, hairstyle posters of made-up models, a TV mounted in the corner, a worn waiting couch with hair magazines, a front counter with an appointment book and a cordless phone. Daytime light through the front window. No readable signs or brand names. Look: warm beige walls with a brown wainscot rail, white drop ceiling with long fluorescent panels, beige floor, black vinyl styling chairs, brown vinyl dryer chairs, white hooded dryers, a worn brown leather waiting couch, a light wood front counter.",
+      "focus": "Mom's own styling station: the chair, the mirror with photos tucked in the frame, and her cart of tools",
+      "reverse_view": "the front of the shop: the big storefront window and the glass front door to the street, the front counter with the appointment book and cordless phone, the worn waiting couch and magazine rack, with the styling stations seen from behind along one side"
+    },
+    {
+      "id": "grandma_backyard",
+      "name": "Grandma's backyard",
+      "design": "Grandma and Grandpa's backyard on a summer afternoon: a chain-link fence, patchy green grass, webbed folding lawn chairs, a kettle charcoal grill, a small vegetable garden with tomato cages, a clothesline with sheets, a shed, a plastic patio table with a cooler, a garden hose and sprinkler, a big shade tree. The back steps and screen door of the house on one side.",
+      "focus": "the lawn chairs and the grill under the shade tree"
+    },
+    {
+      "id": "grandparents_living_room",
+      "name": "Grandma and Grandpa's living room",
+      "design": "Grandma and Grandpa's living room: Grandpa's worn brown recliner in front of a big wooden console TV (his spot, nobody else sits there), a floral couch, framed family photos covering one wall, a candy dish of hard candies on the coffee table, a Bible and TV Guide-style magazine, lace curtains, a wall clock, a big plant in the corner. Warm afternoon light.",
+      "focus": "Grandpa's recliner and the console TV in front of it"
+    },
+    {
+      "id": "auntie_house",
+      "name": "Auntie's house (the family elder)",
+      "design": "The home of an old-school Black great-aunt in her 70s: a sofa and loveseat covered in clear plastic, plastic runners on the carpet, lace doilies on every surface, a glass curio cabinet full of figurines and good china, a dresser with three foam wig heads wearing wigs, church hats on hat boxes, a heavy floor-model TV, a candy dish, a big family Bible on the coffee table, generations of framed family photos, heavy drapes, a wall clock. Spotless and quiet, everything in its place.",
+      "focus": "the plastic-covered sofa and the coffee table with the candy dish and the family Bible"
+    },
+    {
+      "id": "church",
+      "name": "The church",
+      "design": "Sanctuary of a regular Black Baptist church building: rows of wooden pews with red cushions, a red-carpeted center aisle, a raised pulpit platform with a wooden podium, a choir loft with burgundy robes draped over chairs, an organ and a drum set to one side, simple abstract colored-glass windows (no figures, no words), cardboard hand fans and hymnals in the pew racks. Sunday-morning light.",
+      "focus": "the pulpit and podium with the choir loft behind it"
+    },
+    {
+      "id": "school_classroom",
+      "name": "Ty's school classroom",
+      "design": "A 2001 fifth-grade classroom at a mostly white suburban elementary school in a nicer part of Elkhart: rows of desks with attached chairs, a green chalkboard with cursive alphabet strip above it, a pull-down map, an overhead projector cart, cubbies with backpacks, a reading corner with beanbags, construction-paper art on the walls, big windows to a neat lawn. Bright fluorescent and daylight.",
+      "focus": "one student desk in the middle row with a notebook and pencil on it"
+    },
+    {
+      "id": "cousins_block",
+      "name": "The cousins' block (other side of the tracks)",
+      "design": "A residential street on the other side of the tracks in Elkhart, 2001: small older houses with front porches and chain-link fences, a few bikes in the yards, a corner store at the end of the block with plain unbranded signs, a basketball hoop on a pole with no net, cracked sidewalk, power lines, railroad tracks and a crossing in the distance. Late-afternoon summer light.",
+      "focus": "one front porch with a couple of steps and a screen door"
+    },
+    {
+      "id": "townhouse_exterior",
+      "name": "Outside the townhouse",
+      "design": "Exterior of a row of two-story Section 8 townhouses in Elkhart, 2001: matching beige siding, small front stoops, numbered doors, a shared parking lot with a few early-2000s cars, a dumpster area, a patch of grass with a kids' bike lying in it, a streetlight. Evening, warm porch lights coming on.",
+      "focus": "the family's front stoop and front door"
     }
   ],
-  "location_layout": "Empty background plate for a 9:16 vertical cartoon, eye-level camera, no characters in frame, room left in the middle for characters to be added later. No text, no labels, no watermark."
+  "location_layout": "Empty background plate for a 9:16 vertical cartoon, eye-level camera, no characters in frame, room left in the middle for characters to be added later. No text, no labels, no watermark.",
+  "pending_characters": {
+    "note": "Hair notes from Ty (2026-11-28). Not generated yet: the script only reads 'characters'. Move an entry there once Ty has given the rest of the look.",
+    "grandpa": "Flat-top haircut. Always has an attitude, but Ty is his favorite and he treats Ty well.",
+    "grandma": "No gray hair: she's a young grandma (Ty's mom had him at 18). A sweetheart who always gives good lessons.",
+    "uncle_steven": "Bald. Played sports.",
+    "other_uncle": "Bald. Always around, in and out of the streets. Handle with heart, not as a punchline.",
+    "auntie": "The family's old-school great-aunt on Grandma's side (Ty: Grandma's aunt). In her 70s in 2001; gray hair; always wearing wigs. Lived to about 90. Look not designed yet."
+  },
+  "location_angles": [
+    {
+      "id": "wide",
+      "camera": "MASTER WIDE: eye-level, the whole space visible from one end, the main door or entrance in view."
+    },
+    {
+      "id": "reverse",
+      "camera": "REVERSE ANGLE: the camera stands at the back of the space and faces the front/entrance side. In frame: {reverse_view}. Keep every color, material and prop exactly as described in LOCATION.",
+      "from_master": false
+    },
+    {
+      "id": "close",
+      "camera": "CLOSE COVERAGE: a tighter eye-level medium shot on {focus}, with enough background to read where we are."
+    }
+  ]
 }

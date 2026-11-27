@@ -1,7 +1,7 @@
 # Little Ty — Ep. 01: "The Tab"
 
 **Runtime:** about 50 seconds · **Format:** 9:16 reel · **Rating:** grown
-**Setting:** Elkhart, Indiana, 2001. Mom's house. Ty is 11, Little Brother is 9, Little Sister is 8.
+**Setting:** Elkhart, Indiana, 2001. Mom's house. Ty is 10, Little Brother is 8, Little Sister is 7.
 **Style:** Little Ty talks straight to camera (Malcolm style). Hard cuts, a cash-register *KA-CHING* every time Mom says "Mm-hm."
 
 **Premise:** Mom doesn't whoop you when you do something. She lets it slide for two or three weeks, then you get *the* whooping, for all of it at once. And since Ty's the oldest, he pays for everybody.
@@ -34,7 +34,7 @@ About 100 spoken words. That's the right length for 50 seconds with room for the
 
 | Character | Lines | How to perform it |
 |---|---|---|
-| **Little Ty** | 1, 3, 5, 7, 9, 11 | Matter-of-fact, a little too grown for 11. Never whiny. He's explaining the system to the audience like a lawyer. "It was science" is totally serious. On line 9 he admits it fast, then gets outraged on "I'm the oldest." |
+| **Little Ty** | 1, 3, 5, 7, 9, 11 | Matter-of-fact, a little too grown for 10. Never whiny. He's explaining the system to the audience like a lawyer. "It was science" is totally serious. On line 9 he admits it fast, then gets outraged on "I'm the oldest." |
 | **Mom (Neicy)** | 2, 4, 5, 6, 8 | The three "Mm-hm"s are flat and calm, almost bored. Each one's the same, which makes it scarier. Line 6 is one word at a time. Line 8 is quiet. Quiet is worse. |
 | **Tony** | 10 | Low and slow, mouth half full, not looking up. Not trying to be funny. |
 
