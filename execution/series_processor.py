@@ -5,11 +5,22 @@ from dotenv import load_dotenv
 
 load_dotenv(override=True)
 
-def get_atlas_key():
-    key = os.getenv("ATLASCLOUD_API_KEY")
-    if not key or not key.startswith("apikey-"):
-        key = "apikey-5e49f49ef6684fd19abf1774de3cda5f"
-    return key
+def get_atlas_key(required=False):
+    """Return the Atlas Cloud API key from the environment (.env: ATLASCLOUD_API_KEY).
+
+    The key is never hardcoded. If it's missing, callers in this module fall back to
+    their non-Atlas path; pass required=True to raise instead.
+    """
+    key = (os.getenv("ATLASCLOUD_API_KEY") or "").strip()
+    if key:
+        return key
+    msg = ("ATLASCLOUD_API_KEY is not set. Add it to .env "
+           "(create a key in the Atlas Cloud dashboard).")
+    if required:
+        raise RuntimeError(msg)
+    print(f"⚠️ {msg} Skipping Atlas Cloud.")
+    return None
+
 
 # Imports for inner function needing global scope if moving out
 from PIL import Image
